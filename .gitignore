@@ -1,0 +1,12 @@
+ehub-delivery-tp-if
+*.db
+tmp
+.vscode
+.idea
+*.exe
+debug
+*.test
+/controllers/xml/
+.idea/
+mysql/
+mssql/

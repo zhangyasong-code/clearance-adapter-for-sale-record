@@ -1,0 +1,25 @@
+version: '3.6'
+services:
+  sqlserver:
+    image: microsoft/mssql-server-linux
+    container_name: mssql
+    ports:
+      - '1433:1433'
+    volumes:
+      - ./mssql:/var/lib/mssql
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=passwordroot
+      - MSSQL_PID=Developer
+    restart: always
+
+  mysql:
+    image: mysql
+    container_name: mysql
+    ports:
+      - '3306:3306'
+    volumes:
+      - ./mysql:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    restart: always
