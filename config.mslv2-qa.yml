@@ -10,5 +10,5 @@ cslConnDatabase:
 cfsrConnDatabase:
   driver: mysql
   connection: root:root@tcp(localhost:3307)/mslv2_clearance?charset=utf8&parseTime=True&loc=UTC
-appenv: dev
+appenv: mslv2-qa
 serviceName: clearance-adapter-for-sale-record
