@@ -1,7 +1,6 @@
-package main
+package adapter
 
 import (
-	"clearance/clearance-adapter-for-sale-record/adapter"
 	"clearance/clearance-adapter-for-sale-record/config"
 	"clearance/clearance-adapter-for-sale-record/factory"
 	"clearance/clearance-adapter-for-sale-record/models"
@@ -15,7 +14,7 @@ import (
 	"github.com/pangpanglabs/goetl"
 )
 
-func main() {
+func init() {
 	c := config.Init(os.Getenv("APP_ENV"), "")
 	// get saleRecordDB Engine
 	saleRecordDB, err := initDB(c.SaleRecordConnDatabase.Driver, c.SaleRecordConnDatabase.Connection)
@@ -44,8 +43,8 @@ func main() {
 	}
 	defer cfsrDB.Close()
 
-	etl := goetl.New(adapter.SrToClearanceETL{})
-	etl.After(adapter.SrToClearanceETL{}.ReadyToLoad)
+	etl := goetl.New(SrToClearanceETL{})
+	etl.After(SrToClearanceETL{}.ReadyToLoad)
 	err = etl.Run(context.Background())
 	fmt.Println(err)
 }

@@ -1,53 +1,43 @@
 package config
 
 import (
-	"flag"
-	"fmt"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-
-	"github.com/spf13/viper"
+	configutil "github.com/pangpanglabs/goutils/config"
+	"github.com/sirupsen/logrus"
 )
 
-var congfigEnv = flag.String("env", os.Getenv("env"), "")
+var config C
 
-func readConfig(env string) {
-	viper.SetConfigName("config." + env)
-	viper.AddConfigPath(".")
-	viper.AddConfigPath(getCurrPath())
-
-	if err := viper.ReadInConfig(); err != nil {
-		panic(fmt.Errorf("Fatal error config file: %s", err))
+func Init(appEnv, configPath string, options ...func(*C)) C {
+	config.AppEnv = appEnv
+	if configPath != "" {
+		configutil.SetConfigPath(configPath)
 	}
+	if err := configutil.Read(appEnv, &config); err != nil {
+		logrus.WithError(err).Warn("Fail to load config file")
+	}
+	for _, option := range options {
+		option(&config)
+	}
+	return config
 }
 
-func getCurrPath() string {
-	file, _ := exec.LookPath(os.Args[0])
-	path, _ := filepath.Abs(file)
-	index := strings.LastIndex(path, string(os.PathSeparator))
-	ret := path[:index]
-	filepath.Abs(filepath.Dir(os.Args[0]))
-	return ret
+func Config() C {
+	return config
 }
 
-// GetCSLConnString CSL 数据库连接字符串
-func GetCSLConnString() string {
-	if *congfigEnv == "" {
-		defaultAppEnv := "dev"
-		congfigEnv = &defaultAppEnv
+type C struct {
+	SaleRecordConnDatabase struct {
+		Driver     string
+		Connection string
 	}
-	readConfig(*congfigEnv)
-	return viper.Get("cslConnString").(string)
-}
-
-// GetSaleRecord 数据库连接字符串
-func GetSaleRecordConnString() string {
-	if *congfigEnv == "" {
-		defaultAppEnv := "dev"
-		congfigEnv = &defaultAppEnv
+	CslConnDatabase struct {
+		Driver     string
+		Connection string
 	}
-	readConfig(*congfigEnv)
-	return viper.Get("saleRecordConnString").(string)
+	CfsrConnDatabase struct {
+		Driver     string
+		Connection string
+	}
+	AppEnv      string
+	ServiceName string
 }
