@@ -25,9 +25,7 @@ func GetCSLEngine() *xorm.Engine {
 
 // SetCSLEngine 设置CSL数据库引擎
 func SetCSLEngine(engine *xorm.Engine) {
-	once.Do(func() {
-		cslEngine = engine
-	})
+	cslEngine = engine
 }
 
 // GetSrEngine 获取SaleRecord数据库引擎
@@ -37,9 +35,7 @@ func GetSrEngine() *xorm.Engine {
 
 // SetClrEngine 设置SaleRecord数据库引擎
 func SetSrEngine(engine *xorm.Engine) {
-	once.Do(func() {
-		srEngine = engine
-	})
+	srEngine = engine
 }
 
 // GetCfsrEngine 获取clearanceForSaleRecord数据库引擎
@@ -49,7 +45,5 @@ func GetCfsrEngine() *xorm.Engine {
 
 // SetCfsrEngine 设置clearanceForSaleRecord数据库引擎
 func SetCfsrEngine(engine *xorm.Engine) {
-	once.Do(func() {
-		cfsrEngine = engine
-	})
+	cfsrEngine = engine
 }
