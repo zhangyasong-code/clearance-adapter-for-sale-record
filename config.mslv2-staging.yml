@@ -5,7 +5,7 @@ saleRecordConnDatabase:
 # cslDB
 cslConnDatabase:
   driver: mssql
-  connection: server=localhost;user id=sa;password=passwordroot;database=CSL;connection timeout=30
+  connection: server=10.201.10.167;user id=CSL_DEV;password=8zMb4ZP1;database=CSL;connection timeout=300
 # clearanceForSaleRecordDB
 cfsrConnDatabase:
   driver: mysql

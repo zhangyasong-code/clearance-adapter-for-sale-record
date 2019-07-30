@@ -4,25 +4,22 @@ import (
 	"clearance/clearance-adapter-for-sale-record/config"
 	"clearance/clearance-adapter-for-sale-record/factory"
 	"clearance/clearance-adapter-for-sale-record/models"
-	"context"
-	"fmt"
 	"log"
 	"os"
 	"time"
 
 	"github.com/go-xorm/xorm"
-	"github.com/pangpanglabs/goetl"
 )
 
 func init() {
-	c := config.Init(os.Getenv("APP_ENV"), "")
+	c := config.Init(os.Getenv("APP_ENV"), "../")
 	// get saleRecordDB Engine
 	saleRecordDB, err := initDB(c.SaleRecordConnDatabase.Driver, c.SaleRecordConnDatabase.Connection)
 	if err != nil {
 		panic(err)
 	}
 	factory.SetSrEngine(saleRecordDB)
-	defer saleRecordDB.Close()
+	// defer saleRecordDB.Close()
 
 	// get cslDB Engine
 	cslDB, err := initDB(c.CslConnDatabase.Driver, c.CslConnDatabase.Connection)
@@ -30,7 +27,7 @@ func init() {
 		panic(err)
 	}
 	factory.SetCSLEngine(cslDB)
-	defer saleRecordDB.Close()
+	// defer saleRecordDB.Close()
 
 	// get clearanceForSaleRecordDB Engine
 	cfsrDB, err := initDB(c.CfsrConnDatabase.Driver, c.CfsrConnDatabase.Connection)
@@ -41,12 +38,6 @@ func init() {
 	if err := models.InitDb(cfsrDB); err != nil {
 		log.Fatal(err)
 	}
-	defer cfsrDB.Close()
-
-	etl := goetl.New(SrToClearanceETL{})
-	etl.After(SrToClearanceETL{}.ReadyToLoad)
-	err = etl.Run(context.Background())
-	fmt.Println(err)
 }
 
 func initDB(driver, connection string) (*xorm.Engine, error) {
