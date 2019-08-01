@@ -77,7 +77,21 @@ func (etl SrToClearanceETL) Load(ctx context.Context, source interface{}) error 
 	if !ok {
 		return errors.New("Convert Failed")
 	}
-	if _, err := factory.GetCfsrEngine().Insert(&saleTransactions); err != nil {
+	
+	engine := factory.GetCfsrEngine()
+	session := engine.NewSession()
+	defer session.Close()
+	if err := session.Begin(); err != nil {
+		return err
+	}
+
+	for _, saleTransaction := range saleTransactions {
+		if _, err := session.Insert(&saleTransaction); err != nil {
+			session.Rollback()
+			return err
+		}
+	}
+	if err := session.Commit(); err != nil {
 		return err
 	}
 	return nil

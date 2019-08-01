@@ -100,17 +100,32 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 	if !ok {
 		return errors.New("Convert Failed")
 	}
+	//get engine
 	engine := factory.GetCSLEngine()
 	engine.SetMapper(core.SameMapper{})
+
+	//create session
+	session := engine.NewSession()
+	defer session.Close()
+	if err := session.Begin(); err != nil {
+		return err
+	}
+
 	for _, saleMst := range saleMstsAndSaleDtls.SaleMsts {
-		if _, err := engine.Table("dbo.SaleMst").Insert(&saleMst); err != nil {
+		if _, err := session.Table("dbo.SaleMst").Insert(&saleMst); err != nil {
+			session.Rollback()
 			return err
 		}
 	}
 	for _, saleDtl := range saleMstsAndSaleDtls.SaleDtls {
-		if _, err := engine.Table("dbo.SaleDtl").Insert(&saleDtl); err != nil {
+		if _, err := session.Table("dbo.SaleDtl").Insert(&saleDtl); err != nil {
+			session.Rollback()
 			return err
 		}
+	}
+	//commit session
+	if err := session.Commit(); err != nil {
+		return err
 	}
 	return nil
 }
