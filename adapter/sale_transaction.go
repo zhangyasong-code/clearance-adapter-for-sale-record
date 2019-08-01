@@ -16,7 +16,7 @@ const (
 // saleRecord到Clearance
 type SrToClearanceETL struct{}
 
-func buildETL() *goetl.ETL {
+func buildSrToClearanceETL() *goetl.ETL {
 	etl := goetl.New(SrToClearanceETL{})
 	return etl
 }
@@ -52,9 +52,11 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 	saleTransactions := make([]models.SaleTransaction, 0)
 	for _, saleRecord := range saleRecords {
 		saleTransactions = append(saleTransactions, models.SaleTransaction{
+			OrderId:        saleRecord.OrderId,
 			StoreId:        saleRecord.StoreId,
 			TotalSalePrice: saleRecord.TotalSalePrice,
 			Quantity:       saleRecord.Quantity,
+			SalePrice:      saleRecord.SalePrice,
 			SkuId:          saleRecord.SkuId,
 		})
 	}
