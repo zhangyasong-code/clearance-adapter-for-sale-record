@@ -15,9 +15,11 @@ func TestTransform(t *testing.T) {
 	Convey("测试SrToClearanceETL的Transform方法", t, func() {
 		source := []models.AssortedSaleRecord{
 			{
+				OrderId:        1,
 				StoreId:        1,
 				TotalSalePrice: 200,
 				Quantity:       2,
+				SalePrice:      100,
 				SkuId:          3,
 			},
 		}
@@ -25,7 +27,9 @@ func TestTransform(t *testing.T) {
 		So(err, ShouldBeNil)
 		saleTransaction := saleTransactions.([]models.SaleTransaction)[0]
 		So(saleTransaction.Id, ShouldEqual, 0)
+		So(saleTransaction.OrderId, ShouldEqual, 1)
 		So(saleTransaction.Quantity, ShouldEqual, 2)
+		So(saleTransaction.SalePrice, ShouldEqual, 100)
 		So(saleTransaction.TotalSalePrice, ShouldEqual, 200.00)
 		So(saleTransaction.StoreId, ShouldEqual, 1)
 		So(saleTransaction.SkuId, ShouldEqual, 3)
@@ -35,7 +39,7 @@ func TestTransform(t *testing.T) {
 func TestSrToClearanceForSaleRecordETL(t *testing.T) {
 	Convey("测试SrToClearanceETL的Run方法", t, func() {
 		Convey("可以把DATA 从sale-record导入到Clearance", func() {
-			etl := buildETL()
+			etl := buildSrToClearanceETL()
 			etl.After(SrToClearanceETL{}.ReadyToLoad)
 			err := etl.Run(context.Background())
 			fmt.Println(err)

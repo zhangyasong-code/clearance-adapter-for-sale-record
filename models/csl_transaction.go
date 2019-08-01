@@ -57,51 +57,51 @@ type SaleDtl struct {
 	ModiDateTime                      time.Time `query:"modiDateTime" json:"modiDateTime"`
 	SendState                         string    `query:"sendState" json:"sendState"`
 	SendFlag                          string    `query:"sendFlag" json:"sendFlag"`
-	SendSeqNo                         int64     `query:"sendSeqNo" json:"sendSeqNo"`
-	SendDateTime                      time.Time `query:"sendDateTime" json:"sendDateTime"`
-	DiscountAmt                       float64   `query:"discountAmt" json:"discountAmt"`
-	DiscountAmtAsCost                 float64   `query:"discountAmtAsCost" json:"discountAmtAsCost"`
-	UseMileageSettleType              string    `query:"useMileageSettleType" json:"useMileageSettleType"`
-	EstimateSaleAmtForConsumer        float64   `query:"estimateSaleAmtForConsumer" json:"estimateSaleAmtForConsumer"`
-	SaleEventDiscountAmtForConsumer   float64   `query:"saleEventDiscountAmtForConsumer" json:"saleEventDiscountAmtForConsumer"`
-	ShopEmpEstimateSaleAmt            float64   `query:"shopEmpEstimateSaleAmt" json:"shopEmpEstimateSaleAmt"`
-	PromotionID                       int64     `query:"promotionID" json:"promotionID"`
-	TMallEventID                      int64     `query:"tMallEventID" json:"tMallEventID"`
-	TMall_ObtainMileage               float64   `query:"tMall_ObtainMileage" json:"tMall_ObtainMileage"`
-	SaleOfficeCode                    string    `query:"saleOfficeCode" json:"saleOfficeCode"`
+	// SendSeqNo                         int64     `query:"sendSeqNo" json:"sendSeqNo"`
+	SendDateTime                    time.Time `query:"sendDateTime" json:"sendDateTime"`
+	DiscountAmt                     float64   `query:"discountAmt" json:"discountAmt"`
+	DiscountAmtAsCost               float64   `query:"discountAmtAsCost" json:"discountAmtAsCost"`
+	UseMileageSettleType            string    `query:"useMileageSettleType" json:"useMileageSettleType"`
+	EstimateSaleAmtForConsumer      float64   `query:"estimateSaleAmtForConsumer" json:"estimateSaleAmtForConsumer"`
+	SaleEventDiscountAmtForConsumer float64   `query:"saleEventDiscountAmtForConsumer" json:"saleEventDiscountAmtForConsumer"`
+	ShopEmpEstimateSaleAmt          float64   `query:"shopEmpEstimateSaleAmt" json:"shopEmpEstimateSaleAmt"`
+	PromotionID                     int64     `query:"promotionID" json:"promotionID"`
+	TMallEventID                    int64     `query:"tMallEventID" json:"tMallEventID"`
+	TMall_ObtainMileage             float64   `query:"tMall_ObtainMileage" json:"tMall_ObtainMileage"`
+	SaleOfficeCode                  string    `query:"saleOfficeCode" json:"saleOfficeCode"`
 }
 
 type SaleMst struct {
-	SaleNo                      string    `query:"saleNo" json:"saleNo"`
-	BrandCode                   string    `query:"brandCode" json:"brandCode"`
-	ShopCode                    string    `query:"shopCode" json:"shopCode"`
-	Dates                       string    `query:"dates" json:"dates"`
-	PosNo                       string    `query:"posNo" json:"posNo"`
-	SeqNo                       int64     `query:"seqNo" json:"seqNo"`
-	SaleMode                    string    `query:"saleMode" json:"saleMode"`
-	CustNo                      string    `query:"custNo" json:"custNo"`
-	CustCardNo                  string    `query:"custCardNo" json:"custCardNo"`
-	CustMileagePolicyNo         int64     `query:"custMileagePolicyNo" json:"custMileagePolicyNo"`
-	PrimaryCustEventNo          int64     `query:"primaryCustEventNo" json:"primaryCustEventNo"`
-	SecondaryCustEventNo        int64     `query:"secondaryCustEventNo" json:"secondaryCustEventNo"`
-	DepartStoreReceiptNo        string    `query:"departStoreReceiptNo" json:"departStoreReceiptNo"`
-	SaleQty                     int64     `query:"saleQty" json:"saleQty"`
-	SaleAmt                     float64   `query:"saleAmt" json:"saleAmt"`
-	DiscountAmt                 float64   `query:"discountAmt" json:"discountAmt"`
-	ChinaFISaleAmt              float64   `query:"chinaFISaleAmt" json:"chinaFISaleAmt"`
-	EstimateSaleAmt             float64   `query:"estimateSaleAmt" json:"estimateSaleAmt"`
-	SellingAmt                  float64   `query:"sellingAmt" json:"sellingAmt"`
-	FeeAmt                      float64   `query:"feeAmt" json:"feeAmt"`
-	ActualSaleAmt               float64   `query:"actualSaleAmt" json:"actualSaleAmt"`
-	UseMileage                  float64   `query:"useMileage" json:"useMileage"`
-	ObtainMileage               float64   `query:"obtainMileage" json:"obtainMileage"`
-	InUserID                    string    `query:"inUserID" json:"inUserID"`
-	InDateTime                  time.Time `query:"inDateTime" json:"inDateTime"`
-	ModiUserID                  string    `query:"modiUserID" json:"modiUserID"`
-	ModiDateTime                time.Time `query:"modiDateTime" json:"modiDateTime"`
-	SendState                   string    `query:"sendState" json:"sendState"`
-	SendFlag                    string    `query:"sendFlag" json:"sendFlag"`
-	SendSeqNo                   int64     `query:"sendSeqNo" json:"sendSeqNo"`
+	SaleNo               string    `query:"saleNo" json:"saleNo"`
+	BrandCode            string    `query:"brandCode" json:"brandCode"`
+	ShopCode             string    `query:"shopCode" json:"shopCode"`
+	Dates                string    `query:"dates" json:"dates"`
+	PosNo                string    `query:"posNo" json:"posNo"`
+	SeqNo                int64     `query:"seqNo" json:"seqNo"`
+	SaleMode             string    `query:"saleMode" json:"saleMode"`
+	CustNo               string    `query:"custNo" json:"custNo"`
+	CustCardNo           string    `query:"custCardNo" json:"custCardNo"`
+	CustMileagePolicyNo  int64     `query:"custMileagePolicyNo" json:"custMileagePolicyNo"`
+	PrimaryCustEventNo   int64     `query:"primaryCustEventNo" json:"primaryCustEventNo"`
+	SecondaryCustEventNo int64     `query:"secondaryCustEventNo" json:"secondaryCustEventNo"`
+	DepartStoreReceiptNo string    `query:"departStoreReceiptNo" json:"departStoreReceiptNo"`
+	SaleQty              int64     `query:"saleQty" json:"saleQty"`
+	SaleAmt              float64   `query:"saleAmt" json:"saleAmt"`
+	DiscountAmt          float64   `query:"discountAmt" json:"discountAmt"`
+	ChinaFISaleAmt       float64   `query:"chinaFISaleAmt" json:"chinaFISaleAmt"`
+	EstimateSaleAmt      float64   `query:"estimateSaleAmt" json:"estimateSaleAmt"`
+	SellingAmt           float64   `query:"sellingAmt" json:"sellingAmt"`
+	FeeAmt               float64   `query:"feeAmt" json:"feeAmt"`
+	ActualSaleAmt        float64   `query:"actualSaleAmt" json:"actualSaleAmt"`
+	UseMileage           float64   `query:"useMileage" json:"useMileage"`
+	ObtainMileage        float64   `query:"obtainMileage" json:"obtainMileage"`
+	InUserID             string    `query:"inUserID" json:"inUserID"`
+	InDateTime           time.Time `query:"inDateTime" json:"inDateTime"`
+	ModiUserID           string    `query:"modiUserID" json:"modiUserID"`
+	ModiDateTime         time.Time `query:"modiDateTime" json:"modiDateTime"`
+	SendState            string    `query:"sendState" json:"sendState"`
+	SendFlag             string    `query:"sendFlag" json:"sendFlag"`
+	// SendSeqNo                   int64     `query:"sendSeqNo" json:"sendSeqNo"`
 	SendDateTime                time.Time `query:"sendDateTime" json:"sendDateTime"`
 	DiscountAmtAsCost           float64   `query:"discountAmtAsCost" json:"discountAmtAsCost"`
 	CustDivisionCode            string    `query:"custDivisionCode" json:"custDivisionCode"`
@@ -116,7 +116,7 @@ type SaleMst struct {
 	Freight                     float64   `query:"freight" json:"freight"`
 	TMall_UseMileage            float64   `query:"tMall_UseMileage" json:"tMall_UseMileage"`
 	TMall_ObtainMileage         float64   `query:"tMall_ObtainMileage" json:"tMall_ObtainMileage"`
-	SaleOfficeCode              string    `query:"saleOfficeCode" json:"saleOfficeCode"`
+	SaleOfficeCode              string    `query:"saleOfficeCode" json:"saleOfficeCode" xorm:""`
 }
 
 type SalePayment struct {
@@ -133,4 +133,9 @@ type SalePayment struct {
 	SendSeqNo          int64     `query:"sendSeqNo" json:"sendSeqNo"`
 	SendDateTime       time.Time `query:"sendDateTime" json:"sendDateTime"`
 	CreditCardFirmCode string    `query:"creditCardFirmCode" json:"creditCardFirmCode"`
+}
+
+type SaleMstsAndSaleDtls struct {
+	SaleMsts []SaleMst `query:"saleMsts" json:"saleMsts" `
+	SaleDtls []SaleDtl `query:"saleDtls" json:"saleDtls" `
 }
