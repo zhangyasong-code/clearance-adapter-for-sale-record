@@ -3,7 +3,7 @@ package models
 import "time"
 
 type AssortedSaleRecord struct {
-	TransactionId          string    `query:"transactionId" json:"transactionId"`
+	TransactionId          string    `query:"transactionId" json:"transactionId" xorm:"pk"`
 	Created                time.Time `query:"created" json:"created"`
 	CreatedBy              string    `query:"createdBy" json:"createdBy"`
 	Modified               time.Time `query:"modified" json:"modified"`

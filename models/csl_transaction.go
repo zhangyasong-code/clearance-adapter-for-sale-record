@@ -3,8 +3,8 @@ package models
 import "time"
 
 type SaleDtl struct {
-	SaleNo                            string    `query:"saleNo" json:"saleNo"`
-	DtSeq                             int64     `query:"dtSeq" json:"dtSeq"`
+	SaleNo                            string    `query:"saleNo" json:"saleNo" xorm:"pk"`
+	DtSeq                             int64     `query:"dtSeq" json:"dtSeq" xorm:"pk"`
 	BrandCode                         string    `query:"brandCode" json:"brandCode"`
 	ShopCode                          string    `query:"shopCode" json:"shopCode"`
 	Dates                             string    `query:"dates" json:"dates"`
@@ -72,7 +72,7 @@ type SaleDtl struct {
 }
 
 type SaleMst struct {
-	SaleNo               string    `query:"saleNo" json:"saleNo"`
+	SaleNo               string    `query:"saleNo" json:"saleNo" xorm:"pk"`
 	BrandCode            string    `query:"brandCode" json:"brandCode"`
 	ShopCode             string    `query:"shopCode" json:"shopCode"`
 	Dates                string    `query:"dates" json:"dates"`
@@ -120,8 +120,8 @@ type SaleMst struct {
 }
 
 type SalePayment struct {
-	SaleNo             string    `query:"saleNo" json:"saleNo"`
-	SeqNo              int64     `query:"seqNo" json:"seqNo"`
+	SaleNo             string    `query:"saleNo" json:"saleNo" xorm:"pk"`
+	SeqNo              int64     `query:"seqNo" json:"seqNo" xorm:"pk"`
 	PaymentCode        string    `query:"paymentCode" json:"paymentCode"`
 	PaymentAmt         float64   `query:"paymentAmt" json:"paymentAmt"`
 	InUserID           string    `query:"inUserID" json:"inUserID"`
