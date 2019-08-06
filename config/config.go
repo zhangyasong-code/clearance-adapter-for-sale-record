@@ -38,6 +38,14 @@ type C struct {
 		Driver     string
 		Connection string
 	}
+	Services struct {
+		PlaceManagementApi string
+		GetTokenApi        string
+	}
+	GetTokenUser struct {
+		UserName string
+		Password string
+	}
 	AppEnv      string
 	ServiceName string
 }
