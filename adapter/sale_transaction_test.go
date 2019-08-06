@@ -25,14 +25,14 @@ func TestTransform(t *testing.T) {
 		}
 		saleTransactions, err := SrToClearanceETL{}.Transform(context.Background(), source)
 		So(err, ShouldBeNil)
-		saleTransaction := saleTransactions.([]models.SaleTransaction)[0]
-		So(saleTransaction.Id, ShouldEqual, 0)
-		So(saleTransaction.OrderId, ShouldEqual, 1)
-		So(saleTransaction.Quantity, ShouldEqual, 2)
-		So(saleTransaction.SalePrice, ShouldEqual, 100)
-		So(saleTransaction.TotalSalePrice, ShouldEqual, 200.00)
-		So(saleTransaction.StoreId, ShouldEqual, 1)
-		So(saleTransaction.SkuId, ShouldEqual, 3)
+		saleTAndSaleTDtls := saleTransactions.(models.SaleTAndSaleTDtls)
+		So(saleTAndSaleTDtls.SaleTransactions[0].OrderId, ShouldEqual, 1)
+		So(saleTAndSaleTDtls.SaleTransactions[0].TotalSalePrice, ShouldEqual, 200.00)
+		So(saleTAndSaleTDtls.SaleTransactions[0].StoreId, ShouldEqual, 1)
+
+		So(saleTAndSaleTDtls.SaleTransactionDtls[0].SkuId, ShouldEqual, 3)
+		So(saleTAndSaleTDtls.SaleTransactionDtls[0].Quantity, ShouldEqual, 2)
+		So(saleTAndSaleTDtls.SaleTransactionDtls[0].SalePrice, ShouldEqual, 100)
 	})
 }
 

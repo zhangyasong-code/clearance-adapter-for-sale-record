@@ -10,5 +10,11 @@ cslConnDatabase:
 cfsrConnDatabase:
   driver: mysql
   connection: root:root@tcp(localhost:3307)/mslv2_clearance?charset=utf8&parseTime=True&loc=UTC
+services:
+  placeManagementApi: https://staging.p2shop.com.cn/pangpang-brand/place-management-api
+  getTokenApi: https://staging.p2shop.com.cn/pangpang-common/portal-api/login?tenantCode=pangpang
+getTokenUser:
+  userName: staging.pangpang
+  password: 1111
 appenv: dev
 serviceName: clearance-adapter-for-sale-record

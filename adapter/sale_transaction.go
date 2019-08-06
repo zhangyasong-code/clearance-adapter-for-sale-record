@@ -50,17 +50,35 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 		return nil, errors.New("Convert Failed")
 	}
 	saleTransactions := make([]models.SaleTransaction, 0)
+	saleTransactionDtls := make([]models.SaleTransactionDtl, 0)
 	for _, saleRecord := range saleRecords {
-		saleTransactions = append(saleTransactions, models.SaleTransaction{
-			OrderId:        saleRecord.OrderId,
-			StoreId:        saleRecord.StoreId,
-			TotalSalePrice: saleRecord.TotalSalePrice,
-			Quantity:       saleRecord.Quantity,
-			SalePrice:      saleRecord.SalePrice,
-			SkuId:          saleRecord.SkuId,
+		check := true
+		for _, saleTransaction := range saleTransactions {
+			if saleRecord.OrderId == saleTransaction.OrderId {
+				check = false
+			}
+		}
+
+		if len(saleTransactions) == 0 || check {
+			saleTransactions = append(saleTransactions, models.SaleTransaction{
+				OrderId:        saleRecord.OrderId,
+				StoreId:        saleRecord.StoreId,
+				TotalSalePrice: saleRecord.TotalSalePrice,
+				SaleDate:       saleRecord.TransactionCreateDate,
+			})
+		}
+		saleTransactionDtls = append(saleTransactionDtls, models.SaleTransactionDtl{
+			OrderId:   saleRecord.OrderId,
+			StoreId:   saleRecord.StoreId,
+			Quantity:  saleRecord.Quantity,
+			SalePrice: saleRecord.SalePrice,
+			SkuId:     saleRecord.SkuId,
 		})
 	}
-	return saleTransactions, nil
+	return models.SaleTAndSaleTDtls{
+		SaleTransactions:    saleTransactions,
+		SaleTransactionDtls: saleTransactionDtls,
+	}, nil
 }
 
 // ReadyToLoad ...
@@ -73,11 +91,11 @@ func (etl SrToClearanceETL) Load(ctx context.Context, source interface{}) error 
 	if source == nil {
 		return errors.New("source is nil")
 	}
-	saleTransactions, ok := source.([]models.SaleTransaction)
+	saleTAndSaleTDtls, ok := source.(models.SaleTAndSaleTDtls)
 	if !ok {
 		return errors.New("Convert Failed")
 	}
-	
+
 	engine := factory.GetCfsrEngine()
 	session := engine.NewSession()
 	defer session.Close()
@@ -85,8 +103,14 @@ func (etl SrToClearanceETL) Load(ctx context.Context, source interface{}) error 
 		return err
 	}
 
-	for _, saleTransaction := range saleTransactions {
+	for _, saleTransaction := range saleTAndSaleTDtls.SaleTransactions {
 		if _, err := session.Insert(&saleTransaction); err != nil {
+			session.Rollback()
+			return err
+		}
+	}
+	for _, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {
+		if _, err := session.Insert(&saleTransactionDtl); err != nil {
 			session.Rollback()
 			return err
 		}

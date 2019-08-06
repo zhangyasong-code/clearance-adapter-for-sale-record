@@ -1,6 +1,17 @@
 package models
 
-import "time"
+import (
+	"clearance/clearance-adapter-for-sale-record/config"
+	"clearance/clearance-adapter-for-sale-record/factory"
+	"context"
+	"errors"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/pangpanglabs/goutils/behaviorlog"
+	"github.com/pangpanglabs/goutils/httpreq"
+)
 
 type SaleDtl struct {
 	SaleNo                            string    `query:"saleNo" json:"saleNo" xorm:"pk"`
@@ -138,4 +149,73 @@ type SalePayment struct {
 type SaleMstsAndSaleDtls struct {
 	SaleMsts []SaleMst `query:"saleMsts" json:"saleMsts" `
 	SaleDtls []SaleDtl `query:"saleDtls" json:"saleDtls" `
+}
+
+type ResultShop struct {
+	Success bool `json:"success"`
+	Result  []struct {
+		Id   int64  `json:"id"`
+		Code string `json:"code"`
+	} `json:"result"`
+	Error struct{} `json:"error"`
+}
+
+type ResultToken struct {
+	Success bool `json:"success"`
+	Result  struct {
+		Token string `json:"token"`
+	}
+	Error struct{} `json:"error"`
+}
+
+type RequestTokenBody struct {
+	UserName string `json:"userName"`
+	PassWord string `json:"passWord"`
+}
+
+func (SaleMst) GetShopCode(ctx context.Context, storeId int64, token string) (string, error) {
+	resultShop := ResultShop{}
+	if _, err := httpreq.New(http.MethodGet, config.Config().Services.PlaceManagementApi+"/outside/v1/store/getbystoreids?ids="+strconv.FormatInt(storeId, 10), nil).
+		WithBehaviorLogContext(behaviorlog.FromCtx(ctx)).WithToken(token).
+		Call(&resultShop); err != nil {
+		return "", err
+	}
+	if len(resultShop.Result) != 0 {
+		if shopCode := resultShop.Result[0].Code; shopCode != "" {
+			return shopCode, nil
+		}
+	}
+	return "", errors.New("Request PlaceManagementApi failed : Get shopCode error")
+}
+
+func (SaleMst) GetToken(ctx context.Context) (string, error) {
+	resultToken := ResultToken{}
+	body := RequestTokenBody{
+		UserName: config.Config().GetTokenUser.UserName,
+		PassWord: config.Config().GetTokenUser.Password,
+	}
+	if _, err := httpreq.New(http.MethodPost, config.Config().Services.GetTokenApi, body).
+		WithBehaviorLogContext(behaviorlog.FromCtx(ctx)).
+		Call(&resultToken); err != nil {
+		return "", err
+	}
+	if resultToken.Success && resultToken.Result.Token != "" {
+		return resultToken.Result.Token, nil
+	}
+	return "", errors.New("Get token error!")
+}
+
+func (SaleMst) GetlastSeq(ctx context.Context, shopCode, saleDate string) (string, error) {
+	var saleNos []string
+	if err := factory.GetCSLEngine().Table("dbo.SaleMst").Select("SaleNo").Where("shopCode = ?", shopCode).And("dates = ?", saleDate).Desc("SaleNo").Find(&saleNos); err != nil {
+		return "", err
+	}
+	if len(saleNos) != 0 {
+		return saleNos[0], nil
+	}
+	return "", nil
+}
+
+func (SaleMst) GetSequenceNumber(lastSeq string) (string, error) {
+	return "", nil
 }
