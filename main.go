@@ -4,6 +4,7 @@ import (
 	"clearance/clearance-adapter-for-sale-record/config"
 	"clearance/clearance-adapter-for-sale-record/factory"
 	"clearance/clearance-adapter-for-sale-record/models"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -39,11 +40,12 @@ func main() {
 		log.Fatal(err)
 	}
 	defer cfsrDB.Close()
-
+	fmt.Println("Start :========================")
 	// etl := goetl.New(adapter.SrToClearanceETL{})
 	// etl.After(adapter.SrToClearanceETL{}.ReadyToLoad)
 	// err = etl.Run(context.Background())
 	// fmt.Println(err)
+	fmt.Println("End :========================")
 }
 
 func initDB(driver, connection string) (*xorm.Engine, error) {
