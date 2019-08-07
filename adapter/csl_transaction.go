@@ -5,8 +5,8 @@ import (
 	"clearance/clearance-adapter-for-sale-record/models"
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-xorm/core"
@@ -29,7 +29,8 @@ func buildClearanceToCslETL() *goetl.ETL {
 func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 	saleTransactions := []models.SaleTransaction{}
 	saleTransactionDtls := []models.SaleTransactionDtl{}
-
+	// start, _ := time.Parse("2006-01-02", "2019-07-18")
+	// end, _ := time.Parse("2006-01-02", "2019-07-19")
 	//分页查询   一次查1000条
 	skipCount := 0
 	for {
@@ -37,9 +38,12 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 			SaleTransaction    models.SaleTransaction    `xorm:"extends"`
 			SaleTransactionDtl models.SaleTransactionDtl `xorm:"extends"`
 		}
-		if err := factory.GetCfsrEngine().Table("sale_transaction").Select("sale_transaction.*,sale_transaction_dtl.*").
+		if err := factory.GetCfsrEngine().Table("sale_transaction").
+			Select("sale_transaction.*,sale_transaction_dtl.*").
 			Join("INNER", "sale_transaction_dtl", "sale_transaction_dtl.order_id = sale_transaction.order_id").
-			Where("1 = 1").Limit(maxResultCount, skipCount).Find(&stsAndStds); err != nil {
+			// Where("sale_date > ?", start).
+			// And("sale_date < ?", end).
+			Limit(maxResultCount, skipCount).Find(&stsAndStds); err != nil {
 			return nil, err
 		}
 		for _, stsAndStd := range stsAndStds {
@@ -78,7 +82,9 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 	if err != nil {
 		return nil, err
 	}
-	seq := 0
+
+	endSeq := 0
+	startStr := ""
 	for i, saleTransaction := range saleTAndSaleTDtls.SaleTransactions {
 		saleDate := saleTransaction.SaleDate.Format("20060102")
 
@@ -88,35 +94,45 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			return nil, err
 		}
 
-		//get last Seq in csl SaleMst
+		//get last endSeq and startStr in csl SaleMst
 		if i == 0 {
 			lastSeq, err := models.SaleMst{}.GetlastSeq(ctx, shopCode, saleDate)
 			if err != nil {
 				return nil, err
 			}
-			if lastSeq != "" {
-				lastFour := lastSeq[len(lastSeq)-4 : len(lastSeq)]
-				intLastFour, err := strconv.Atoi(lastFour)
-				if err != nil {
-					//    When err != nil intLastFour = A001-A999
-					fmt.Println(err)
-				}
-				if intLastFour != 9999 {
-					seq = intLastFour + 1
-				}
+			seq, str, err := models.SaleMst{}.GetSeqAndStartStr(lastSeq)
+			if err != nil {
+				return nil, err
 			}
+			endSeq = seq
+			startStr = str
 		}
 
-		//获取四位seq
-		sequenceNumber, err := models.SaleMst{}.GetSequenceNumber(seq)
+		//Get SequenceNumber
+		sequenceNumber, nextSeq, str, err := models.SaleMst{}.GetSequenceNumber(endSeq, startStr)
 		if err != nil {
 			return nil, err
 		}
+		endSeq = nextSeq
+		startStr = str
 		saleNo := shopCode + saleDate[len(saleDate)-6:len(saleDate)] + MSLV2_POS + sequenceNumber
-		seqNo, err := strconv.ParseInt(sequenceNumber, 10, 64)
+
+		//get SeqNo
+		strSeqNo := ""
+		startStrs := []string{"A", "B", "C", "D", "E", "F", "G"}
+		for _, startStr := range startStrs {
+			if strings.HasPrefix(sequenceNumber, startStr) {
+				strSeqNo = sequenceNumber[len(sequenceNumber)-3 : len(sequenceNumber)]
+				break
+			} else {
+				strSeqNo = sequenceNumber
+			}
+		}
+		seqNo, err := strconv.ParseInt(strSeqNo, 10, 64)
 		if err != nil {
 			return nil, err
 		}
+
 		saleMsts = append(saleMsts, models.SaleMst{
 			SaleNo:        saleNo,
 			SeqNo:         seqNo,
@@ -141,7 +157,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				})
 			}
 		}
-		seq += 1
 	}
 	return models.SaleMstsAndSaleDtls{
 		SaleMsts: saleMsts,
