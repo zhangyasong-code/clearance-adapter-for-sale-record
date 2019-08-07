@@ -1,18 +1,14 @@
 package main
 
 import (
-	"clearance/clearance-adapter-for-sale-record/adapter"
 	"clearance/clearance-adapter-for-sale-record/config"
 	"clearance/clearance-adapter-for-sale-record/factory"
 	"clearance/clearance-adapter-for-sale-record/models"
-	"context"
-	"fmt"
 	"log"
 	"os"
 	"time"
 
 	"github.com/go-xorm/xorm"
-	"github.com/pangpanglabs/goetl"
 )
 
 func main() {
@@ -44,10 +40,10 @@ func main() {
 	}
 	defer cfsrDB.Close()
 
-	etl := goetl.New(adapter.SrToClearanceETL{})
-	etl.After(adapter.SrToClearanceETL{}.ReadyToLoad)
-	err = etl.Run(context.Background())
-	fmt.Println(err)
+	// etl := goetl.New(adapter.SrToClearanceETL{})
+	// etl.After(adapter.SrToClearanceETL{}.ReadyToLoad)
+	// err = etl.Run(context.Background())
+	// fmt.Println(err)
 }
 
 func initDB(driver, connection string) (*xorm.Engine, error) {

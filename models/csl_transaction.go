@@ -207,7 +207,12 @@ func (SaleMst) GetToken(ctx context.Context) (string, error) {
 
 func (SaleMst) GetlastSeq(ctx context.Context, shopCode, saleDate string) (string, error) {
 	var saleNos []string
-	if err := factory.GetCSLEngine().Table("dbo.SaleMst").Select("SaleNo").Where("shopCode = ?", shopCode).And("dates = ?", saleDate).Desc("SaleNo").Find(&saleNos); err != nil {
+	if err := factory.GetCSLEngine().
+		Table("dbo.SaleMst").
+		Select("SaleNo").
+		Where("shopCode = ?", shopCode).
+		And("dates = ?", saleDate).
+		Desc("SaleNo").Find(&saleNos); err != nil {
 		return "", err
 	}
 	if len(saleNos) != 0 {
@@ -221,7 +226,7 @@ func (SaleMst) GetSequenceNumber(seq int) (string, error) {
 		return "0000", nil
 	}
 	strSeq := strconv.Itoa(seq)
-	
+
 	//不够四位自动补0
 BreakHere:
 	if len(strSeq) != 4 {
