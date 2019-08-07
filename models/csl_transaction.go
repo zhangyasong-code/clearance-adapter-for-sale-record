@@ -216,6 +216,17 @@ func (SaleMst) GetlastSeq(ctx context.Context, shopCode, saleDate string) (strin
 	return "", nil
 }
 
-func (SaleMst) GetSequenceNumber(lastSeq string) (string, error) {
-	return "", nil
+func (SaleMst) GetSequenceNumber(seq int) (string, error) {
+	if seq == 0 {
+		return "0000", nil
+	}
+	strSeq := strconv.Itoa(seq)
+	
+	//不够四位自动补0
+BreakHere:
+	if len(strSeq) != 4 {
+		strSeq = "0" + strSeq
+		goto BreakHere
+	}
+	return strSeq, nil
 }

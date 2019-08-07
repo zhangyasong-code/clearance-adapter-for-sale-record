@@ -29,6 +29,7 @@ func buildClearanceToCslETL() *goetl.ETL {
 func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 	saleTransactions := []models.SaleTransaction{}
 	saleTransactionDtls := []models.SaleTransactionDtl{}
+
 	//分页查询   一次查1000条
 	skipCount := 0
 	for {
@@ -77,6 +78,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 	if err != nil {
 		return nil, err
 	}
+	seq := 0
 	for i, saleTransaction := range saleTAndSaleTDtls.SaleTransactions {
 		saleDate := saleTransaction.SaleDate.Format("20060102")
 
@@ -85,23 +87,41 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if err != nil {
 			return nil, err
 		}
-		shopCode = "test"
-		saleDate = "20190806"
 
 		//get last Seq in csl SaleMst
-		lastSeq, err := models.SaleMst{}.GetlastSeq(ctx, shopCode, saleDate)
+		if i == 0 {
+			lastSeq, err := models.SaleMst{}.GetlastSeq(ctx, shopCode, saleDate)
+			if err != nil {
+				return nil, err
+			}
+			if lastSeq != "" {
+				lastFour := lastSeq[len(lastSeq)-4 : len(lastSeq)]
+				intLastFour, err := strconv.Atoi(lastFour)
+				if err != nil {
+					//    When err != nil intLastFour = A001-A999
+					fmt.Println(err)
+				}
+				if intLastFour != 9999 {
+					seq = intLastFour + 1
+				}
+			}
+		}
+
+		//获取四位seq
+		sequenceNumber, err := models.SaleMst{}.GetSequenceNumber(seq)
 		if err != nil {
 			return nil, err
 		}
-		//get seq  this function is not done
-		sequenceNumber, err := models.SaleMst{}.GetSequenceNumber(lastSeq)
+		saleNo := shopCode + saleDate[len(saleDate)-6:len(saleDate)] + MSLV2_POS + sequenceNumber
+		seqNo, err := strconv.ParseInt(sequenceNumber, 10, 64)
 		if err != nil {
 			return nil, err
 		}
-		saleNo := shopCode + saleTransaction.SaleDate.Format("20060102") + MSLV2_POS + sequenceNumber + strconv.Itoa(i)
-		fmt.Println(lastSeq)
 		saleMsts = append(saleMsts, models.SaleMst{
 			SaleNo:        saleNo,
+			SeqNo:         seqNo,
+			PosNo:         MSLV2_POS,
+			Dates:         saleDate,
 			ShopCode:      shopCode,
 			InDateTime:    time.Now(),
 			ActualSaleAmt: saleTransaction.TotalSalePrice,
@@ -112,6 +132,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					SaleNo:     saleNo,
 					ShopCode:   shopCode,
 					DtSeq:      int64(len(saleDtls)),
+					SeqNo:      seqNo,
+					Dates:      saleDate,
 					ProdCode:   strconv.FormatInt(saleTransactionDtl.SkuId, 10),
 					InDateTime: time.Now(),
 					SaleQty:    saleTransactionDtl.Quantity,
@@ -119,6 +141,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				})
 			}
 		}
+		seq += 1
 	}
 	return models.SaleMstsAndSaleDtls{
 		SaleMsts: saleMsts,
