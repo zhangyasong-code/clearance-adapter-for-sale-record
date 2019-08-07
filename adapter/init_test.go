@@ -45,6 +45,13 @@ func init() {
 	if err := models.InitDb(cfsrDB); err != nil {
 		log.Fatal(err)
 	}
+
+	pmDb, err := initDB(c.PmConnDatabase.Driver, c.PmConnDatabase.Connection)
+	if err != nil {
+		panic(err)
+	}
+	factory.SetPmEngine(pmDb)
+	// defer pmDb.Close()
 }
 
 func initDB(driver, connection string) (*xorm.Engine, error) {
