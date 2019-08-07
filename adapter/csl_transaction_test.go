@@ -55,12 +55,12 @@ func TestCTCETLTransform(t *testing.T) {
 		sas := saleMstsAndSaleDtls.(models.SaleMstsAndSaleDtls)
 		saleDtls := sas.SaleDtls
 		saleMsts := sas.SaleMsts
-		So(saleMsts[0].SaleNo, ShouldEqual, "test"+time.Now().Format("20060102")+"8")
+		nowDate := time.Now().Format("20060102")
+		So(saleMsts[0].SaleNo, ShouldEqual, "test"+nowDate[len(nowDate)-6:len(nowDate)]+"80000")
 		So(saleMsts[0].ShopCode, ShouldEqual, "test")
 		So(saleMsts[0].ActualSaleAmt, ShouldEqual, 200)
 
 		So(saleDtls[0].SaleQty, ShouldEqual, 1)
-		So(saleDtls[0].SaleNo, ShouldEqual, "test"+time.Now().Format("20060102")+"8")
 		So(saleDtls[0].ShopCode, ShouldEqual, "test")
 		So(saleDtls[0].ProdCode, ShouldEqual, strconv.FormatInt(3, 10))
 		So(saleDtls[0].SaleAmt, ShouldEqual, 100)
@@ -83,9 +83,7 @@ func TestClearanceToCslETL(t *testing.T) {
 func setUpRestAPIStubFixture() {
 	config.Init("", "", func(c *config.C) {
 		callPlaceManagementApiServer = httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			// fmt.Println("99999", req.URL.String())
 			if strings.Contains(req.URL.String(), "/outside/v1") {
-				fmt.Println("99999", req.URL.String())
 				rw.WriteHeader(http.StatusOK)
 				response := `{
 					"success": true,
