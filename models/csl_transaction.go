@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pangpanglabs/goutils/behaviorlog"
@@ -221,17 +222,80 @@ func (SaleMst) GetlastSeq(ctx context.Context, shopCode, saleDate string) (strin
 	return "", nil
 }
 
-func (SaleMst) GetSequenceNumber(seq int) (string, error) {
-	if seq == 0 {
-		return "0000", nil
-	}
+func (SaleMst) GetSequenceNumber(seq int, str string) (string, int, string, error) {
+	startStrs := []string{"A", "B", "C", "D", "E", "F", "G"}
+	nextSeq := seq + 1
 	strSeq := strconv.Itoa(seq)
 
-	//不够四位自动补0
-BreakHere:
-	if len(strSeq) != 4 {
-		strSeq = "0" + strSeq
-		goto BreakHere
+	switch {
+	//str not null , seq 最大999  so 当str不是空 seq < 999的情况
+	case str != "" && seq <= 999:
+	BreakA:
+		if len(strSeq) != 3 {
+			strSeq = "0" + strSeq
+			goto BreakA
+		}
+		return str + strSeq, nextSeq, str, nil
+	//seq == 999 && str != "" 下次循环将从str的下一个，seq从1开始
+	case str != "" && seq == 1000:
+		for i, _ := range startStrs {
+			if str == startStrs[i] {
+				str = startStrs[i+1]
+				break
+			}
+		}
+		return str + "001", 2, str, nil
+	//str 为空
+	case str == "" && seq <= 9999:
+	BreakB:
+		if len(strSeq) != 4 {
+			strSeq = "0" + strSeq
+			goto BreakB
+		}
+		return strSeq, nextSeq, str, nil
+	//str 为空  seq等于9999  下次加前缀，从开始，seq 从1 开始
+	case str == "" && seq == 10000:
+		str = startStrs[0]
+		return str + "001", 2, str, nil
 	}
-	return strSeq, nil
+	return "", 0, "", errors.New("GetSequenceNumber EROR")
+}
+
+func (SaleMst) GetSeqAndStartStr(lastSeq string) (int, string, error) {
+	startStrs := []string{"A", "B", "C", "D", "E", "F", "G"}
+	var startStr string
+	var seq int
+	if lastSeq != "" {
+		lastFour := lastSeq[len(lastSeq)-4 : len(lastSeq)]
+		for i, _ := range startStrs {
+			if strings.HasPrefix(lastFour, startStrs[i]) {
+				lastThree := lastFour[len(lastFour)-3 : len(lastFour)]
+				intLastThree, err := strconv.Atoi(lastThree)
+				if err != nil {
+					return 0, "", err
+				}
+				if intLastThree != 999 {
+					seq = intLastThree + 1
+					startStr = startStrs[i]
+				} else {
+					seq = 1
+					startStr = startStrs[i+1]
+				}
+				return seq, startStr, nil
+			}
+		}
+		intLastFour, err := strconv.Atoi(lastFour)
+		if err != nil {
+			return 0, "", err
+		}
+		if intLastFour < 9999 {
+			seq = intLastFour + 1
+		} else {
+			seq = 1
+			startStr = startStrs[0]
+		}
+		return seq, startStr, nil
+	}
+	seq = 1
+	return seq, startStr, nil
 }

@@ -56,7 +56,7 @@ func TestCTCETLTransform(t *testing.T) {
 		saleDtls := sas.SaleDtls
 		saleMsts := sas.SaleMsts
 		nowDate := time.Now().Format("20060102")
-		So(saleMsts[0].SaleNo, ShouldEqual, "test"+nowDate[len(nowDate)-6:len(nowDate)]+"80000")
+		So(saleMsts[0].SaleNo, ShouldEqual, "test"+nowDate[len(nowDate)-6:len(nowDate)]+"80001")
 		So(saleMsts[0].ShopCode, ShouldEqual, "test")
 		So(saleMsts[0].ActualSaleAmt, ShouldEqual, 200)
 
@@ -78,6 +78,134 @@ func TestClearanceToCslETL(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 	})
+}
+
+func TestSaleNoLogic(t *testing.T) {
+	setUpRestAPIStubFixture()
+	Convey("First add data with the SaleNo test19081289999", t, func() {
+		saleMstsAndSaleDtls := models.SaleMstsAndSaleDtls{
+			SaleMsts: []models.SaleMst{
+				{
+					SaleNo:   "test19081289999",
+					ShopCode: "test",
+					Dates:    "20190812",
+					PosNo:    "8",
+					SeqNo:    1,
+				},
+			},
+			SaleDtls: []models.SaleDtl{
+				{
+					SaleNo:   "test19081289999",
+					DtSeq:    0,
+					ShopCode: "test",
+					Dates:    "20190812",
+					SeqNo:    1,
+				},
+			},
+		}
+		err := ClearanceToCslETL{}.Load(context.Background(), saleMstsAndSaleDtls)
+		So(err, ShouldBeNil)
+	})
+
+	Convey("Then test whether the next SaleNo is test1908128A001", t, func() {
+		saleDate, _ := time.Parse("2006-01-02", "2019-08-12")
+		saleTAndSaleTDtls := models.SaleTAndSaleTDtls{
+			SaleTransactions: []models.SaleTransaction{
+				{
+					OrderId:        1,
+					StoreId:        1,
+					TotalSalePrice: 200,
+					SaleDate:       saleDate,
+				},
+			},
+			SaleTransactionDtls: []models.SaleTransactionDtl{
+				{
+					OrderId:   1,
+					StoreId:   1,
+					Quantity:  1,
+					SalePrice: 100,
+					SkuId:     3,
+				},
+				{
+					OrderId:   1,
+					StoreId:   1,
+					Quantity:  2,
+					SalePrice: 50,
+					SkuId:     4,
+				},
+			},
+		}
+		saleMstsAndSaleDtls, err := ClearanceToCslETL{}.Transform(context.Background(), saleTAndSaleTDtls)
+		So(err, ShouldBeNil)
+		sas := saleMstsAndSaleDtls.(models.SaleMstsAndSaleDtls)
+		saleDtls := sas.SaleDtls
+		saleMsts := sas.SaleMsts
+		So(saleMsts[0].SaleNo, ShouldEqual, "test"+"190812"+"8A001")
+		So(saleDtls[0].SaleNo, ShouldEqual, "test"+"190812"+"8A001")
+	})
+
+	Convey("First add data with the SaleNo test1908128A999", t, func() {
+		saleMstsAndSaleDtls := models.SaleMstsAndSaleDtls{
+			SaleMsts: []models.SaleMst{
+				{
+					SaleNo:   "test1908128A999",
+					ShopCode: "test",
+					Dates:    "20190812",
+					PosNo:    "8",
+					SeqNo:    1,
+				},
+			},
+			SaleDtls: []models.SaleDtl{
+				{
+					SaleNo:   "test1908128A999",
+					DtSeq:    0,
+					ShopCode: "test",
+					Dates:    "20190812",
+					SeqNo:    1,
+				},
+			},
+		}
+		err := ClearanceToCslETL{}.Load(context.Background(), saleMstsAndSaleDtls)
+		So(err, ShouldBeNil)
+	})
+
+	Convey("Then test whether the next SaleNo is test1908128B001", t, func() {
+		saleDate, _ := time.Parse("2006-01-02", "2019-08-12")
+		saleTAndSaleTDtls := models.SaleTAndSaleTDtls{
+			SaleTransactions: []models.SaleTransaction{
+				{
+					OrderId:        1,
+					StoreId:        1,
+					TotalSalePrice: 200,
+					SaleDate:       saleDate,
+				},
+			},
+			SaleTransactionDtls: []models.SaleTransactionDtl{
+				{
+					OrderId:   1,
+					StoreId:   1,
+					Quantity:  1,
+					SalePrice: 100,
+					SkuId:     3,
+				},
+				{
+					OrderId:   1,
+					StoreId:   1,
+					Quantity:  2,
+					SalePrice: 50,
+					SkuId:     4,
+				},
+			},
+		}
+		saleMstsAndSaleDtls, err := ClearanceToCslETL{}.Transform(context.Background(), saleTAndSaleTDtls)
+		So(err, ShouldBeNil)
+		sas := saleMstsAndSaleDtls.(models.SaleMstsAndSaleDtls)
+		saleDtls := sas.SaleDtls
+		saleMsts := sas.SaleMsts
+		So(saleMsts[0].SaleNo, ShouldEqual, "test"+"190812"+"8B001")
+		So(saleDtls[0].SaleNo, ShouldEqual, "test"+"190812"+"8B001")
+	})
+
 }
 
 func setUpRestAPIStubFixture() {
