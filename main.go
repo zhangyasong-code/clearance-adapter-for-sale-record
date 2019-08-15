@@ -40,6 +40,14 @@ func main() {
 		log.Fatal(err)
 	}
 	defer cfsrDB.Close()
+
+	pmDb, err := initDB(c.PmConnDatabase.Driver, c.PmConnDatabase.Connection)
+	if err != nil {
+		panic(err)
+	}
+	factory.SetPmEngine(pmDb)
+	defer pmDb.Close()
+
 	fmt.Println("Start :========================")
 	// etl := goetl.New(adapter.SrToClearanceETL{})
 	// etl.After(adapter.SrToClearanceETL{}.ReadyToLoad)

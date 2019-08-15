@@ -50,18 +50,21 @@ func TestCTCETLTransform(t *testing.T) {
 				},
 			},
 		}
+		//param >>> storeId
+		store, _ := models.Store{}.GetStore(1)
+
 		saleMstsAndSaleDtls, err := ClearanceToCslETL{}.Transform(context.Background(), saleTAndSaleTDtls)
 		So(err, ShouldBeNil)
 		sas := saleMstsAndSaleDtls.(models.SaleMstsAndSaleDtls)
 		saleDtls := sas.SaleDtls
 		saleMsts := sas.SaleMsts
 		nowDate := time.Now().Format("20060102")
-		So(saleMsts[0].SaleNo, ShouldEqual, "test"+nowDate[len(nowDate)-6:len(nowDate)]+"80001")
-		So(saleMsts[0].ShopCode, ShouldEqual, "test")
+		So(saleMsts[0].SaleNo, ShouldEqual, store.Code+nowDate[len(nowDate)-6:len(nowDate)]+"80001")
+		So(saleMsts[0].ShopCode, ShouldEqual, store.Code)
 		So(saleMsts[0].ActualSaleAmt, ShouldEqual, 200)
 
 		So(saleDtls[0].SaleQty, ShouldEqual, 1)
-		So(saleDtls[0].ShopCode, ShouldEqual, "test")
+		So(saleDtls[0].ShopCode, ShouldEqual, store.Code)
 		So(saleDtls[0].ProdCode, ShouldEqual, strconv.FormatInt(3, 10))
 		So(saleDtls[0].SaleAmt, ShouldEqual, 100)
 	})
@@ -81,13 +84,14 @@ func TestClearanceToCslETL(t *testing.T) {
 }
 
 func TestSaleNoLogic(t *testing.T) {
+	store, _ := models.Store{}.GetStore(1)
 	setUpRestAPIStubFixture()
 	Convey("First add data with the SaleNo test19081289999", t, func() {
 		saleMstsAndSaleDtls := models.SaleMstsAndSaleDtls{
 			SaleMsts: []models.SaleMst{
 				{
-					SaleNo:   "test19081289999",
-					ShopCode: "test",
+					SaleNo:   "test119081289999",
+					ShopCode: store.Code,
 					Dates:    "20190812",
 					PosNo:    "8",
 					SeqNo:    1,
@@ -95,9 +99,9 @@ func TestSaleNoLogic(t *testing.T) {
 			},
 			SaleDtls: []models.SaleDtl{
 				{
-					SaleNo:   "test19081289999",
+					SaleNo:   "test119081289999",
 					DtSeq:    0,
-					ShopCode: "test",
+					ShopCode: store.Code,
 					Dates:    "20190812",
 					SeqNo:    1,
 				},
@@ -140,16 +144,16 @@ func TestSaleNoLogic(t *testing.T) {
 		sas := saleMstsAndSaleDtls.(models.SaleMstsAndSaleDtls)
 		saleDtls := sas.SaleDtls
 		saleMsts := sas.SaleMsts
-		So(saleMsts[0].SaleNo, ShouldEqual, "test"+"190812"+"8A001")
-		So(saleDtls[0].SaleNo, ShouldEqual, "test"+"190812"+"8A001")
+		So(saleMsts[0].SaleNo, ShouldEqual, store.Code+"190812"+"8A001")
+		So(saleDtls[0].SaleNo, ShouldEqual, store.Code+"190812"+"8A001")
 	})
 
 	Convey("First add data with the SaleNo test1908128A999", t, func() {
 		saleMstsAndSaleDtls := models.SaleMstsAndSaleDtls{
 			SaleMsts: []models.SaleMst{
 				{
-					SaleNo:   "test1908128A999",
-					ShopCode: "test",
+					SaleNo:   "test11908128A999",
+					ShopCode: store.Code,
 					Dates:    "20190812",
 					PosNo:    "8",
 					SeqNo:    1,
@@ -157,9 +161,9 @@ func TestSaleNoLogic(t *testing.T) {
 			},
 			SaleDtls: []models.SaleDtl{
 				{
-					SaleNo:   "test1908128A999",
+					SaleNo:   "test11908128A999",
 					DtSeq:    0,
-					ShopCode: "test",
+					ShopCode: "test1",
 					Dates:    "20190812",
 					SeqNo:    1,
 				},
@@ -202,8 +206,8 @@ func TestSaleNoLogic(t *testing.T) {
 		sas := saleMstsAndSaleDtls.(models.SaleMstsAndSaleDtls)
 		saleDtls := sas.SaleDtls
 		saleMsts := sas.SaleMsts
-		So(saleMsts[0].SaleNo, ShouldEqual, "test"+"190812"+"8B001")
-		So(saleDtls[0].SaleNo, ShouldEqual, "test"+"190812"+"8B001")
+		So(saleMsts[0].SaleNo, ShouldEqual, store.Code+"190812"+"8B001")
+		So(saleDtls[0].SaleNo, ShouldEqual, store.Code+"190812"+"8B001")
 	})
 
 }

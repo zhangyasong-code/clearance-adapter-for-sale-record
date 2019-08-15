@@ -78,25 +78,21 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 	}
 	saleMsts := make([]models.SaleMst, 0)
 	saleDtls := make([]models.SaleDtl, 0)
-	token, err := models.SaleMst{}.GetToken(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	endSeq := 0
 	startStr := ""
 	for i, saleTransaction := range saleTAndSaleTDtls.SaleTransactions {
 		saleDate := saleTransaction.SaleDate.Format("20060102")
 
-		//get shopCode BY StoreId
-		shopCode, err := models.SaleMst{}.GetShopCode(ctx, saleTransaction.StoreId, token)
+		//get store
+		store, err := models.Store{}.GetStore(saleTransaction.StoreId)
 		if err != nil {
 			return nil, err
 		}
 
 		//get last endSeq and startStr in csl SaleMst
 		if i == 0 {
-			lastSeq, err := models.SaleMst{}.GetlastSeq(ctx, shopCode, saleDate)
+			lastSeq, err := models.SaleMst{}.GetlastSeq(store.Code, saleDate)
 			if err != nil {
 				return nil, err
 			}
@@ -115,7 +111,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		}
 		endSeq = nextSeq
 		startStr = str
-		saleNo := shopCode + saleDate[len(saleDate)-6:len(saleDate)] + MSLV2_POS + sequenceNumber
+		saleNo := store.Code + saleDate[len(saleDate)-6:len(saleDate)] + MSLV2_POS + sequenceNumber
 
 		//get SeqNo
 		strSeqNo := ""
@@ -138,7 +134,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			SeqNo:         seqNo,
 			PosNo:         MSLV2_POS,
 			Dates:         saleDate,
-			ShopCode:      shopCode,
+			ShopCode:      store.Code,
 			InDateTime:    time.Now(),
 			ActualSaleAmt: saleTransaction.TotalSalePrice,
 		})
@@ -146,7 +142,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			if saleTransactionDtl.OrderId == saleTransaction.OrderId {
 				saleDtls = append(saleDtls, models.SaleDtl{
 					SaleNo:     saleNo,
-					ShopCode:   shopCode,
+					ShopCode:   store.Code,
 					DtSeq:      int64(len(saleDtls)),
 					SeqNo:      seqNo,
 					Dates:      saleDate,
