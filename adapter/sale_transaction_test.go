@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	_ "github.com/denisenkom/go-mssqldb"
 	_ "github.com/go-sql-driver/mysql"
@@ -13,14 +14,22 @@ import (
 
 func TestTransform(t *testing.T) {
 	Convey("测试SrToClearanceETL的Transform方法", t, func() {
-		source := []models.AssortedSaleRecord{
-			{
-				OrderId:        1,
-				StoreId:        1,
-				TotalSalePrice: 200,
-				Quantity:       2,
-				SalePrice:      100,
-				SkuId:          3,
+		saleData, _ := time.Parse("2006-01-02", "2019-07-18")
+		source := models.AssortedSaleRecordAndDels{
+			AssortedSaleRecords: []models.AssortedSaleRecord{
+				{
+					OrderId:               1,
+					StoreId:               1,
+					TotalSalePrice:        200,
+					TransactionCreateDate: saleData,
+				},
+			},
+			AssortedSaleRecordDtls: []models.AssortedSaleRecordDtl{
+				{
+					Quantity:  2,
+					SalePrice: 100,
+					SkuId:     3,
+				},
 			},
 		}
 		saleTransactions, err := SrToClearanceETL{}.Transform(context.Background(), source)
@@ -29,6 +38,7 @@ func TestTransform(t *testing.T) {
 		So(saleTAndSaleTDtls.SaleTransactions[0].OrderId, ShouldEqual, 1)
 		So(saleTAndSaleTDtls.SaleTransactions[0].TotalSalePrice, ShouldEqual, 200.00)
 		So(saleTAndSaleTDtls.SaleTransactions[0].StoreId, ShouldEqual, 1)
+		So(saleTAndSaleTDtls.SaleTransactions[0].SaleDate, ShouldEqual, saleData)
 
 		So(saleTAndSaleTDtls.SaleTransactionDtls[0].SkuId, ShouldEqual, 3)
 		So(saleTAndSaleTDtls.SaleTransactionDtls[0].Quantity, ShouldEqual, 2)

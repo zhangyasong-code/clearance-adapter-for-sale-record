@@ -29,8 +29,8 @@ func buildClearanceToCslETL() *goetl.ETL {
 func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 	saleTransactions := []models.SaleTransaction{}
 	saleTransactionDtls := []models.SaleTransactionDtl{}
-	// start, _ := time.Parse("2006-01-02", "2019-07-18")
-	// end, _ := time.Parse("2006-01-02", "2019-07-19")
+	// start, _ := time.Parse("2006-01-02", "2019-08-08")
+	// end, _ := time.Parse("2006-01-02", "2019-08-09")
 	//分页查询   一次查1000条
 	skipCount := 0
 	for {
@@ -40,9 +40,9 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 		}
 		if err := factory.GetCfsrEngine().Table("sale_transaction").
 			Select("sale_transaction.*,sale_transaction_dtl.*").
-			Join("INNER", "sale_transaction_dtl", "sale_transaction_dtl.order_id = sale_transaction.order_id").
-			// Where("sale_date > ?", start).
-			// And("sale_date < ?", end).
+			Join("INNER", "sale_transaction_dtl", "sale_transaction_dtl.transaction_id = sale_transaction.transaction_id").
+			// Where("sale_transaction.sale_date > ?", start).
+			// And("sale_transaction.sale_date < ?", end).
 			Limit(maxResultCount, skipCount).Find(&stsAndStds); err != nil {
 			return nil, err
 		}
@@ -139,7 +139,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			ActualSaleAmt: saleTransaction.TotalSalePrice,
 		})
 		for _, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {
-			if saleTransactionDtl.OrderId == saleTransaction.OrderId {
+			if saleTransactionDtl.TransactionId == saleTransaction.TransactionId {
 				saleDtls = append(saleDtls, models.SaleDtl{
 					SaleNo:     saleNo,
 					ShopCode:   store.Code,
