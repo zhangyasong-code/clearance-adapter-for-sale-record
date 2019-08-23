@@ -15,7 +15,7 @@ import (
 func TestTransform(t *testing.T) {
 	Convey("测试SrToClearanceETL的Transform方法", t, func() {
 		saleData, _ := time.Parse("2006-01-02", "2019-07-18")
-		source := models.AssortedSaleRecordAndDels{
+		source := models.AssortedSaleRecordAndDtls{
 			AssortedSaleRecords: []models.AssortedSaleRecord{
 				{
 					OrderId:               1,

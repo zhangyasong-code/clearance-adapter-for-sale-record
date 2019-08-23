@@ -63,7 +63,7 @@ type AssortedSaleRecordDtl struct {
 	TransactionId                   string    `query:"transactionId" json:"transactionId"`
 }
 
-type AssortedSaleRecordAndDels struct {
+type AssortedSaleRecordAndDtls struct {
 	AssortedSaleRecords    []AssortedSaleRecord    `query:"assortedSaleRecords" json:"assortedSaleRecords"`
 	AssortedSaleRecordDtls []AssortedSaleRecordDtl `query:"assortedSaleRecordDtls" json:"assortedSaleRecordDtls"`
 }

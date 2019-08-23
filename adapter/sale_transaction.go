@@ -29,7 +29,7 @@ func (etl SrToClearanceETL) Extract(ctx context.Context) (interface{}, error) {
 	skipCount := 0
 	for {
 		// srs := []models.AssortedSaleRecord{}
-		var assortedSaleRecordAndDels []struct {
+		var assortedSaleRecordAndDtls []struct {
 			AssortedSaleRecord    models.AssortedSaleRecord    `xorm:"extends"`
 			AssortedSaleRecordDtl models.AssortedSaleRecordDtl `xorm:"extends"`
 		}
@@ -37,28 +37,28 @@ func (etl SrToClearanceETL) Extract(ctx context.Context) (interface{}, error) {
 			Join("INNER", "assorted_sale_record_dtl", "assorted_sale_record_dtl.transaction_id = assorted_sale_record.transaction_id").
 			Where("assorted_sale_record.transaction_channel_type = ?", "POS").
 			Limit(maxResultCount, skipCount).
-			Find(&assortedSaleRecordAndDels); err != nil {
+			Find(&assortedSaleRecordAndDtls); err != nil {
 			return nil, err
 		}
-		for _, assortedSaleRecordAndDel := range assortedSaleRecordAndDels {
+		for _, assortedSaleRecordAndDtl := range assortedSaleRecordAndDtls {
 			check := true
 			for _, saleRecord := range saleRecords {
-				if assortedSaleRecordAndDel.AssortedSaleRecord.OrderId == saleRecord.OrderId {
+				if assortedSaleRecordAndDtl.AssortedSaleRecord.OrderId == saleRecord.OrderId {
 					check = false
 				}
 			}
 			if len(saleRecords) == 0 || check {
-				saleRecords = append(saleRecords, assortedSaleRecordAndDel.AssortedSaleRecord)
+				saleRecords = append(saleRecords, assortedSaleRecordAndDtl.AssortedSaleRecord)
 			}
-			saleRecordsDtl = append(saleRecordsDtl, assortedSaleRecordAndDel.AssortedSaleRecordDtl)
+			saleRecordsDtl = append(saleRecordsDtl, assortedSaleRecordAndDtl.AssortedSaleRecordDtl)
 		}
-		if len(assortedSaleRecordAndDels) < maxResultCount {
+		if len(assortedSaleRecordAndDtls) < maxResultCount {
 			break
 		} else {
 			skipCount += maxResultCount
 		}
 	}
-	return models.AssortedSaleRecordAndDels{
+	return models.AssortedSaleRecordAndDtls{
 		AssortedSaleRecords:    saleRecords,
 		AssortedSaleRecordDtls: saleRecordsDtl,
 	}, nil
@@ -66,13 +66,13 @@ func (etl SrToClearanceETL) Extract(ctx context.Context) (interface{}, error) {
 
 // Transform ...
 func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
-	assortedSaleRecordAndDels, ok := source.(models.AssortedSaleRecordAndDels)
+	assortedSaleRecordAndDtls, ok := source.(models.AssortedSaleRecordAndDtls)
 	if !ok {
 		return nil, errors.New("Convert Failed")
 	}
 	saleTransactions := make([]models.SaleTransaction, 0)
 	saleTransactionDtls := make([]models.SaleTransactionDtl, 0)
-	for _, assortedSaleRecord := range assortedSaleRecordAndDels.AssortedSaleRecords {
+	for _, assortedSaleRecord := range assortedSaleRecordAndDtls.AssortedSaleRecords {
 		saleTransactions = append(saleTransactions, models.SaleTransaction{
 			OrderId:        assortedSaleRecord.OrderId,
 			StoreId:        assortedSaleRecord.StoreId,
@@ -81,7 +81,7 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 			TransactionId:  assortedSaleRecord.TransactionId,
 		})
 	}
-	for _, assortedSaleRecordDtl := range assortedSaleRecordAndDels.AssortedSaleRecordDtls {
+	for _, assortedSaleRecordDtl := range assortedSaleRecordAndDtls.AssortedSaleRecordDtls {
 		saleTransactionDtls = append(saleTransactionDtls, models.SaleTransactionDtl{
 			Quantity:      assortedSaleRecordDtl.Quantity,
 			SalePrice:     assortedSaleRecordDtl.SalePrice,
