@@ -79,6 +79,7 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 			TotalSalePrice: assortedSaleRecord.TotalSalePrice,
 			SaleDate:       assortedSaleRecord.TransactionCreateDate,
 			TransactionId:  assortedSaleRecord.TransactionId,
+			CustomerId:     assortedSaleRecord.CustomerId,
 		})
 	}
 	for _, assortedSaleRecordDtl := range assortedSaleRecordAndDtls.AssortedSaleRecordDtls {

@@ -14,7 +14,9 @@ import (
 )
 
 const (
-	MSLV2_POS = "8"
+	MSLV2_POS        = "8"
+	MILEAGE_CUSTOMER = "M"
+	NEW_CUSTOMER     = "N"
 )
 
 // Clearance到CSL
@@ -128,15 +130,23 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if err != nil {
 			return nil, err
 		}
-
+		mileage, err := models.SaleMst{}.GetMileage(saleTransaction.CustomerId)
+		if err != nil {
+			return nil, err
+		}
 		saleMsts = append(saleMsts, models.SaleMst{
-			SaleNo:        saleNo,
-			SeqNo:         seqNo,
-			PosNo:         MSLV2_POS,
-			Dates:         saleDate,
-			ShopCode:      store.Code,
-			InDateTime:    time.Now(),
-			ActualSaleAmt: saleTransaction.TotalSalePrice,
+			SaleNo:           saleNo,
+			SeqNo:            seqNo,
+			PosNo:            MSLV2_POS,
+			Dates:            saleDate,
+			ShopCode:         store.Code,
+			InDateTime:       time.Now(),
+			CustNo:           strconv.FormatInt(saleTransaction.CustomerId, 10),
+			CustCardNo:       strconv.FormatInt(saleTransaction.CustomerId, 10),
+			CustDivisionCode: MILEAGE_CUSTOMER,
+			CustGradeCode:    mileage.CustGradeCode,
+			CustBrandCode:    mileage.CustBrandCode,
+			ActualSaleAmt:    saleTransaction.TotalSalePrice,
 		})
 		for _, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {
 			if saleTransactionDtl.TransactionId == saleTransaction.TransactionId {
