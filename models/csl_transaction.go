@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type SaleDtl struct {
@@ -214,6 +216,20 @@ func (SaleMst) GetlastSeq(shopCode, saleDate string) (string, error) {
 		return saleNos[0], nil
 	}
 	return "", nil
+}
+
+func (SaleMst) GetMileage(customerId int64) (*PostMileage, error) {
+	var mileage PostMileage
+	exist, err := factory.GetSrEngine().Where("customer_id = ?", customerId).Get(&mileage)
+	if err != nil {
+		return nil, err
+	} else if !exist {
+		logrus.WithFields(logrus.Fields{
+			"customer_id": customerId,
+		}).Error("Fail to get Mileage")
+		return nil, errors.New("Mileage is not exist")
+	}
+	return &mileage, nil
 }
 
 func (SaleMst) GetSequenceNumber(seq int, str string) (string, int, string, error) {

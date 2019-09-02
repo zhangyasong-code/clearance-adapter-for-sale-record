@@ -67,3 +67,11 @@ type AssortedSaleRecordAndDtls struct {
 	AssortedSaleRecords    []AssortedSaleRecord    `query:"assortedSaleRecords" json:"assortedSaleRecords"`
 	AssortedSaleRecordDtls []AssortedSaleRecordDtl `query:"assortedSaleRecordDtls" json:"assortedSaleRecordDtls"`
 }
+
+type PostMileage struct {
+	Id            int64  `json:"id" query:"id"`
+	TenantCode    string `json:"tenantCode" query:"tenantCode"`
+	CustomerId    int64  `json:"customerId" query:"customerId"`
+	CustGradeCode string `json:"custGradeCode" query:"custGradeCode"`
+	CustBrandCode string `json:"custBrandCode" query:"custBrandCode"`
+}
