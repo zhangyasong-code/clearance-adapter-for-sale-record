@@ -218,9 +218,11 @@ func (SaleMst) GetlastSeq(shopCode, saleDate string) (string, error) {
 	return "", nil
 }
 
-func (SaleMst) GetMileage(customerId int64) (*PostMileage, error) {
+func (SaleMst) GetMileage(customerId, transactionId int64, use_type UseType) (*PostMileage, error) {
 	var mileage PostMileage
-	exist, err := factory.GetSrEngine().Where("customer_id = ?", customerId).Get(&mileage)
+	exist, err := factory.GetSrEngine().Where("customer_id = ?", customerId).
+		And("use_type = ?", use_type).And("transaction_id = ?", transactionId).
+		Get(&mileage)
 	if err != nil {
 		return nil, err
 	} else if !exist {
@@ -230,6 +232,16 @@ func (SaleMst) GetMileage(customerId int64) (*PostMileage, error) {
 		return nil, errors.New("Mileage is not exist")
 	}
 	return &mileage, nil
+}
+
+//sum quantity , total_sale_price , total_discount_price
+func (SaleMst) GetSumsFields(transactionId int64) ([]float64, error) {
+	var assortedSaleRecordDtl AssortedSaleRecordDtl
+	res, err := factory.GetSrEngine().Where("transaction_id = ?", transactionId).Sums(assortedSaleRecordDtl, "quantity", "total_sale_price", "total_discount_price")
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func (SaleMst) GetSequenceNumber(seq int, str string) (string, int, string, error) {

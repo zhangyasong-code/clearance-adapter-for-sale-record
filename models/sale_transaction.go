@@ -9,6 +9,8 @@ type SaleTransaction struct {
 	CustomerId     int64     `json:"customerId" query:"customerId" xorm:"index default 0" validate:"required"`
 	TotalSalePrice float64   `json:"totalSalePrice" query:"totalSalePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	SaleDate       time.Time `json:"saleDate" query:"saleDate"`
+	Mileage        float64   `query:"mileage" json:"mileage" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	MileagePrice   float64   `query:"mileagePrice" json:"mileagePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 }
 
 type SaleTransactionDtl struct {
