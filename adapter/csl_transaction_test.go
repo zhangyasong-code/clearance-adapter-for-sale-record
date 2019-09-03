@@ -31,7 +31,8 @@ func TestCTCETLTransform(t *testing.T) {
 					StoreId:        1,
 					TotalSalePrice: 200,
 					SaleDate:       time.Now(),
-					TransactionId:  "1",
+					TransactionId:  1,
+					CustomerId:     1,
 				},
 			},
 			SaleTransactionDtls: []models.SaleTransactionDtl{
@@ -39,13 +40,13 @@ func TestCTCETLTransform(t *testing.T) {
 					Quantity:      1,
 					SalePrice:     100,
 					SkuId:         3,
-					TransactionId: "1",
+					TransactionId: 1,
 				},
 				{
 					Quantity:      2,
 					SalePrice:     50,
 					SkuId:         4,
-					TransactionId: "1",
+					TransactionId: 1,
 				},
 			},
 		}
@@ -119,6 +120,7 @@ func TestSaleNoLogic(t *testing.T) {
 					StoreId:        1,
 					TotalSalePrice: 200,
 					SaleDate:       saleDate,
+					CustomerId:     1,
 				},
 			},
 			SaleTransactionDtls: []models.SaleTransactionDtl{
@@ -177,6 +179,7 @@ func TestSaleNoLogic(t *testing.T) {
 					StoreId:        1,
 					TotalSalePrice: 200,
 					SaleDate:       saleDate,
+					CustomerId:     1,
 				},
 			},
 			SaleTransactionDtls: []models.SaleTransactionDtl{
