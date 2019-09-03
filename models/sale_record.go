@@ -3,8 +3,9 @@ package models
 import "time"
 
 type AssortedSaleRecord struct {
-	TransactionId          string    `query:"transactionId" json:"transactionId" xorm:"pk"`
+	TransactionId          int64     `query:"transactionId" json:"transactionId" xorm:"pk"`
 	CashPrice              float64   `query:"cashPrice" json:"cashPrice"`
+	ChannelId              int64     `query:"channelId" json:"channelId"`
 	Created                time.Time `query:"created" json:"created"`
 	CreatedBy              string    `query:"createdBy" json:"createdBy"`
 	Modified               time.Time `query:"modified" json:"modified"`
@@ -13,7 +14,6 @@ type AssortedSaleRecord struct {
 	DiscountCouponPrice    float64   `query:"discountCouponPrice" json:"discountCouponPrice"`
 	DiscountOfferPrice     float64   `query:"discountOfferPrice" json:"discountOfferPrice"`
 	FreightPrice           float64   `query:"freightPrice" json:"freightPrice"`
-	IsDelivery             int64     `query:"isDelivery" json:"isDelivery"`
 	IsOutPaid              int64     `query:"isOutPaid" json:"isOutPaid"`
 	IsRefund               int64     `query:"isRefund" json:"isRefund"`
 	Mileage                float64   `query:"mileage" json:"mileage"`
@@ -36,31 +36,34 @@ type AssortedSaleRecord struct {
 }
 
 type AssortedSaleRecordDtl struct {
-	Id                              int64     `query:"id" json:"id"`
-	BrandCode                       string    `query:"brandCode" json:"brandCode"`
-	BrandId                         int64     `query:"brandId" json:"brandId"`
-	Created                         time.Time `query:"created" json:"created"`
-	CreatedBy                       string    `query:"createdBy" json:"createdBy"`
-	Modified                        time.Time `query:"modified" json:"modified"`
-	ModifiedBy                      string    `query:"modifiedBy" json:"modifiedBy"`
-	DistributedCashPrice            float64   `query:"distributedCashPrice" json:"distributedCashPrice"`
-	ItemCode                        string    `query:"itemCode" json:"itemCode"`
-	ItemName                        string    `query:"itemName" json:"itemName"`
-	ListPrice                       float64   `query:"listPrice" json:"listPrice"`
-	OrderItemId                     int64     `query:"orderItemId" json:"orderItemId"`
-	ProductId                       int64     `query:"productId" json:"productId"`
-	Quantity                        int64     `query:"quantity" json:"quantity"`
-	RefundItemId                    int64     `query:"refundItemId" json:"refundItemId"`
-	SalePrice                       float64   `query:"salePrice" json:"salePrice"`
-	SkuId                           int64     `query:"skuId" json:"skuId"`
-	SkuImg                          string    `query:"skuImg" json:"skuImg"`
-	Status                          string    `query:"status" json:"status"`
-	TotalDistributedCartCouponPrice float64   `query:"totalDistributedCartCouponPrice" json:"totalDistributedCartCouponPrice"`
-	TotalDistributedCartOfferPrice  float64   `query:"totalDistributedCartOfferPrice" json:"totalDistributedCartOfferPrice"`
-	TotalDistributedPaymentPrice    float64   `query:"totalDistributedPaymentPrice" json:"totalDistributedPaymentPrice"`
-	TotalListPrice                  float64   `query:"totalListPrice" json:"totalListPrice"`
-	TotalSalePrice                  float64   `query:"totalSalePrice" json:"totalSalePrice"`
-	TransactionId                   string    `query:"transactionId" json:"transactionId"`
+	Id                             int64     `query:"id" json:"id"`
+	BrandCode                      string    `query:"brandCode" json:"brandCode"`
+	BrandId                        int64     `query:"brandId" json:"brandId"`
+	Created                        time.Time `query:"created" json:"created"`
+	CreatedBy                      string    `query:"createdBy" json:"createdBy"`
+	Modified                       time.Time `query:"modified" json:"modified"`
+	ModifiedBy                     string    `query:"modifiedBy" json:"modifiedBy"`
+	DistributedCashPrice           float64   `query:"distributedCashPrice" json:"distributedCashPrice"`
+	TotalDistributedCartOfferPrice float64   `query:"totalDistributedCartOfferPrice" json:"totalDistributedCartOfferPrice"`
+	TotalDistributedItemOfferPrice float64   `query:"totalDistributedItemOfferPrice" json:"totalDistributedItemOfferPrice"`
+	TotalDistributedPaymentPrice   float64   `query:"totalDistributedPaymentPrice" json:"totalDistributedPaymentPrice"`
+	IsDelivery                     bool      `query:"isDelivery" json:"isDelivery"`
+	ItemCode                       string    `query:"itemCode" json:"itemCode"`
+	ItemName                       string    `query:"itemName" json:"itemName"`
+	ListPrice                      float64   `query:"listPrice" json:"listPrice"`
+	OrderItemId                    int64     `query:"orderItemId" json:"orderItemId"`
+	ProductId                      int64     `query:"productId" json:"productId"`
+	Quantity                       int64     `query:"quantity" json:"quantity"`
+	RefundItemId                   int64     `query:"refundItemId" json:"refundItemId"`
+	SalePrice                      float64   `query:"salePrice" json:"salePrice"`
+	SkuId                          int64     `query:"skuId" json:"skuId"`
+	SkuImg                         string    `query:"skuImg" json:"skuImg"`
+	Status                         string    `query:"status" json:"status"`
+	TotalDiscountPrice             float64   `query:"TotalDiscountPrice" json:"TotalDiscountPrice"`
+	TotalListPrice                 float64   `query:"totalListPrice" json:"totalListPrice"`
+	TotalSalePrice                 float64   `query:"totalSalePrice" json:"totalSalePrice"`
+	TotalTransactionPrice          float64   `query:"totalTransactionPrice" json:"totalTransactionPrice"`
+	TransactionId                  int64     `query:"transactionId" json:"transactionId"`
 }
 
 type AssortedSaleRecordAndDtls struct {

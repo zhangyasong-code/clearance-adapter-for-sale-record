@@ -3,7 +3,7 @@ package models
 import "time"
 
 type SaleTransaction struct {
-	TransactionId  string    `json:"transactionId" query:"transactionId" xorm:"index VARCHAR(30) notnull pk" validate:"required"`
+	TransactionId  int64     `json:"transactionId" query:"transactionId" xorm:"index default 0 pk" validate:"required"`
 	OrderId        int64     `json:"orderId" query:"orderId"`
 	StoreId        int64     `json:"storeId" query:"storeId" xorm:"index default 0" validate:"required"`
 	CustomerId     int64     `json:"customerId" query:"customerId" xorm:"index default 0" validate:"required"`
@@ -18,7 +18,7 @@ type SaleTransactionDtl struct {
 	SkuId         int64   `json:"skuId" query:"skuId" xorm:"index notnull" validate:"gte=0"`
 	BrandCode     string  `json:"brandCode" query:"brandCode" xorm:"index VARCHAR(30) notnull" validate:"required"`
 	BrandId       int64   `json:"brandId" query:"brandId" xorm:"index default 0"`
-	TransactionId string  `json:"transactionId" query:"transactionId" xorm:"index VARCHAR(30) notnull" validate:"required"`
+	TransactionId int64   `json:"transactionId" query:"transactionId" xorm:"index VARCHAR(30) notnull" validate:"required"`
 }
 
 //SaleTransactionAndSaleTransactionDtl
