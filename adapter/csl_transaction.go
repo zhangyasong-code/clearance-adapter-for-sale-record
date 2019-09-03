@@ -17,6 +17,7 @@ const (
 	MSLV2_POS        = "8"
 	MILEAGE_CUSTOMER = "M"
 	NEW_CUSTOMER     = "N"
+	MSLv2_0          = "P009"
 )
 
 // Clearance到CSL
@@ -130,7 +131,13 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if err != nil {
 			return nil, err
 		}
-		mileage, err := models.SaleMst{}.GetMileage(saleTransaction.CustomerId)
+		//get mileage
+		mileage, err := models.SaleMst{}.GetMileage(saleTransaction.CustomerId, saleTransaction.TransactionId, models.UseTypeEarn)
+		if err != nil {
+			return nil, err
+		}
+		//sum quantity , total_sale_price , total_discount_price
+		res, err := models.SaleMst{}.GetSumsFields(saleTransaction.TransactionId)
 		if err != nil {
 			return nil, err
 		}
@@ -147,6 +154,13 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			CustGradeCode:    mileage.CustGradeCode,
 			CustBrandCode:    mileage.CustBrandCode,
 			ActualSaleAmt:    saleTransaction.TotalSalePrice,
+			SaleQty:          int64(res[0]),
+			SaleAmt:          res[1],
+			DiscountAmt:      res[2],
+			EstimateSaleAmt:  res[1] - res[2],
+			UseMileage:       saleTransaction.Mileage,
+			ObtainMileage:    mileage.Point,
+			SaleOfficeCode:   MSLv2_0,
 		})
 		for _, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {
 			if saleTransactionDtl.TransactionId == saleTransaction.TransactionId {

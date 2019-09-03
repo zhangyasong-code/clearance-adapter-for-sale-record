@@ -2,6 +2,15 @@ package models
 
 import "time"
 
+type UseType string
+
+const (
+	UseTypeEarn       UseType = "Earn"
+	UseTypeEarnCancel UseType = "EarnCancel"
+	UseTypeUsed       UseType = "Used"
+	UseTypeUsedCancel UseType = "UsedCancel"
+)
+
 type AssortedSaleRecord struct {
 	TransactionId          int64     `query:"transactionId" json:"transactionId" xorm:"pk"`
 	CashPrice              float64   `query:"cashPrice" json:"cashPrice"`
@@ -59,7 +68,7 @@ type AssortedSaleRecordDtl struct {
 	SkuId                          int64     `query:"skuId" json:"skuId"`
 	SkuImg                         string    `query:"skuImg" json:"skuImg"`
 	Status                         string    `query:"status" json:"status"`
-	TotalDiscountPrice             float64   `query:"TotalDiscountPrice" json:"TotalDiscountPrice"`
+	TotalDiscountPrice             float64   `query:"totalDiscountPrice" json:"totalDiscountPrice"`
 	TotalListPrice                 float64   `query:"totalListPrice" json:"totalListPrice"`
 	TotalSalePrice                 float64   `query:"totalSalePrice" json:"totalSalePrice"`
 	TotalTransactionPrice          float64   `query:"totalTransactionPrice" json:"totalTransactionPrice"`
@@ -72,9 +81,12 @@ type AssortedSaleRecordAndDtls struct {
 }
 
 type PostMileage struct {
-	Id            int64  `json:"id" query:"id"`
-	TenantCode    string `json:"tenantCode" query:"tenantCode"`
-	CustomerId    int64  `json:"customerId" query:"customerId"`
-	CustGradeCode string `json:"custGradeCode" query:"custGradeCode"`
-	CustBrandCode string `json:"custBrandCode" query:"custBrandCode"`
+	Id            int64   `json:"id" query:"id"`
+	TenantCode    string  `json:"tenantCode" query:"tenantCode"`
+	CustomerId    int64   `json:"customerId" query:"customerId"`
+	CustGradeCode string  `json:"custGradeCode" query:"custGradeCode"`
+	CustBrandCode string  `json:"custBrandCode" query:"custBrandCode"`
+	UseType       string  `json:"useType" xorm:"VARCHAR(25)"`
+	Point         float64 `json:"point" xorm:"decimal(19,2)"`
+	PointAmount   float64 `json:"pointAmount" xorm:"decimal(19,2)"`
 }
