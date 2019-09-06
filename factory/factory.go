@@ -17,7 +17,9 @@ var (
 	cfsrEngine *xorm.Engine
 	// pmEngine placeManagementDB
 	pmEngine *xorm.Engine
-	once     sync.Once
+	// productEngine
+	productEngine *xorm.Engine
+	once          sync.Once
 )
 
 // GetCSLEngine 获取CSL数据库引擎
@@ -58,4 +60,12 @@ func GetPmEngine() *xorm.Engine {
 // SetPmEngine 设置placeManagement数据库引擎
 func SetPmEngine(engine *xorm.Engine) {
 	pmEngine = engine
+}
+
+func GetProductEngine() *xorm.Engine {
+	return productEngine
+}
+
+func SetProductEngine(engine *xorm.Engine) {
+	productEngine = engine
 }

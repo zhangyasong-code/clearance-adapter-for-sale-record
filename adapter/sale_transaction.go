@@ -75,6 +75,7 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 	for _, assortedSaleRecord := range assortedSaleRecordAndDtls.AssortedSaleRecords {
 		saleTransactions = append(saleTransactions, models.SaleTransaction{
 			OrderId:        assortedSaleRecord.OrderId,
+			RefundId:       assortedSaleRecord.RefundId,
 			StoreId:        assortedSaleRecord.StoreId,
 			TotalSalePrice: assortedSaleRecord.TotalSalePrice,
 			SaleDate:       assortedSaleRecord.TransactionCreateDate,
@@ -82,16 +83,24 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 			CustomerId:     assortedSaleRecord.CustomerId,
 			Mileage:        assortedSaleRecord.Mileage,
 			MileagePrice:   assortedSaleRecord.MileagePrice,
+			OuterOrderNo:   assortedSaleRecord.OuterOrderNo,
 		})
 	}
 	for _, assortedSaleRecordDtl := range assortedSaleRecordAndDtls.AssortedSaleRecordDtls {
 		saleTransactionDtls = append(saleTransactionDtls, models.SaleTransactionDtl{
-			Quantity:      assortedSaleRecordDtl.Quantity,
-			SalePrice:     assortedSaleRecordDtl.SalePrice,
-			SkuId:         assortedSaleRecordDtl.SkuId,
-			BrandCode:     assortedSaleRecordDtl.BrandCode,
-			BrandId:       assortedSaleRecordDtl.BrandId,
-			TransactionId: assortedSaleRecordDtl.TransactionId,
+			Quantity:                       assortedSaleRecordDtl.Quantity,
+			SalePrice:                      assortedSaleRecordDtl.SalePrice,
+			TotalDiscountPrice:             assortedSaleRecordDtl.TotalDiscountPrice,
+			SkuId:                          assortedSaleRecordDtl.SkuId,
+			OrderItemId:                    assortedSaleRecordDtl.OrderItemId,
+			BrandCode:                      assortedSaleRecordDtl.BrandCode,
+			BrandId:                        assortedSaleRecordDtl.BrandId,
+			ProductId:                      assortedSaleRecordDtl.ProductId,
+			ListPrice:                      assortedSaleRecordDtl.ListPrice,
+			TotalTransactionPrice:          assortedSaleRecordDtl.TotalTransactionPrice,
+			TotalDistributedCartOfferPrice: assortedSaleRecordDtl.TotalDistributedCartOfferPrice,
+			TransactionId:                  assortedSaleRecordDtl.TransactionId,
+			TotalSalePrice:                 assortedSaleRecordDtl.TotalSalePrice,
 		})
 	}
 	return models.SaleTAndSaleTDtls{

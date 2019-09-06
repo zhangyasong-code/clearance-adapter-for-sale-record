@@ -7,7 +7,6 @@ import (
 	"errors"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/go-xorm/core"
 	"github.com/pangpanglabs/goetl"
@@ -18,6 +17,11 @@ const (
 	MILEAGE_CUSTOMER = "M"
 	NEW_CUSTOMER     = "N"
 	MSLv2_0          = "P009"
+	Refund           = "R"
+	Sale             = "S"
+	InUserID         = "MSLV2"
+	NotSynChronized  = "R" // R 未同步
+	SaipType         = "00"
 )
 
 // Clearance到CSL
@@ -75,15 +79,18 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 
 // Transform ...
 func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
+	var endSeq int
+	var startStr, strSeqNo, saleMode, eventTypeCode, eANCode, normalSaleTypeCode string
+	var eventNo int64
+	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
+		discountAmt, saleEventDiscountAmtForConsumer float64
+
 	saleTAndSaleTDtls, ok := source.(models.SaleTAndSaleTDtls)
 	if !ok {
 		return nil, errors.New("Convert Failed")
 	}
 	saleMsts := make([]models.SaleMst, 0)
 	saleDtls := make([]models.SaleDtl, 0)
-
-	endSeq := 0
-	startStr := ""
 	for i, saleTransaction := range saleTAndSaleTDtls.SaleTransactions {
 		saleDate := saleTransaction.SaleDate.Format("20060102")
 
@@ -117,7 +124,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		saleNo := store.Code + saleDate[len(saleDate)-6:len(saleDate)] + MSLV2_POS + sequenceNumber
 
 		//get SeqNo
-		strSeqNo := ""
+		strSeqNo = ""
 		startStrs := []string{"A", "B", "C", "D", "E", "F", "G"}
 		for _, startStr := range startStrs {
 			if strings.HasPrefix(sequenceNumber, startStr) {
@@ -131,52 +138,178 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if err != nil {
 			return nil, err
 		}
-		//get mileage
-		mileage, err := models.SaleMst{}.GetMileage(saleTransaction.CustomerId, saleTransaction.TransactionId, models.UseTypeEarn)
-		if err != nil {
-			return nil, err
-		}
 		//sum quantity , total_sale_price , total_discount_price
-		res, err := models.SaleMst{}.GetSumsFields(saleTransaction.TransactionId)
+		res, err := models.AssortedSaleRecordDtl{}.GetSumsFields(saleTransaction.TransactionId)
 		if err != nil {
 			return nil, err
 		}
-		saleMsts = append(saleMsts, models.SaleMst{
-			SaleNo:           saleNo,
-			SeqNo:            seqNo,
-			PosNo:            MSLV2_POS,
-			Dates:            saleDate,
-			ShopCode:         store.Code,
-			InDateTime:       time.Now(),
-			CustNo:           strconv.FormatInt(saleTransaction.CustomerId, 10),
-			CustCardNo:       strconv.FormatInt(saleTransaction.CustomerId, 10),
-			CustDivisionCode: MILEAGE_CUSTOMER,
-			CustGradeCode:    mileage.CustGradeCode,
-			CustBrandCode:    mileage.CustBrandCode,
-			ActualSaleAmt:    saleTransaction.TotalSalePrice,
-			SaleQty:          int64(res[0]),
-			SaleAmt:          res[1],
-			DiscountAmt:      res[2],
-			EstimateSaleAmt:  res[1] - res[2],
-			UseMileage:       saleTransaction.Mileage,
-			ObtainMileage:    mileage.Point,
-			SaleOfficeCode:   MSLv2_0,
-		})
+		//Sale S 销售  Refund R 退货
+		saleMode = ""
+		use_type := models.UseTypeEarn
+		complexShopSeqNo := ""
+		if saleTransaction.RefundId == 0 {
+			saleMode = Sale
+			complexShopSeqNo = strconv.FormatInt(saleTransaction.OrderId, 10)
+		} else {
+			saleMode = Refund
+			use_type = models.UseTypeEarnCancel
+			complexShopSeqNo = strconv.FormatInt(saleTransaction.RefundId, 10)
+		}
+		//get mileage
+		mileage, err := models.PostMileage{}.GetMileage(saleTransaction.CustomerId, saleTransaction.TransactionId, use_type)
+		if err != nil {
+			return nil, err
+		}
+		saleMst := models.SaleMst{
+			SaleNo:               saleNo,
+			SeqNo:                seqNo,
+			PosNo:                MSLV2_POS,
+			Dates:                saleDate,
+			ShopCode:             store.Code,
+			SaleMode:             saleMode,
+			InDateTime:           saleTransaction.SaleDate,
+			CustNo:               strconv.FormatInt(saleTransaction.CustomerId, 10),
+			CustCardNo:           "",
+			CustMileagePolicyNo:  mileage.CustMileagePolicyNo,
+			DepartStoreReceiptNo: saleTransaction.OuterOrderNo,
+			CustDivisionCode:     MILEAGE_CUSTOMER,
+			CustGradeCode:        mileage.CustGradeCode,
+			CustBrandCode:        mileage.CustBrandCode,
+			ActualSaleAmt:        saleTransaction.TotalSalePrice,
+			SaleQty:              int64(res[0]),
+			SaleAmt:              res[1],
+			DiscountAmt:          res[2],
+			EstimateSaleAmt:      res[1] - res[2],
+			UseMileage:           saleTransaction.Mileage,
+			ObtainMileage:        mileage.PointAmount,
+			InUserID:             InUserID,
+			ModiUserID:           InUserID,
+			ModiDateTime:         saleTransaction.SaleDate,
+			SendState:            "",
+			SendFlag:             NotSynChronized,
+			ComplexShopSeqNo:     complexShopSeqNo,
+			SaleOfficeCode:       MSLv2_0,
+		}
 		for _, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {
 			if saleTransactionDtl.TransactionId == saleTransaction.TransactionId {
-				saleDtls = append(saleDtls, models.SaleDtl{
-					SaleNo:     saleNo,
-					ShopCode:   store.Code,
-					DtSeq:      int64(len(saleDtls)),
-					SeqNo:      seqNo,
-					Dates:      saleDate,
-					ProdCode:   strconv.FormatInt(saleTransactionDtl.SkuId, 10),
-					InDateTime: time.Now(),
-					SaleQty:    saleTransactionDtl.Quantity,
-					SaleAmt:    saleTransactionDtl.SalePrice,
-				})
+				saleMst.BrandCode = saleTransactionDtl.BrandCode
+				eventNo = 0
+				eventTypeCode = ""
+				saleEventSaleBaseAmt = 0
+				saleEventDiscountBaseAmt = 0
+				normalSaleTypeCode = "0"
+				saleEventAutoDiscountAmt = 0
+				saleEventManualDiscountAmt = 0
+				saleVentDecisionDiscountAmt = 0
+				discountAmt = 0
+				saleEventDiscountAmtForConsumer = 0
+				if saleTransactionDtl.TotalDiscountPrice != 0 {
+					appliedOrderItemOffer, err := models.AppliedOrderItemOffer{}.GetAppliedOrderItemOffer(saleTransactionDtl.OrderItemId)
+					if err != nil {
+						return nil, err
+					}
+					if appliedOrderItemOffer.OfferNo != "" {
+						promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(appliedOrderItemOffer.OfferNo)
+						if err != nil {
+							return nil, err
+						}
+						eventN, err := strconv.ParseInt(promotionEvent.EventNo, 10, 64)
+						if err != nil {
+							return nil, err
+						}
+						eventNo = eventN
+						eventTypeCode = promotionEvent.EventTypeCode
+						saleEventSaleBaseAmt = promotionEvent.SaleBaseAmt
+						saleEventDiscountBaseAmt = promotionEvent.DiscountBaseAmt
+						if promotionEvent.EventTypeCode == "01" || promotionEvent.EventTypeCode == "02" || promotionEvent.EventTypeCode == "03" {
+							normalSaleTypeCode = "1"
+						} else if promotionEvent.EventTypeCode == "B" || promotionEvent.EventTypeCode == "C" ||
+							promotionEvent.EventTypeCode == "G" || promotionEvent.EventTypeCode == "M" || promotionEvent.EventTypeCode == "P" ||
+							promotionEvent.EventTypeCode == "R" || promotionEvent.EventTypeCode == "V" {
+							normalSaleTypeCode = "2"
+						}
+					}
+				}
+
+				sku, err := models.Product{}.GetSkuBySkuId(saleTransactionDtl.SkuId)
+				if err != nil {
+					return nil, err
+				}
+
+				eANCode = ""
+				if len(sku.Identifiers) != 0 {
+					eANCode = sku.Identifiers[0].Uid
+				}
+				product, err := models.Product{}.GetProductById(saleTransactionDtl.ProductId)
+				if err != nil {
+					return nil, err
+				}
+				priceTypeCode, err := models.SaleMst{}.GetPriceTypeCode(saleTransactionDtl.BrandCode, product.Code)
+				if err != nil {
+					return nil, err
+				}
+				supGroupCode, err := models.SaleMst{}.GetSupGroupCode(saleTransactionDtl.BrandCode, product.Code)
+				if err != nil {
+					return nil, err
+				}
+				if normalSaleTypeCode == "1" {
+					saleEventAutoDiscountAmt = saleTransactionDtl.TotalDistributedCartOfferPrice
+					saleEventManualDiscountAmt = saleTransactionDtl.TotalDistributedCartOfferPrice
+					saleVentDecisionDiscountAmt = saleTransactionDtl.TotalDistributedCartOfferPrice
+					discountAmt = saleTransactionDtl.TotalDistributedCartOfferPrice
+					saleEventDiscountAmtForConsumer = saleTransactionDtl.TotalDistributedCartOfferPrice
+				}
+				postMileageDtl, err := models.PostMileage{}.GetPostMileageDtl(saleTransactionDtl.Id, models.UseTypeUsed)
+				if err != nil {
+					return nil, err
+				}
+				saleDtl := models.SaleDtl{
+					SaleNo:                          saleNo,
+					ShopCode:                        store.Code,
+					BrandCode:                       saleTransactionDtl.BrandCode,
+					DtSeq:                           int64(len(saleDtls)),
+					SeqNo:                           seqNo,
+					Dates:                           saleDate,
+					PosNo:                           MSLV2_POS,
+					NormalSaleTypeCode:              normalSaleTypeCode,
+					SaleEventNo:                     eventNo,
+					SaleEventTypeCode:               eventTypeCode,
+					ProdCode:                        sku.Code,
+					EANCode:                         eANCode,
+					PriceTypeCode:                   priceTypeCode,
+					SupGroupCode:                    supGroupCode,
+					SaipType:                        SaipType,
+					NormalPrice:                     saleTransactionDtl.ListPrice,
+					Price:                           saleTransactionDtl.SalePrice,
+					PriceDecisionDate:               saleDate,
+					SaleQty:                         saleTransactionDtl.Quantity,
+					SaleAmt:                         saleTransactionDtl.TotalTransactionPrice,
+					SaleEventSaleBaseAmt:            saleEventSaleBaseAmt,
+					SaleEventDiscountBaseAmt:        saleEventDiscountBaseAmt,
+					SaleEventAutoDiscountAmt:        saleEventAutoDiscountAmt,
+					SaleEventManualDiscountAmt:      saleEventManualDiscountAmt,
+					SaleVentDecisionDiscountAmt:     saleVentDecisionDiscountAmt,
+					ChinaFISaleAmt:                  saleTransactionDtl.TotalSalePrice,
+					EstimateSaleAmt:                 saleTransactionDtl.TotalTransactionPrice,
+					SellingAmt:                      saleTransactionDtl.TotalTransactionPrice,
+					UseMileage:                      postMileageDtl.PointAmount,
+					InUserID:                        InUserID,
+					InDateTime:                      saleTransaction.SaleDate,
+					ModiUserID:                      InUserID,
+					ModiDateTime:                    saleTransaction.SaleDate,
+					SendState:                       "",
+					SendFlag:                        NotSynChronized,
+					DiscountAmt:                     discountAmt,
+					DiscountAmtAsCost:               0,
+					EstimateSaleAmtForConsumer:      saleTransactionDtl.TotalTransactionPrice,
+					SaleEventDiscountAmtForConsumer: saleEventDiscountAmtForConsumer,
+					ShopEmpEstimateSaleAmt:          saleTransactionDtl.TotalTransactionPrice,
+					SaleOfficeCode:                  MSLv2_0,
+				}
+				saleDtls = append(saleDtls, saleDtl)
 			}
 		}
+		saleMsts = append(saleMsts, saleMst)
 	}
 	return models.SaleMstsAndSaleDtls{
 		SaleMsts: saleMsts,

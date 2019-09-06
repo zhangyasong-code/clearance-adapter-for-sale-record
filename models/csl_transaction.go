@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/sirupsen/logrus"
 )
 
 type SaleDtl struct {
@@ -104,9 +102,9 @@ type SaleMst struct {
 	UseMileage           float64   `query:"useMileage" json:"useMileage"`
 	ObtainMileage        float64   `query:"obtainMileage" json:"obtainMileage"`
 	InUserID             string    `query:"inUserID" json:"inUserID"`
-	InDateTime           time.Time `query:"inDateTime" json:"inDateTime"`
+	InDateTime           time.Time `query:"inDateTime" json:"inDateTime" xorm:"created"`
 	ModiUserID           string    `query:"modiUserID" json:"modiUserID"`
-	ModiDateTime         time.Time `query:"modiDateTime" json:"modiDateTime"`
+	ModiDateTime         time.Time `query:"modiDateTime" json:"modiDateTime" xorm:"created"`
 	SendState            string    `query:"sendState" json:"sendState"`
 	SendFlag             string    `query:"sendFlag" json:"sendFlag"`
 	// SendSeqNo                   int64     `query:"sendSeqNo" json:"sendSeqNo"`
@@ -218,30 +216,32 @@ func (SaleMst) GetlastSeq(shopCode, saleDate string) (string, error) {
 	return "", nil
 }
 
-func (SaleMst) GetMileage(customerId, transactionId int64, use_type UseType) (*PostMileage, error) {
-	var mileage PostMileage
-	exist, err := factory.GetSrEngine().Where("customer_id = ?", customerId).
-		And("use_type = ?", use_type).And("transaction_id = ?", transactionId).
-		Get(&mileage)
-	if err != nil {
-		return nil, err
-	} else if !exist {
-		logrus.WithFields(logrus.Fields{
-			"customer_id": customerId,
-		}).Error("Fail to get Mileage")
-		return nil, errors.New("Mileage is not exist")
+func (SaleMst) GetPriceTypeCode(brandCode, productCode string) (string, error) {
+	var priceTypeCodes []string
+	if err := factory.GetCSLEngine().Table("dbo.BrandPrice").
+		Select("PriceTypeCode").Distinct("PriceTypeCode").
+		Where("BrandCode = ?", brandCode).
+		And("StyleCode = ?", productCode).Find(&priceTypeCodes); err != nil {
+		return "", err
 	}
-	return &mileage, nil
+	if len(priceTypeCodes) != 0 {
+		return priceTypeCodes[0], nil
+	}
+	return "", nil
 }
 
-//sum quantity , total_sale_price , total_discount_price
-func (SaleMst) GetSumsFields(transactionId int64) ([]float64, error) {
-	var assortedSaleRecordDtl AssortedSaleRecordDtl
-	res, err := factory.GetSrEngine().Where("transaction_id = ?", transactionId).Sums(assortedSaleRecordDtl, "quantity", "total_sale_price", "total_discount_price")
-	if err != nil {
-		return nil, err
+func (SaleMst) GetSupGroupCode(brandCode, productCode string) (string, error) {
+	var SupGroupCodes []string
+	if err := factory.GetCSLEngine().Table("dbo.Style").
+		Select("SupGroupCode").Distinct("SupGroupCode").
+		Where("BrandCode = ?", brandCode).
+		And("StyleCode = ?", productCode).Find(&SupGroupCodes); err != nil {
+		return "", err
 	}
-	return res, nil
+	if len(SupGroupCodes) != 0 {
+		return SupGroupCodes[0], nil
+	}
+	return "", nil
 }
 
 func (SaleMst) GetSequenceNumber(seq int, str string) (string, int, string, error) {

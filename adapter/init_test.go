@@ -46,12 +46,18 @@ func init() {
 		log.Fatal(err)
 	}
 
-	pmDb, err := initDB(c.PmConnDatabase.Driver, c.PmConnDatabase.Connection)
+	pmDB, err := initDB(c.PmConnDatabase.Driver, c.PmConnDatabase.Connection)
 	if err != nil {
 		panic(err)
 	}
-	factory.SetPmEngine(pmDb)
+	factory.SetPmEngine(pmDB)
 	// defer pmDb.Close()
+
+	productDB, err := initDB(c.ProductDatabase.Driver, c.ProductDatabase.Connection)
+	if err != nil {
+		panic(err)
+	}
+	factory.SetProductEngine(productDB)
 }
 
 func initDB(driver, connection string) (*xorm.Engine, error) {
