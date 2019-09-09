@@ -42,6 +42,10 @@ type C struct {
 		Driver     string
 		Connection string
 	}
+	ProductDatabase struct {
+		Driver     string
+		Connection string
+	}
 	Services struct {
 		PlaceManagementApi string
 		GetTokenApi        string

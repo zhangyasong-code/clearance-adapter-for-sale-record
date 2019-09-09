@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -33,20 +32,29 @@ func TestCTCETLTransform(t *testing.T) {
 					SaleDate:       time.Now(),
 					TransactionId:  1,
 					CustomerId:     1,
+					Mileage:        20,
+					MileagePrice:   20,
+					OuterOrderNo:   "123",
 				},
 			},
 			SaleTransactionDtls: []models.SaleTransactionDtl{
 				{
-					Quantity:      1,
-					SalePrice:     100,
-					SkuId:         3,
-					TransactionId: 1,
+					Quantity:              1,
+					SalePrice:             100,
+					ListPrice:             120,
+					SkuId:                 3,
+					ProductId:             1,
+					TransactionId:         1,
+					TotalTransactionPrice: 100,
 				},
 				{
-					Quantity:      2,
-					SalePrice:     50,
-					SkuId:         4,
-					TransactionId: 1,
+					Quantity:              2,
+					SalePrice:             50,
+					ListPrice:             70,
+					SkuId:                 4,
+					ProductId:             2,
+					TransactionId:         1,
+					TotalTransactionPrice: 100,
 				},
 			},
 		}
@@ -65,7 +73,7 @@ func TestCTCETLTransform(t *testing.T) {
 
 		So(saleDtls[0].SaleQty, ShouldEqual, 1)
 		So(saleDtls[0].ShopCode, ShouldEqual, store.Code)
-		So(saleDtls[0].ProdCode, ShouldEqual, strconv.FormatInt(3, 10))
+		So(saleDtls[0].ProdCode, ShouldEqual, "PBAC45341M40048")
 		So(saleDtls[0].SaleAmt, ShouldEqual, 100)
 	})
 }
@@ -226,5 +234,13 @@ func setUpRestAPIStubFixture() {
 		}))
 		c.Services.PlaceManagementApi = callPlaceManagementApiServer.URL
 
+	})
+}
+
+func TestGetSumsFields(t *testing.T) {
+	Convey("测试GetSumsFields的方法", t, func() {
+		res, err := models.AssortedSaleRecordDtl{}.GetSumsFields(1)
+		So(err, ShouldBeNil)
+		fmt.Println("YYYYYYYYY", res)
 	})
 }
