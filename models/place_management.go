@@ -9,10 +9,10 @@ import (
 )
 
 type Store struct {
-	Id         int64  `query:"id" json:"id"`
-	TenantCode string `query:"tenantCode" json:"tenantCode"`
-	Code       string `query:"code" json:"code"`
-	Name       string `query:"name" json:"name"`
+	Id         int64  `json:"id"`
+	TenantCode string `json:"tenantCode"`
+	Code       string `json:"code"`
+	Name       string `json:"name"`
 }
 
 func (Store) GetStore(storeId int64) (*Store, error) {

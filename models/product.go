@@ -35,6 +35,13 @@ type Product struct {
 	Enable     bool    `json:"enable"`
 }
 
+type Brand struct {
+	Id     int64  `json:"id"`
+	Code   string `json:"code"`
+	Name   string `json:"name"`
+	Enable bool   `json:"enable"`
+}
+
 func (Product) GetProductById(id int64) (*Product, error) {
 	var product Product
 	exist, err := factory.GetProductEngine().ID(id).Get(&product)
@@ -69,4 +76,19 @@ func (Product) GetSkuBySkuId(skuId int64) (sku *Sku, err error) {
 		sku.Identifiers = append(sku.Identifiers, skuAndSkuIdentifier.SkuIdentifier)
 	}
 	return sku, nil
+}
+
+func (Product) GetBrandById(brandId int64) (*Brand, error) {
+	var brand Brand
+	has, err := factory.GetProductEngine().Id(brandId).Where("enable = ?", true).Get(&brand)
+	if err != nil {
+		return nil, err
+	}
+	if !has {
+		logrus.WithFields(logrus.Fields{
+			"brandId": brandId,
+		}).Error("Fail to GetBrandById")
+		return nil, errors.New("Brand is not exist")
+	}
+	return &brand, nil
 }

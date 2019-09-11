@@ -160,6 +160,10 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if err != nil {
 			return nil, err
 		}
+		brand, err := models.Product{}.GetBrandById(mileage.BrandId)
+		if err != nil {
+			return nil, err
+		}
 		saleMst := models.SaleMst{
 			SaleNo:               saleNo,
 			SeqNo:                seqNo,
@@ -173,8 +177,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			CustMileagePolicyNo:  mileage.CustMileagePolicyNo,
 			DepartStoreReceiptNo: saleTransaction.OuterOrderNo,
 			CustDivisionCode:     MILEAGE_CUSTOMER,
-			CustGradeCode:        mileage.CustGradeCode,
-			CustBrandCode:        mileage.CustBrandCode,
+			CustGradeCode:        strconv.FormatInt(mileage.GradeId, 10),
+			CustBrandCode:        brand.Code,
 			ActualSaleAmt:        saleTransaction.TotalSalePrice,
 			SaleQty:              int64(res[0]),
 			SaleAmt:              res[1],

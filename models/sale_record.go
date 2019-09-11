@@ -87,16 +87,16 @@ type AssortedSaleRecordAndDtls struct {
 }
 
 type PostMileage struct {
-	Id                  int64   `json:"id" query:"id"`
-	TransactionId       int64   `query:"transactionId" json:"transactionId"`
-	TenantCode          string  `json:"tenantCode" query:"tenantCode"`
-	CustomerId          int64   `json:"customerId" query:"customerId"`
-	CustGradeCode       string  `json:"custGradeCode" query:"custGradeCode"`
-	CustBrandCode       string  `json:"custBrandCode" query:"custBrandCode"`
-	CustMileagePolicyNo int64   `json:"custMileagePolicyNo" query:"custMileagePolicyNo"`
-	UseType             string  `json:"useType" query:"useType"`
-	Point               float64 `json:"point" query:"point"`
-	PointAmount         float64 `json:"pointAmount" query:"pointAmount"`
+	Id                  int64   `json:"id"`
+	TransactionId       int64   `json:"transactionId"`
+	TenantCode          string  `json:"tenantCode"`
+	CustomerId          int64   `json:"customerId"`
+	GradeId             int64   `json:"gradeId"`
+	BrandId             int64   `json:"brandId"`
+	CustMileagePolicyNo int64   `json:"custMileagePolicyNo"`
+	UseType             string  `json:"useType"`
+	Point               float64 `json:"point"`
+	PointAmount         float64 `json:"pointAmount"`
 }
 
 type PostMileageDtl struct {
