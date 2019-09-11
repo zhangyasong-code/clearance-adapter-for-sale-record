@@ -43,7 +43,7 @@ func (etl SrToClearanceETL) Extract(ctx context.Context) (interface{}, error) {
 		for _, assortedSaleRecordAndDtl := range assortedSaleRecordAndDtls {
 			check := true
 			for _, saleRecord := range saleRecords {
-				if assortedSaleRecordAndDtl.AssortedSaleRecord.OrderId == saleRecord.OrderId {
+				if assortedSaleRecordAndDtl.AssortedSaleRecord.OrderId == saleRecord.OrderId && assortedSaleRecordAndDtl.AssortedSaleRecord.RefundId == saleRecord.RefundId {
 					check = false
 				}
 			}
