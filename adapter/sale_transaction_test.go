@@ -50,8 +50,11 @@ func TestSrToClearanceForSaleRecordETL(t *testing.T) {
 	Convey("测试SrToClearanceETL的Run方法", t, func() {
 		Convey("可以把DATA 从sale-record导入到Clearance", func() {
 			etl := buildSrToClearanceETL()
+			ctx := context.Background()
+			// data := map[string]string{"brandCode": "PB", "channelType": "POS", "startAt": "2019-08-27 05:42:08", "endAt": "2019-08-27 06:55:33"}
+			data := map[string]string{"brandCode": "", "channelType": "POS", "startAt": "", "endAt": ""}
 			etl.After(SrToClearanceETL{}.ReadyToLoad)
-			err := etl.Run(context.Background())
+			err := etl.Run(context.WithValue(ctx, "data", data))
 			fmt.Println(err)
 			So(err, ShouldBeNil)
 		})
