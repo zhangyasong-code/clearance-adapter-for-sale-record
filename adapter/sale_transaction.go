@@ -95,16 +95,17 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 	saleTransactionDtls := make([]models.SaleTransactionDtl, 0)
 	for _, assortedSaleRecord := range assortedSaleRecordAndDtls.AssortedSaleRecords {
 		saleTransactions = append(saleTransactions, models.SaleTransaction{
-			OrderId:        assortedSaleRecord.OrderId,
-			RefundId:       assortedSaleRecord.RefundId,
-			StoreId:        assortedSaleRecord.StoreId,
-			TotalSalePrice: assortedSaleRecord.TotalSalePrice,
-			SaleDate:       assortedSaleRecord.TransactionCreateDate,
-			TransactionId:  assortedSaleRecord.TransactionId,
-			CustomerId:     assortedSaleRecord.CustomerId,
-			Mileage:        assortedSaleRecord.Mileage,
-			MileagePrice:   assortedSaleRecord.MileagePrice,
-			OuterOrderNo:   assortedSaleRecord.OuterOrderNo,
+			OrderId:               assortedSaleRecord.OrderId,
+			RefundId:              assortedSaleRecord.RefundId,
+			StoreId:               assortedSaleRecord.StoreId,
+			TotalSalePrice:        assortedSaleRecord.TotalSalePrice,
+			TotalTransactionPrice: assortedSaleRecord.TotalTransactionPrice,
+			SaleDate:              assortedSaleRecord.TransactionCreateDate,
+			TransactionId:         assortedSaleRecord.TransactionId,
+			CustomerId:            assortedSaleRecord.CustomerId,
+			Mileage:               assortedSaleRecord.Mileage,
+			MileagePrice:          assortedSaleRecord.MileagePrice,
+			OuterOrderNo:          assortedSaleRecord.OuterOrderNo,
 		})
 	}
 	for _, assortedSaleRecordDtl := range assortedSaleRecordAndDtls.AssortedSaleRecordDtls {
@@ -114,10 +115,12 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 			TotalDiscountPrice:             assortedSaleRecordDtl.TotalDiscountPrice,
 			SkuId:                          assortedSaleRecordDtl.SkuId,
 			OrderItemId:                    assortedSaleRecordDtl.OrderItemId,
+			RefundItemId:                   assortedSaleRecordDtl.RefundItemId,
 			BrandCode:                      assortedSaleRecordDtl.BrandCode,
 			BrandId:                        assortedSaleRecordDtl.BrandId,
 			ProductId:                      assortedSaleRecordDtl.ProductId,
 			ListPrice:                      assortedSaleRecordDtl.ListPrice,
+			ItemFee:                        assortedSaleRecordDtl.ItemFee,
 			TotalTransactionPrice:          assortedSaleRecordDtl.TotalTransactionPrice,
 			TotalDistributedCartOfferPrice: assortedSaleRecordDtl.TotalDistributedCartOfferPrice,
 			TransactionId:                  assortedSaleRecordDtl.TransactionId,
