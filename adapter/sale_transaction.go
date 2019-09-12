@@ -5,7 +5,9 @@ import (
 	"clearance/clearance-adapter-for-sale-record/models"
 	"context"
 	"errors"
+	"time"
 
+	"github.com/go-xorm/xorm"
 	"github.com/pangpanglabs/goetl"
 )
 
@@ -27,23 +29,42 @@ func (etl SrToClearanceETL) Extract(ctx context.Context) (interface{}, error) {
 	saleRecordsDtl := []models.AssortedSaleRecordDtl{}
 	//分页查询   一次查1000条
 	skipCount := 0
+	data := ctx.Value("data")
+	dataMap := data.(map[string]string)
+	brandCode := dataMap["brandCode"]
+	transactionChannelType := dataMap["channelType"]
+	startAt := dataMap["startAt"]
+	endAt := dataMap["endAt"]
 	for {
 		// srs := []models.AssortedSaleRecord{}
 		var assortedSaleRecordAndDtls []struct {
 			AssortedSaleRecord    models.AssortedSaleRecord    `xorm:"extends"`
 			AssortedSaleRecordDtl models.AssortedSaleRecordDtl `xorm:"extends"`
 		}
-		if err := factory.GetSrEngine().Table("assorted_sale_record").
-			Join("INNER", "assorted_sale_record_dtl", "assorted_sale_record_dtl.transaction_id = assorted_sale_record.transaction_id").
-			Where("assorted_sale_record.transaction_channel_type = ?", "POS").
-			Limit(maxResultCount, skipCount).
-			Find(&assortedSaleRecordAndDtls); err != nil {
+		query := func() xorm.Interface {
+			q := factory.GetSrEngine().Table("assorted_sale_record").
+				Join("INNER", "assorted_sale_record_dtl", "assorted_sale_record_dtl.transaction_id = assorted_sale_record.transaction_id").
+				Where("1 = 1")
+			if brandCode != "" {
+				q.And("assorted_sale_record_dtl.brand_code = ?", brandCode)
+			}
+			if transactionChannelType != "" {
+				q.And("assorted_sale_record.transaction_channel_type = ?", transactionChannelType)
+			}
+			if startAt != "" && endAt != "" {
+				st, _ := time.Parse("2006-01-02 15:04:05", startAt)
+				et, _ := time.Parse("2006-01-02 15:04:05", endAt)
+				q.And("assorted_sale_record.transaction_create_date >= ?", st).And("assorted_sale_record.transaction_create_date < ?", et)
+			}
+			return q
+		}
+		if err := query().Limit(maxResultCount, skipCount).Find(&assortedSaleRecordAndDtls); err != nil {
 			return nil, err
 		}
 		for _, assortedSaleRecordAndDtl := range assortedSaleRecordAndDtls {
 			check := true
 			for _, saleRecord := range saleRecords {
-				if assortedSaleRecordAndDtl.AssortedSaleRecord.OrderId == saleRecord.OrderId && assortedSaleRecordAndDtl.AssortedSaleRecord.RefundId == saleRecord.RefundId {
+				if assortedSaleRecordAndDtl.AssortedSaleRecord.OrderId == saleRecord.OrderId {
 					check = false
 				}
 			}
