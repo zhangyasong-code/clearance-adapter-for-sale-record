@@ -80,10 +80,10 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 // Transform ...
 func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
 	var endSeq int
-	var startStr, strSeqNo, saleMode, eventTypeCode, eANCode, normalSaleTypeCode string
-	var eventNo int64
+	var startStr, strSeqNo, saleMode, eventTypeCode, eANCode, normalSaleTypeCode, primaryEventTypeCode, secondaryEventTypeCode string
+	var eventNo, primaryCustEventNo, secondaryCustEventNo int64
 	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
-		discountAmt, saleEventDiscountAmtForConsumer float64
+		discountAmt, saleEventDiscountAmtForConsumer, actualSaleAmt float64
 
 	saleTAndSaleTDtls, ok := source.(models.SaleTAndSaleTDtls)
 	if !ok {
@@ -164,40 +164,55 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if err != nil {
 			return nil, err
 		}
+		feeAmt, err := models.PostSaleRecordFee{}.GetSumFeeAmount(saleTransaction.TransactionId)
+		if err != nil {
+			return nil, err
+		}
 		saleMst := models.SaleMst{
-			SaleNo:               saleNo,
-			SeqNo:                seqNo,
-			PosNo:                MSLV2_POS,
-			Dates:                saleDate,
-			ShopCode:             store.Code,
-			SaleMode:             saleMode,
-			InDateTime:           saleTransaction.SaleDate,
-			CustNo:               strconv.FormatInt(saleTransaction.CustomerId, 10),
-			CustCardNo:           "",
-			CustMileagePolicyNo:  mileage.CustMileagePolicyNo,
-			DepartStoreReceiptNo: saleTransaction.OuterOrderNo,
-			CustDivisionCode:     MILEAGE_CUSTOMER,
-			CustGradeCode:        strconv.FormatInt(mileage.GradeId, 10),
-			CustBrandCode:        brand.Code,
-			ActualSaleAmt:        saleTransaction.TotalSalePrice,
-			SaleQty:              int64(res[0]),
-			SaleAmt:              res[1],
-			DiscountAmt:          res[2],
-			EstimateSaleAmt:      res[1] - res[2],
-			UseMileage:           saleTransaction.Mileage,
-			ObtainMileage:        mileage.PointAmount,
-			InUserID:             InUserID,
-			ModiUserID:           InUserID,
-			ModiDateTime:         saleTransaction.SaleDate,
-			SendState:            "",
-			SendFlag:             NotSynChronized,
-			ComplexShopSeqNo:     complexShopSeqNo,
-			SaleOfficeCode:       MSLv2_0,
+			SaleNo:                     saleNo,
+			SeqNo:                      seqNo,
+			PosNo:                      MSLV2_POS,
+			Dates:                      saleDate,
+			ShopCode:                   store.Code,
+			SaleMode:                   saleMode,
+			CustNo:                     strconv.FormatInt(saleTransaction.CustomerId, 10),
+			CustCardNo:                 "",
+			CustMileagePolicyNo:        mileage.CustMileagePolicyNo,
+			DepartStoreReceiptNo:       saleTransaction.OuterOrderNo,
+			CustDivisionCode:           MILEAGE_CUSTOMER,
+			CustGradeCode:              strconv.FormatInt(mileage.GradeId, 10),
+			CustBrandCode:              brand.Code,
+			SaleQty:                    int64(res[0]),
+			SaleAmt:                    res[1],
+			DiscountAmt:                res[2],
+			ChinaFISaleAmt:             saleTransaction.TotalSalePrice,
+			EstimateSaleAmt:            saleTransaction.TotalTransactionPrice,
+			SellingAmt:                 saleTransaction.TotalTransactionPrice,
+			FeeAmt:                     feeAmt,
+			ActualSaleAmt:              saleTransaction.TotalTransactionPrice - feeAmt,
+			UseMileage:                 saleTransaction.Mileage,
+			ObtainMileage:              mileage.PointAmount,
+			InUserID:                   InUserID,
+			InDateTime:                 saleTransaction.SaleDate,
+			ModiUserID:                 InUserID,
+			ModiDateTime:               saleTransaction.SaleDate,
+			SendState:                  "",
+			SendFlag:                   NotSynChronized,
+			ActualSellingAmt:           saleTransaction.TotalTransactionPrice,
+			EstimateSaleAmtForConsumer: saleTransaction.TotalTransactionPrice,
+			ShopEmpEstimateSaleAmt:     saleTransaction.TotalTransactionPrice,
+			DiscountAmtAsCost:          0,
+			ComplexShopSeqNo:           complexShopSeqNo,
+			SaleOfficeCode:             MSLv2_0,
 		}
 		for _, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {
 			if saleTransactionDtl.TransactionId == saleTransaction.TransactionId {
 				saleMst.BrandCode = saleTransactionDtl.BrandCode
 				eventNo = 0
+				primaryCustEventNo = 0
+				primaryEventTypeCode = ""
+				secondaryCustEventNo = 0
+				secondaryEventTypeCode = ""
 				eventTypeCode = ""
 				saleEventSaleBaseAmt = 0
 				saleEventDiscountBaseAmt = 0
@@ -221,16 +236,20 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						if err != nil {
 							return nil, err
 						}
-						eventNo = eventN
-						eventTypeCode = promotionEvent.EventTypeCode
 						saleEventSaleBaseAmt = promotionEvent.SaleBaseAmt
 						saleEventDiscountBaseAmt = promotionEvent.DiscountBaseAmt
 						if promotionEvent.EventTypeCode == "01" || promotionEvent.EventTypeCode == "02" || promotionEvent.EventTypeCode == "03" {
 							normalSaleTypeCode = "1"
+							eventNo = eventN
+							eventTypeCode = promotionEvent.EventTypeCode
 						} else if promotionEvent.EventTypeCode == "B" || promotionEvent.EventTypeCode == "C" ||
 							promotionEvent.EventTypeCode == "G" || promotionEvent.EventTypeCode == "M" || promotionEvent.EventTypeCode == "P" ||
 							promotionEvent.EventTypeCode == "R" || promotionEvent.EventTypeCode == "V" {
 							normalSaleTypeCode = "2"
+							primaryCustEventNo = eventN
+							primaryEventTypeCode = promotionEvent.EventTypeCode
+							secondaryCustEventNo = eventN
+							secondaryEventTypeCode = promotionEvent.EventTypeCode
 						}
 					}
 				}
@@ -267,48 +286,74 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				if err != nil {
 					return nil, err
 				}
+				postSaleRecordFee, err := models.PostSaleRecordFee{}.GetPostSaleRecordFee(saleTransactionDtl.OrderItemId, saleTransactionDtl.RefundItemId)
+				if err != nil {
+					return nil, err
+				}
+				actualSaleAmt = 0
+				if postSaleRecordFee.EventFeeRate != 0 {
+					//SellingAmt-SaleEventFee
+					actualSaleAmt = saleTransactionDtl.TotalTransactionPrice - postSaleRecordFee.AppliedFeeRate*saleTransactionDtl.TotalSalePrice
+				} else {
+					//SellingAmt - NormalFee
+					actualSaleAmt = saleTransactionDtl.TotalTransactionPrice - saleTransactionDtl.ItemFee
+				}
 				saleDtl := models.SaleDtl{
-					SaleNo:                          saleNo,
-					ShopCode:                        store.Code,
-					BrandCode:                       saleTransactionDtl.BrandCode,
-					DtSeq:                           int64(len(saleDtls)),
-					SeqNo:                           seqNo,
-					Dates:                           saleDate,
-					PosNo:                           MSLV2_POS,
-					NormalSaleTypeCode:              normalSaleTypeCode,
-					SaleEventNo:                     eventNo,
-					SaleEventTypeCode:               eventTypeCode,
-					ProdCode:                        sku.Code,
-					EANCode:                         eANCode,
-					PriceTypeCode:                   priceTypeCode,
-					SupGroupCode:                    supGroupCode,
-					SaipType:                        SaipType,
-					NormalPrice:                     saleTransactionDtl.ListPrice,
-					Price:                           saleTransactionDtl.SalePrice,
-					PriceDecisionDate:               saleDate,
-					SaleQty:                         saleTransactionDtl.Quantity,
-					SaleAmt:                         saleTransactionDtl.TotalTransactionPrice,
-					SaleEventSaleBaseAmt:            saleEventSaleBaseAmt,
-					SaleEventDiscountBaseAmt:        saleEventDiscountBaseAmt,
-					SaleEventAutoDiscountAmt:        saleEventAutoDiscountAmt,
-					SaleEventManualDiscountAmt:      saleEventManualDiscountAmt,
-					SaleVentDecisionDiscountAmt:     saleVentDecisionDiscountAmt,
-					ChinaFISaleAmt:                  saleTransactionDtl.TotalSalePrice,
-					EstimateSaleAmt:                 saleTransactionDtl.TotalTransactionPrice,
-					SellingAmt:                      saleTransactionDtl.TotalTransactionPrice,
-					UseMileage:                      postMileageDtl.PointAmount,
-					InUserID:                        InUserID,
-					InDateTime:                      saleTransaction.SaleDate,
-					ModiUserID:                      InUserID,
-					ModiDateTime:                    saleTransaction.SaleDate,
-					SendState:                       "",
-					SendFlag:                        NotSynChronized,
-					DiscountAmt:                     discountAmt,
-					DiscountAmtAsCost:               0,
-					EstimateSaleAmtForConsumer:      saleTransactionDtl.TotalTransactionPrice,
-					SaleEventDiscountAmtForConsumer: saleEventDiscountAmtForConsumer,
-					ShopEmpEstimateSaleAmt:          saleTransactionDtl.TotalTransactionPrice,
-					SaleOfficeCode:                  MSLv2_0,
+					SaleNo:                            saleNo,
+					ShopCode:                          store.Code,
+					BrandCode:                         saleTransactionDtl.BrandCode,
+					DtSeq:                             int64(len(saleDtls) + 1),
+					SeqNo:                             seqNo,
+					Dates:                             saleDate,
+					PosNo:                             MSLV2_POS,
+					NormalSaleTypeCode:                normalSaleTypeCode,
+					PrimaryCustEventNo:                primaryCustEventNo,
+					PrimaryEventTypeCode:              primaryEventTypeCode,
+					SecondaryCustEventNo:              secondaryCustEventNo,
+					SecondaryEventTypeCode:            secondaryEventTypeCode,
+					SaleEventNo:                       eventNo,
+					SaleEventTypeCode:                 eventTypeCode,
+					SaleReturnReasonCode:              "",
+					ProdCode:                          sku.Code,
+					EANCode:                           eANCode,
+					PriceTypeCode:                     priceTypeCode,
+					SupGroupCode:                      supGroupCode,
+					SaipType:                          SaipType,
+					NormalPrice:                       saleTransactionDtl.ListPrice,
+					Price:                             saleTransactionDtl.SalePrice,
+					PriceDecisionDate:                 saleDate,
+					SaleQty:                           saleTransactionDtl.Quantity,
+					SaleAmt:                           saleTransactionDtl.TotalTransactionPrice,
+					EventAutoDiscountAmt:              0,
+					EventDecisionDiscountAmt:          0,
+					SaleEventSaleBaseAmt:              saleEventSaleBaseAmt,
+					SaleEventDiscountBaseAmt:          saleEventDiscountBaseAmt,
+					SaleEventNormalSaleRecognitionChk: false,
+					SaleEventInterShopSalePermitChk:   false,
+					SaleEventAutoDiscountAmt:          saleEventAutoDiscountAmt,
+					SaleEventManualDiscountAmt:        saleEventManualDiscountAmt,
+					SaleVentDecisionDiscountAmt:       saleVentDecisionDiscountAmt,
+					ChinaFISaleAmt:                    saleTransactionDtl.TotalSalePrice,
+					EstimateSaleAmt:                   saleTransactionDtl.TotalTransactionPrice,
+					SellingAmt:                        saleTransactionDtl.TotalTransactionPrice,
+					NormalFee:                         saleTransactionDtl.ItemFee,
+					SaleEventFee:                      postSaleRecordFee.EventFeeRate * saleTransactionDtl.TotalSalePrice,
+					ActualSaleAmt:                     actualSaleAmt,
+					UseMileage:                        postMileageDtl.PointAmount,
+					NormalFeeRate:                     postSaleRecordFee.ItemFeeRate,
+					SaleEventFeeRate:                  postSaleRecordFee.EventFeeRate,
+					InUserID:                          InUserID,
+					InDateTime:                        saleTransaction.SaleDate,
+					ModiUserID:                        InUserID,
+					ModiDateTime:                      saleTransaction.SaleDate,
+					SendState:                         "",
+					SendFlag:                          NotSynChronized,
+					DiscountAmt:                       discountAmt,
+					DiscountAmtAsCost:                 0,
+					EstimateSaleAmtForConsumer:        saleTransactionDtl.TotalTransactionPrice,
+					SaleEventDiscountAmtForConsumer:   saleEventDiscountAmtForConsumer,
+					ShopEmpEstimateSaleAmt:            saleTransactionDtl.TotalTransactionPrice,
+					SaleOfficeCode:                    MSLv2_0,
 				}
 				saleDtls = append(saleDtls, saleDtl)
 			}
