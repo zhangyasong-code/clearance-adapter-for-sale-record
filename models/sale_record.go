@@ -138,37 +138,24 @@ type PromotionEvent struct {
 	StaffSaleChk              bool      `json:"staffSaleChk" query:"staffSaleChk"`
 }
 
-func (PostMileage) GetMileage(customerId, transactionId int64, use_type UseType) (*PostMileage, error) {
+func (PostMileage) GetMileage(customerId, transactionId int64, use_type UseType) (PostMileage, error) {
 	var mileage PostMileage
-	exist, err := factory.GetSrEngine().Where("customer_id = ?", customerId).
+	if _, err := factory.GetSrEngine().Where("customer_id = ?", customerId).
 		And("use_type = ?", string(use_type)).And("transaction_id = ?", transactionId).
-		Get(&mileage)
-	if err != nil {
-		return nil, err
-	} else if !exist {
-		logrus.WithFields(logrus.Fields{
-			"customer_id":    customerId,
-			"transaction_id": transactionId,
-		}).Error("Fail to get Mileage")
-		return nil, errors.New("Mileage is not exist")
+		Get(&mileage); err != nil {
+		return PostMileage{}, err
 	}
-	return &mileage, nil
+	return mileage, nil
 }
 
-func (PostMileage) GetPostMileageDtl(transactionDtlId int64, use_type UseType) (*PostMileageDtl, error) {
+func (PostMileage) GetPostMileageDtl(transactionDtlId int64, use_type UseType) (PostMileageDtl, error) {
 	var postMileageDtl PostMileageDtl
-	exist, err := factory.GetSrEngine().Where("mileage_type = ?", string(use_type)).
+	if _, err := factory.GetSrEngine().Where("mileage_type = ?", string(use_type)).
 		And("transaction_dtl_id = ?", transactionDtlId).
-		Get(&postMileageDtl)
-	if err != nil {
-		return nil, err
-	} else if !exist {
-		logrus.WithFields(logrus.Fields{
-			"transaction_dtl_id": transactionDtlId,
-		}).Error("Fail to GetPostMileageDtl")
-		return nil, errors.New("PostMileageDtl is not exist")
+		Get(&postMileageDtl); err != nil {
+		return PostMileageDtl{}, err
 	}
-	return &postMileageDtl, nil
+	return postMileageDtl, nil
 }
 
 func (AppliedOrderItemOffer) GetAppliedOrderItemOffer(orderItemId int64) (*AppliedOrderItemOffer, error) {
