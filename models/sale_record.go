@@ -62,8 +62,10 @@ type AssortedSaleRecordDtl struct {
 	TotalDistributedCartOfferPrice float64   `json:"totalDistributedCartOfferPrice"`
 	TotalDistributedItemOfferPrice float64   `json:"totalDistributedItemOfferPrice"`
 	TotalDistributedPaymentPrice   float64   `json:"totalDistributedPaymentPrice"`
+	FeeRate                        float64   `json:"feeRate"`
 	IsDelivery                     bool      `json:"isDelivery"`
 	ItemCode                       string    `json:"itemCode"`
+	ItemFee                        float64   `json:"itemFee"`
 	ItemName                       string    `json:"itemName"`
 	ListPrice                      float64   `json:"listPrice"`
 	OrderItemId                    int64     `json:"orderItemId"`
@@ -79,7 +81,6 @@ type AssortedSaleRecordDtl struct {
 	TotalSalePrice                 float64   `json:"totalSalePrice"`
 	TotalTransactionPrice          float64   `json:"totalTransactionPrice"`
 	TransactionId                  int64     `json:"transactionId"`
-	ItemFee                        float64   `json:"itemFee"`
 }
 
 type AssortedSaleRecordAndDtls struct {
@@ -189,7 +190,7 @@ func (AppliedOrderItemOffer) GetAppliedOrderItemOffer(orderItemId int64) (*Appli
 		logrus.WithFields(logrus.Fields{
 			"order_item_id": orderItemId,
 		}).Error("Fail to GetAppliedOrderItemOffer")
-		return nil, errors.New("AppliedOrderItemOffer is not exist")
+		return nil, errors.New("AppliedOrderItemOffer is not exist!")
 	}
 	return &appliedOrderItemOffer, nil
 }
@@ -214,7 +215,7 @@ func (PromotionEvent) GetPromotionEvent(offerNo string) (*PromotionEvent, error)
 		logrus.WithFields(logrus.Fields{
 			"offerNo": offerNo,
 		}).Error("Fail to GetPromotionEvent")
-		return nil, errors.New("PromotionEvent is not exist")
+		return nil, errors.New("PromotionEvent is not exist!")
 	}
 	return &promotionEvent, nil
 }
@@ -229,7 +230,7 @@ func (PostSaleRecordFee) GetPostSaleRecordFee(orderItemId, refundId int64) (*Pos
 			"order_item_id":  orderItemId,
 			"refund_item_id": refundId,
 		}).Error("Fail to GetPostSaleRecordFee")
-		return nil, errors.New("PostSaleRecordFee is not exist")
+		return nil, errors.New("PostSaleRecordFee is not exist!")
 	}
 	return &postSaleRecordFee, nil
 }

@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type SaleDtl struct {
@@ -226,8 +228,13 @@ func (SaleMst) GetPriceTypeCode(brandCode, productCode string) (string, error) {
 	}
 	if len(priceTypeCodes) != 0 {
 		return priceTypeCodes[0], nil
+	} else {
+		logrus.WithFields(logrus.Fields{
+			"brandCode":   brandCode,
+			"productCode": productCode,
+		}).Error("Fail to GetPriceTypeCode")
+		return "", errors.New("GetPriceTypeCode error!")
 	}
-	return "", nil
 }
 
 func (SaleMst) GetSupGroupCode(brandCode, productCode string) (string, error) {
@@ -240,8 +247,13 @@ func (SaleMst) GetSupGroupCode(brandCode, productCode string) (string, error) {
 	}
 	if len(SupGroupCodes) != 0 {
 		return SupGroupCodes[0], nil
+	} else {
+		logrus.WithFields(logrus.Fields{
+			"brandCode":   brandCode,
+			"productCode": productCode,
+		}).Error("Fail to GetSupGroupCode")
+		return "", errors.New("GetSupGroupCode error!")
 	}
-	return "", nil
 }
 
 func (SaleMst) GetSequenceNumber(seq int, str string) (string, int, string, error) {

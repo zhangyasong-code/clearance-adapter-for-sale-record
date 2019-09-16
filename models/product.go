@@ -71,6 +71,11 @@ func (Product) GetSkuBySkuId(skuId int64) (sku *Sku, err error) {
 	}
 	if len(SkuAndSkuIdentifiers) != 0 {
 		sku = &SkuAndSkuIdentifiers[0].Sku
+	} else {
+		logrus.WithFields(logrus.Fields{
+			"skuId": skuId,
+		}).Error("Fail to GetSkuBySkuId")
+		return nil, errors.New("Sku is not exist!")
 	}
 	for _, skuAndSkuIdentifier := range SkuAndSkuIdentifiers {
 		sku.Identifiers = append(sku.Identifiers, skuAndSkuIdentifier.SkuIdentifier)
@@ -88,7 +93,7 @@ func (Product) GetBrandById(brandId int64) (*Brand, error) {
 		logrus.WithFields(logrus.Fields{
 			"brandId": brandId,
 		}).Error("Fail to GetBrandById")
-		return nil, errors.New("Brand is not exist")
+		return nil, errors.New("Brand is not exist!")
 	}
 	return &brand, nil
 }
