@@ -97,7 +97,11 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		//get store
 		store, err := models.Store{}.GetStore(saleTransaction.StoreId)
 		if err != nil {
-			return nil, err
+			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransaction.TransactionId, CreatedBy: "batch-job", Error: err.Error() + " StoreId:" + strconv.FormatInt(saleTransaction.StoreId, 10)}
+			if err := SaleRecordIdFailMapping.Save(); err != nil {
+				return nil, err
+			}
+			continue
 		}
 
 		//get last endSeq and startStr in csl SaleMst
@@ -162,7 +166,11 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		}
 		brand, err := models.Product{}.GetBrandById(mileage.BrandId)
 		if err != nil {
-			return nil, err
+			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransaction.TransactionId, CreatedBy: "batch-job", Error: err.Error() + " BrandId:" + strconv.FormatInt(mileage.BrandId, 10)}
+			if err := SaleRecordIdFailMapping.Save(); err != nil {
+				return nil, err
+			}
+			continue
 		}
 		feeAmt, err := models.PostSaleRecordFee{}.GetSumFeeAmount(saleTransaction.TransactionId)
 		if err != nil {
@@ -225,12 +233,20 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				if saleTransactionDtl.TotalDiscountPrice != 0 {
 					appliedOrderItemOffer, err := models.AppliedOrderItemOffer{}.GetAppliedOrderItemOffer(saleTransactionDtl.OrderItemId)
 					if err != nil {
-						return nil, err
+						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10)}
+						if err := SaleRecordIdFailMapping.Save(); err != nil {
+							return nil, err
+						}
+						continue
 					}
 					if appliedOrderItemOffer.OfferNo != "" {
 						promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(appliedOrderItemOffer.OfferNo)
 						if err != nil {
-							return nil, err
+							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " OfferNo:" + appliedOrderItemOffer.OfferNo}
+							if err := SaleRecordIdFailMapping.Save(); err != nil {
+								return nil, err
+							}
+							continue
 						}
 						eventN, err := strconv.ParseInt(promotionEvent.EventNo, 10, 64)
 						if err != nil {
@@ -256,7 +272,11 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 
 				sku, err := models.Product{}.GetSkuBySkuId(saleTransactionDtl.SkuId)
 				if err != nil {
-					return nil, err
+					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " SkuId:" + strconv.FormatInt(saleTransactionDtl.SkuId, 10)}
+					if err := SaleRecordIdFailMapping.Save(); err != nil {
+						return nil, err
+					}
+					continue
 				}
 
 				eANCode = ""
@@ -265,15 +285,27 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				}
 				product, err := models.Product{}.GetProductById(saleTransactionDtl.ProductId)
 				if err != nil {
-					return nil, err
+					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " ProductId:" + strconv.FormatInt(saleTransactionDtl.ProductId, 10)}
+					if err := SaleRecordIdFailMapping.Save(); err != nil {
+						return nil, err
+					}
+					continue
 				}
 				priceTypeCode, err := models.SaleMst{}.GetPriceTypeCode(saleTransactionDtl.BrandCode, product.Code)
 				if err != nil {
-					return nil, err
+					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode + " productCode:" + product.Code}
+					if err := SaleRecordIdFailMapping.Save(); err != nil {
+						return nil, err
+					}
+					continue
 				}
 				supGroupCode, err := models.SaleMst{}.GetSupGroupCode(saleTransactionDtl.BrandCode, product.Code)
 				if err != nil {
-					return nil, err
+					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode + " productCode:" + product.Code}
+					if err := SaleRecordIdFailMapping.Save(); err != nil {
+						return nil, err
+					}
+					continue
 				}
 				if normalSaleTypeCode == "1" {
 					saleEventAutoDiscountAmt = saleTransactionDtl.TotalDistributedCartOfferPrice
@@ -288,7 +320,12 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				}
 				postSaleRecordFee, err := models.PostSaleRecordFee{}.GetPostSaleRecordFee(saleTransactionDtl.OrderItemId, saleTransactionDtl.RefundItemId)
 				if err != nil {
-					return nil, err
+					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId,
+						TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10) + " RefundItemId" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10)}
+					if err := SaleRecordIdFailMapping.Save(); err != nil {
+						return nil, err
+					}
+					continue
 				}
 				actualSaleAmt = 0
 				if postSaleRecordFee.EventFeeRate != 0 {
@@ -357,6 +394,10 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				}
 				saleDtls = append(saleDtls, saleDtl)
 			}
+		}
+		saleRecordIdSuccessMapping := &models.SaleRecordIdSuccessMapping{SaleNo: saleNo, CreatedBy: "batch-job", TransactionId: saleTransaction.TransactionId}
+		if err := saleRecordIdSuccessMapping.CheckAndSave(); err != nil {
+			return nil, err
 		}
 		saleMsts = append(saleMsts, saleMst)
 	}

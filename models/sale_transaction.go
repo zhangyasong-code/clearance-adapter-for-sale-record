@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"clearance/clearance-adapter-for-sale-record/factory"
+	"time"
+)
 
 type SaleTransaction struct {
 	TransactionId         int64     `json:"transactionId" xorm:"index default 0 pk" validate:"required"`
@@ -32,11 +35,48 @@ type SaleTransactionDtl struct {
 	TotalTransactionPrice          float64 `json:"totalTransactionPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	TotalDistributedCartOfferPrice float64 `json:"totalDistributedCartOfferPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	TotalSalePrice                 float64 `json:"totalSalePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	TransactionId                  int64   `json:"transactionId" xorm:"index VARCHAR(30) notnull" validate:"required"`
+	TransactionId                  int64   `json:"transactionId" xorm:"index default 0" validate:"required"`
 }
 
 //SaleTransactionAndSaleTransactionDtl
 type SaleTAndSaleTDtls struct {
 	SaleTransactions    []SaleTransaction    `json:"saleTransactions"`
 	SaleTransactionDtls []SaleTransactionDtl `json:"saleTransactionDtls"`
+}
+
+type SaleRecordIdSuccessMapping struct {
+	SaleNo        string    `json:"saleNo" xorm:"index VARCHAR(30) notnull pk"`
+	TransactionId int64     `json:"transactionId" xorm:"index default 0" validate:"required"`
+	CreatedAt     time.Time `json:"createdAt" xorm:"created"`
+	CreatedBy     string    `json:"createdBy" xorm:"index VARCHAR(30) notnull"`
+}
+
+type SaleRecordIdFailMapping struct {
+	TransactionId    int64     `json:"transactionId" xorm:"index default 0" validate:"required"`
+	TransactionDtlId int64     `json:"transactionDtlId" xorm:"index default 0"`
+	Error            string    `json:"error" xorm:"VARCHAR(50)"`
+	IsCreate         bool      `json:"isCreate" xorm:"index notnull default false"`
+	CreatedAt        time.Time `json:"createdAt" xorm:"created"`
+	CreatedBy        string    `json:"createdBy" xorm:"index VARCHAR(30)"`
+}
+
+func (srsm *SaleRecordIdSuccessMapping) CheckAndSave() error {
+	saleRecordIdSuccessMapping := SaleRecordIdSuccessMapping{}
+	has, err := factory.GetCfsrEngine().Where("saleNo = ?", srsm.SaleNo).Get(&saleRecordIdSuccessMapping)
+	if err != nil {
+		return err
+	}
+	if !has {
+		if _, err := factory.GetCfsrEngine().Insert(srsm); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (srfm *SaleRecordIdFailMapping) Save() error {
+	if _, err := factory.GetCfsrEngine().Insert(srfm); err != nil {
+		return err
+	}
+	return nil
 }
