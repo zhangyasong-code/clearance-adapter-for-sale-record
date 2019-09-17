@@ -220,19 +220,12 @@ func (PromotionEvent) GetPromotionEvent(offerNo string) (*PromotionEvent, error)
 	return &promotionEvent, nil
 }
 
-func (PostSaleRecordFee) GetPostSaleRecordFee(orderItemId, refundId int64) (*PostSaleRecordFee, error) {
+func (PostSaleRecordFee) GetPostSaleRecordFee(orderItemId, refundId int64) (PostSaleRecordFee, error) {
 	var postSaleRecordFee PostSaleRecordFee
-	exist, err := factory.GetSrEngine().Where("order_item_id = ?", orderItemId).And("refund_item_id = ?", refundId).Get(&postSaleRecordFee)
-	if err != nil {
-		return nil, err
-	} else if !exist {
-		logrus.WithFields(logrus.Fields{
-			"order_item_id":  orderItemId,
-			"refund_item_id": refundId,
-		}).Error("Fail to GetPostSaleRecordFee")
-		return nil, errors.New("PostSaleRecordFee is not exist!")
+	if _, err := factory.GetSrEngine().Where("order_item_id = ?", orderItemId).And("refund_item_id = ?", refundId).Get(&postSaleRecordFee); err != nil {
+		return PostSaleRecordFee{}, err
 	}
-	return &postSaleRecordFee, nil
+	return postSaleRecordFee, nil
 }
 
 func (PostSaleRecordFee) GetSumFeeAmount(transactionId int64) (float64, error) {
