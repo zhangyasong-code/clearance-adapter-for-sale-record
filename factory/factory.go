@@ -15,7 +15,11 @@ var (
 	srEngine *xorm.Engine
 	// cfsrEngine clearanceForSaleRecord DB
 	cfsrEngine *xorm.Engine
-	once       sync.Once
+	// pmEngine placeManagementDB
+	pmEngine *xorm.Engine
+	// productEngine
+	productEngine *xorm.Engine
+	once          sync.Once
 )
 
 // GetCSLEngine 获取CSL数据库引擎
@@ -46,4 +50,22 @@ func GetCfsrEngine() *xorm.Engine {
 // SetCfsrEngine 设置clearanceForSaleRecord数据库引擎
 func SetCfsrEngine(engine *xorm.Engine) {
 	cfsrEngine = engine
+}
+
+// GetPmEngine 获取placeManagement数据库引擎
+func GetPmEngine() *xorm.Engine {
+	return pmEngine
+}
+
+// SetPmEngine 设置placeManagement数据库引擎
+func SetPmEngine(engine *xorm.Engine) {
+	pmEngine = engine
+}
+
+func GetProductEngine() *xorm.Engine {
+	return productEngine
+}
+
+func SetProductEngine(engine *xorm.Engine) {
+	productEngine = engine
 }

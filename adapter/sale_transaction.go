@@ -5,7 +5,9 @@ import (
 	"clearance/clearance-adapter-for-sale-record/models"
 	"context"
 	"errors"
+	"time"
 
+	"github.com/go-xorm/xorm"
 	"github.com/pangpanglabs/goetl"
 )
 
@@ -24,55 +26,105 @@ func buildSrToClearanceETL() *goetl.ETL {
 // Extract ...
 func (etl SrToClearanceETL) Extract(ctx context.Context) (interface{}, error) {
 	saleRecords := []models.AssortedSaleRecord{}
+	saleRecordsDtl := []models.AssortedSaleRecordDtl{}
 	//分页查询   一次查1000条
 	skipCount := 0
+	data := ctx.Value("data")
+	dataMap := data.(map[string]string)
+	brandCode := dataMap["brandCode"]
+	transactionChannelType := dataMap["channelType"]
+	startAt := dataMap["startAt"]
+	endAt := dataMap["endAt"]
 	for {
-		srs := []models.AssortedSaleRecord{}
-		if err := factory.GetSrEngine().Where("transaction_channel_type = ?", "POS").Limit(maxResultCount, skipCount).Find(&srs); err != nil {
+		// srs := []models.AssortedSaleRecord{}
+		var assortedSaleRecordAndDtls []struct {
+			AssortedSaleRecord    models.AssortedSaleRecord    `xorm:"extends"`
+			AssortedSaleRecordDtl models.AssortedSaleRecordDtl `xorm:"extends"`
+		}
+		query := func() xorm.Interface {
+			q := factory.GetSrEngine().Table("assorted_sale_record").
+				Join("INNER", "assorted_sale_record_dtl", "assorted_sale_record_dtl.transaction_id = assorted_sale_record.transaction_id").
+				Where("1 = 1")
+			if brandCode != "" {
+				q.And("assorted_sale_record_dtl.brand_code = ?", brandCode)
+			}
+			if transactionChannelType != "" {
+				q.And("assorted_sale_record.transaction_channel_type = ?", transactionChannelType)
+			}
+			if startAt != "" && endAt != "" {
+				st, _ := time.Parse("2006-01-02 15:04:05", startAt)
+				et, _ := time.Parse("2006-01-02 15:04:05", endAt)
+				q.And("assorted_sale_record.transaction_create_date >= ?", st).And("assorted_sale_record.transaction_create_date < ?", et)
+			}
+			return q
+		}
+		if err := query().Limit(maxResultCount, skipCount).Find(&assortedSaleRecordAndDtls); err != nil {
 			return nil, err
 		}
-		for _, saleRecord := range srs {
-			saleRecords = append(saleRecords, saleRecord)
+		for _, assortedSaleRecordAndDtl := range assortedSaleRecordAndDtls {
+			check := true
+			for _, saleRecord := range saleRecords {
+				if assortedSaleRecordAndDtl.AssortedSaleRecord.OrderId == saleRecord.OrderId {
+					check = false
+				}
+			}
+			if len(saleRecords) == 0 || check {
+				saleRecords = append(saleRecords, assortedSaleRecordAndDtl.AssortedSaleRecord)
+			}
+			saleRecordsDtl = append(saleRecordsDtl, assortedSaleRecordAndDtl.AssortedSaleRecordDtl)
 		}
-		if len(srs) < maxResultCount {
+		if len(assortedSaleRecordAndDtls) < maxResultCount {
 			break
 		} else {
 			skipCount += maxResultCount
 		}
 	}
-	return saleRecords, nil
+	return models.AssortedSaleRecordAndDtls{
+		AssortedSaleRecords:    saleRecords,
+		AssortedSaleRecordDtls: saleRecordsDtl,
+	}, nil
 }
 
 // Transform ...
 func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
-	saleRecords, ok := source.([]models.AssortedSaleRecord)
+	assortedSaleRecordAndDtls, ok := source.(models.AssortedSaleRecordAndDtls)
 	if !ok {
 		return nil, errors.New("Convert Failed")
 	}
 	saleTransactions := make([]models.SaleTransaction, 0)
 	saleTransactionDtls := make([]models.SaleTransactionDtl, 0)
-	for _, saleRecord := range saleRecords {
-		check := true
-		for _, saleTransaction := range saleTransactions {
-			if saleRecord.OrderId == saleTransaction.OrderId {
-				check = false
-			}
-		}
-
-		if len(saleTransactions) == 0 || check {
-			saleTransactions = append(saleTransactions, models.SaleTransaction{
-				OrderId:        saleRecord.OrderId,
-				StoreId:        saleRecord.StoreId,
-				TotalSalePrice: saleRecord.TotalSalePrice,
-				SaleDate:       saleRecord.TransactionCreateDate,
-			})
-		}
+	for _, assortedSaleRecord := range assortedSaleRecordAndDtls.AssortedSaleRecords {
+		saleTransactions = append(saleTransactions, models.SaleTransaction{
+			OrderId:               assortedSaleRecord.OrderId,
+			RefundId:              assortedSaleRecord.RefundId,
+			StoreId:               assortedSaleRecord.StoreId,
+			TotalSalePrice:        assortedSaleRecord.TotalSalePrice,
+			TotalTransactionPrice: assortedSaleRecord.TotalTransactionPrice,
+			SaleDate:              assortedSaleRecord.TransactionCreateDate,
+			TransactionId:         assortedSaleRecord.TransactionId,
+			CustomerId:            assortedSaleRecord.CustomerId,
+			Mileage:               assortedSaleRecord.Mileage,
+			MileagePrice:          assortedSaleRecord.MileagePrice,
+			OuterOrderNo:          assortedSaleRecord.OuterOrderNo,
+		})
+	}
+	for _, assortedSaleRecordDtl := range assortedSaleRecordAndDtls.AssortedSaleRecordDtls {
 		saleTransactionDtls = append(saleTransactionDtls, models.SaleTransactionDtl{
-			OrderId:   saleRecord.OrderId,
-			StoreId:   saleRecord.StoreId,
-			Quantity:  saleRecord.Quantity,
-			SalePrice: saleRecord.SalePrice,
-			SkuId:     saleRecord.SkuId,
+			Quantity:                       assortedSaleRecordDtl.Quantity,
+			SalePrice:                      assortedSaleRecordDtl.SalePrice,
+			TotalDiscountPrice:             assortedSaleRecordDtl.TotalDiscountPrice,
+			SkuId:                          assortedSaleRecordDtl.SkuId,
+			OrderItemId:                    assortedSaleRecordDtl.OrderItemId,
+			RefundItemId:                   assortedSaleRecordDtl.RefundItemId,
+			BrandCode:                      assortedSaleRecordDtl.BrandCode,
+			BrandId:                        assortedSaleRecordDtl.BrandId,
+			ProductId:                      assortedSaleRecordDtl.ProductId,
+			ListPrice:                      assortedSaleRecordDtl.ListPrice,
+			ItemFee:                        assortedSaleRecordDtl.ItemFee,
+			TotalTransactionPrice:          assortedSaleRecordDtl.TotalTransactionPrice,
+			TotalDistributedCartOfferPrice: assortedSaleRecordDtl.TotalDistributedCartOfferPrice,
+			TransactionId:                  assortedSaleRecordDtl.TransactionId,
+			TotalSalePrice:                 assortedSaleRecordDtl.TotalSalePrice,
 		})
 	}
 	return models.SaleTAndSaleTDtls{
