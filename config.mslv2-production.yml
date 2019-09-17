@@ -1,0 +1,27 @@
+# saleRecordDB
+saleRecordConnDatabase:
+  driver: mysql
+  connection: pangpang_app:7#dIQ2qY@tcp(rm-uf65796v5j1t257t1.mysql.rds.aliyuncs.com)/pangpang_brand_nhub?charset=utf8
+# cslDB
+cslConnDatabase:
+  driver: mssql
+  connection: server=10.201.10.120;user id=CSL_DEV;password=#fldzm49.7;database=CSL;connection timeout=300
+# clearanceForSaleRecordDB
+cfsrConnDatabase:
+  driver: mysql
+  connection: mslv2_app:0pL6LA#7@tcp(rm-uf65796v5j1t257t1.mysql.rds.aliyuncs.com)/mslv2_clearance?charset=utf8&parseTime=True&loc=UTC
+# placeManagementDB
+pmConnDatabase:
+  driver: mysql
+  connection: pangpang_app:7#dIQ2qY@tcp@tcp(rm-uf65796v5j1t257t1.mysql.rds.aliyuncs.com)/pangpang_brand_place_management?charset=utf8
+productDatabase:
+  driver: mysql
+  connection: pangpang_app:7#dIQ2qY@tcp(rm-uf65796v5j1t257t1.mysql.rds.aliyuncs.com)/pangpang_brand_product?charset=utf8&parseTime=True&loc=UTC
+services:
+  placeManagementApi: http://place-management-api.pangpang-brand-qa:8080
+  getTokenApi: https://qa.p2shop.com.cn/pangpang-common/portal-api/login?tenantCode=pangpang
+getTokenUser:
+  userName: qa.pangpang
+  password: 1111
+appenv: mslv2-production
+serviceName: clearance-adapter-for-sale-record
