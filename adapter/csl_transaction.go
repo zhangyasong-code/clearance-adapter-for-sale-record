@@ -164,14 +164,18 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if err != nil {
 			return nil, err
 		}
-		brand, err := models.Product{}.GetBrandById(mileage.BrandId)
-		if err != nil {
-			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransaction.TransactionId, CreatedBy: "batch-job", Error: err.Error() + " BrandId:" + strconv.FormatInt(mileage.BrandId, 10)}
-			if err := SaleRecordIdFailMapping.Save(); err != nil {
-				return nil, err
+		var brand models.Brand
+		if mileage.BrandId != 0 {
+			brand, err = models.Product{}.GetBrandById(mileage.BrandId)
+			if err != nil {
+				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransaction.TransactionId, CreatedBy: "batch-job", Error: err.Error() + " BrandId:" + strconv.FormatInt(mileage.BrandId, 10)}
+				if err := SaleRecordIdFailMapping.Save(); err != nil {
+					return nil, err
+				}
+				continue
 			}
-			continue
 		}
+
 		feeAmt, err := models.PostSaleRecordFee{}.GetSumFeeAmount(saleTransaction.TransactionId)
 		if err != nil {
 			return nil, err
@@ -376,7 +380,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					NormalFee:                         saleTransactionDtl.ItemFee,
 					SaleEventFee:                      postSaleRecordFee.EventFeeRate * saleTransactionDtl.TotalSalePrice,
 					ActualSaleAmt:                     actualSaleAmt,
-					UseMileage:                        postMileageDtl.PointAmount,
+					UseMileage:                        postMileageDtl.PointPrice,
 					NormalFeeRate:                     postSaleRecordFee.ItemFeeRate,
 					SaleEventFeeRate:                  postSaleRecordFee.EventFeeRate,
 					InUserID:                          InUserID,

@@ -83,17 +83,17 @@ func (Product) GetSkuBySkuId(skuId int64) (sku *Sku, err error) {
 	return sku, nil
 }
 
-func (Product) GetBrandById(brandId int64) (*Brand, error) {
+func (Product) GetBrandById(brandId int64) (Brand, error) {
 	var brand Brand
 	has, err := factory.GetProductEngine().Id(brandId).Where("enable = ?", true).Get(&brand)
 	if err != nil {
-		return nil, err
+		return Brand{}, err
 	}
 	if !has {
 		logrus.WithFields(logrus.Fields{
 			"brandId": brandId,
 		}).Error("Fail to GetBrandById")
-		return nil, errors.New("Brand is not exist!")
+		return Brand{}, errors.New("Brand is not exist!")
 	}
-	return &brand, nil
+	return brand, nil
 }

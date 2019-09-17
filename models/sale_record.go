@@ -109,7 +109,7 @@ type PostMileageDtl struct {
 	RefundItemId     int64   `json:"refundItemId" xorm:"index default 0"`
 	UseType          string  `json:"useType" xorm:"VARCHAR(25)"`
 	Point            float64 `json:"point" xorm:"decimal(19,2)"`
-	PointAmount      float64 `json:"pointAmount" xorm:"decimal(19,2)"`
+	PointPrice       float64 `json:"pointPrice" xorm:"decimal(19,2)"`
 }
 
 type AppliedOrderItemOffer struct {
@@ -173,7 +173,7 @@ func (PostMileage) GetMileage(customerId, transactionId int64, use_type UseType)
 
 func (PostMileage) GetPostMileageDtl(transactionDtlId int64, use_type UseType) (PostMileageDtl, error) {
 	var postMileageDtl PostMileageDtl
-	if _, err := factory.GetSrEngine().Where("mileage_type = ?", string(use_type)).
+	if _, err := factory.GetSrEngine().Where("use_type = ?", string(use_type)).
 		And("transaction_dtl_id = ?", transactionDtlId).
 		Get(&postMileageDtl); err != nil {
 		return PostMileageDtl{}, err
