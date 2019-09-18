@@ -77,7 +77,7 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 		for _, stsAndStd := range stsAndStds {
 			check := true
 			for _, saleTransaction := range saleTransactions {
-				if stsAndStd.SaleTransaction.OrderId == saleTransaction.OrderId {
+				if stsAndStd.SaleTransaction.OrderId == saleTransaction.OrderId && stsAndStd.SaleTransaction.RefundId == saleTransaction.RefundId {
 					check = false
 				}
 			}
