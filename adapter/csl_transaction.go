@@ -285,7 +285,11 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 
 				eANCode = ""
 				if len(sku.Identifiers) != 0 {
-					eANCode = sku.Identifiers[0].Uid
+					if sku.Identifiers[0].Uid == "" {
+						eANCode = sku.Code
+					} else {
+						eANCode = sku.Identifiers[0].Uid
+					}
 				}
 				product, err := models.Product{}.GetProductById(saleTransactionDtl.ProductId)
 				if err != nil {

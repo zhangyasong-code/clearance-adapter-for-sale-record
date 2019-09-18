@@ -62,7 +62,7 @@ type SaleRecordIdFailMapping struct {
 
 func (srsm *SaleRecordIdSuccessMapping) CheckAndSave() error {
 	saleRecordIdSuccessMapping := SaleRecordIdSuccessMapping{}
-	has, err := factory.GetCfsrEngine().Where("saleNo = ?", srsm.SaleNo).Get(&saleRecordIdSuccessMapping)
+	has, err := factory.GetCfsrEngine().Where("sale_no = ?", srsm.SaleNo).Get(&saleRecordIdSuccessMapping)
 	if err != nil {
 		return err
 	}

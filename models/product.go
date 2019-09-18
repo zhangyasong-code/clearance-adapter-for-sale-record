@@ -64,8 +64,8 @@ func (Product) GetSkuBySkuId(skuId int64) (sku *Sku, err error) {
 	if err := factory.GetProductEngine().Table("sku").
 		Join("left", "sku_identifier", "sku_identifier.sku_id = sku.id").
 		Where("sku.id = ?", skuId).
-		And("sku.enable = ?", true).
-		And("sku_identifier.source = ?", "Barcode").
+		//And("sku.enable = ?", true).
+		//And("sku_identifier.source = ?", "Barcode").
 		Find(&SkuAndSkuIdentifiers); err != nil {
 		return nil, err
 	}
