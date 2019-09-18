@@ -6,17 +6,18 @@ import (
 )
 
 type SaleTransaction struct {
-	TransactionId         int64     `json:"transactionId" xorm:"index default 0 pk" validate:"required"`
-	OrderId               int64     `json:"orderId" xorm:"index default 0" validate:"required"`
-	RefundId              int64     `json:"refundId" xorm:"index default 0" validate:"required"`
-	StoreId               int64     `json:"storeId" xorm:"index default 0" validate:"required"`
-	CustomerId            int64     `json:"customerId" xorm:"index default 0" validate:"required"`
-	TotalSalePrice        float64   `json:"totalSalePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	TotalTransactionPrice float64   `json:"totalTransactionPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	SaleDate              time.Time `json:"saleDate"`
-	Mileage               float64   `json:"mileage" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	MileagePrice          float64   `json:"mileagePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	OuterOrderNo          string    `json:"outerOrderNo" xorm:"index VARCHAR(30) notnull" validate:"required"`
+	TransactionId          int64     `json:"transactionId" xorm:"index default 0 pk" validate:"required"`
+	OrderId                int64     `json:"orderId" xorm:"index default 0" validate:"required"`
+	RefundId               int64     `json:"refundId" xorm:"index default 0" validate:"required"`
+	StoreId                int64     `json:"storeId" xorm:"index default 0" validate:"required"`
+	CustomerId             int64     `json:"customerId" xorm:"index default 0" validate:"required"`
+	TotalSalePrice         float64   `json:"totalSalePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	TotalTransactionPrice  float64   `json:"totalTransactionPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	SaleDate               time.Time `json:"saleDate"`
+	Mileage                float64   `json:"mileage" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	MileagePrice           float64   `json:"mileagePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	OuterOrderNo           string    `json:"outerOrderNo" xorm:"index VARCHAR(30) notnull" validate:"required"`
+	TransactionChannelType string    `json:"transactionChannelType" xorm:"index VARCHAR(30) notnull"`
 }
 
 type SaleTransactionDtl struct {

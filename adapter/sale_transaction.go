@@ -95,17 +95,18 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 	saleTransactionDtls := make([]models.SaleTransactionDtl, 0)
 	for _, assortedSaleRecord := range assortedSaleRecordAndDtls.AssortedSaleRecords {
 		saleTransactions = append(saleTransactions, models.SaleTransaction{
-			OrderId:               assortedSaleRecord.OrderId,
-			RefundId:              assortedSaleRecord.RefundId,
-			StoreId:               assortedSaleRecord.StoreId,
-			TotalSalePrice:        assortedSaleRecord.TotalSalePrice,
-			TotalTransactionPrice: assortedSaleRecord.TotalTransactionPrice,
-			SaleDate:              assortedSaleRecord.TransactionCreateDate,
-			TransactionId:         assortedSaleRecord.TransactionId,
-			CustomerId:            assortedSaleRecord.CustomerId,
-			Mileage:               assortedSaleRecord.Mileage,
-			MileagePrice:          assortedSaleRecord.MileagePrice,
-			OuterOrderNo:          assortedSaleRecord.OuterOrderNo,
+			OrderId:                assortedSaleRecord.OrderId,
+			RefundId:               assortedSaleRecord.RefundId,
+			StoreId:                assortedSaleRecord.StoreId,
+			TotalSalePrice:         assortedSaleRecord.TotalSalePrice,
+			TotalTransactionPrice:  assortedSaleRecord.TotalTransactionPrice,
+			SaleDate:               assortedSaleRecord.TransactionCreateDate,
+			TransactionId:          assortedSaleRecord.TransactionId,
+			CustomerId:             assortedSaleRecord.CustomerId,
+			Mileage:                assortedSaleRecord.Mileage,
+			MileagePrice:           assortedSaleRecord.MileagePrice,
+			OuterOrderNo:           assortedSaleRecord.OuterOrderNo,
+			TransactionChannelType: assortedSaleRecord.TransactionChannelType,
 		})
 	}
 	for _, assortedSaleRecordDtl := range assortedSaleRecordAndDtls.AssortedSaleRecordDtls {

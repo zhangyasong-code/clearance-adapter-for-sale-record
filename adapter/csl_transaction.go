@@ -7,8 +7,10 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-xorm/core"
+	"github.com/go-xorm/xorm"
 	"github.com/pangpanglabs/goetl"
 )
 
@@ -40,17 +42,36 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 	// end, _ := time.Parse("2006-01-02", "2019-08-09")
 	//分页查询   一次查1000条
 	skipCount := 0
+	data := ctx.Value("data")
+	dataMap := data.(map[string]string)
+	brandCode := dataMap["brandCode"]
+	transactionChannelType := dataMap["channelType"]
+	startAt := dataMap["startAt"]
+	endAt := dataMap["endAt"]
 	for {
 		var stsAndStds []struct {
 			SaleTransaction    models.SaleTransaction    `xorm:"extends"`
 			SaleTransactionDtl models.SaleTransactionDtl `xorm:"extends"`
 		}
-		if err := factory.GetCfsrEngine().Table("sale_transaction").
-			Select("sale_transaction.*,sale_transaction_dtl.*").
-			Join("INNER", "sale_transaction_dtl", "sale_transaction_dtl.transaction_id = sale_transaction.transaction_id").
-			// Where("sale_transaction.sale_date > ?", start).
-			// And("sale_transaction.sale_date < ?", end).
-			Limit(maxResultCount, skipCount).Find(&stsAndStds); err != nil {
+		query := func() xorm.Interface {
+			q := factory.GetCfsrEngine().Table("sale_transaction").
+				Select("sale_transaction.*,sale_transaction_dtl.*").
+				Join("INNER", "sale_transaction_dtl", "sale_transaction_dtl.transaction_id = sale_transaction.transaction_id").
+				Where("1 = 1")
+			if brandCode != "" {
+				q.And("sale_transaction_dtl.brand_code = ?", brandCode)
+			}
+			if transactionChannelType != "" {
+				q.And("sale_transaction.transaction_channel_type = ?", transactionChannelType)
+			}
+			if startAt != "" && endAt != "" {
+				st, _ := time.Parse("2006-01-02 15:04:05", startAt)
+				et, _ := time.Parse("2006-01-02 15:04:05", endAt)
+				q.And("sale_transaction.sale_date >= ?", st).And("sale_transaction.sale_date < ?", et)
+			}
+			return q
+		}
+		if err := query().Limit(maxResultCount, skipCount).Find(&stsAndStds); err != nil {
 			return nil, err
 		}
 		for _, stsAndStd := range stsAndStds {
@@ -329,7 +350,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				postSaleRecordFee, err := models.PostSaleRecordFee{}.GetPostSaleRecordFee(saleTransactionDtl.OrderItemId, saleTransactionDtl.RefundItemId)
 				if err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId,
-						TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10) + " RefundItemId" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10)}
+						TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10) + " RefundItemId:" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10)}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return nil, err
 					}
@@ -403,11 +424,23 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				saleDtls = append(saleDtls, saleDtl)
 			}
 		}
-		saleRecordIdSuccessMapping := &models.SaleRecordIdSuccessMapping{SaleNo: saleNo, CreatedBy: "batch-job", TransactionId: saleTransaction.TransactionId}
-		if err := saleRecordIdSuccessMapping.CheckAndSave(); err != nil {
-			return nil, err
+		check := false
+		for i, saleDtl := range saleDtls {
+			if saleNo == saleDtl.SaleNo {
+				check = true
+				if i == 0 {
+					saleRecordIdSuccessMapping := &models.SaleRecordIdSuccessMapping{SaleNo: saleNo, CreatedBy: "batch-job", TransactionId: saleTransaction.TransactionId}
+					if err := saleRecordIdSuccessMapping.CheckAndSave(); err != nil {
+						return nil, err
+					}
+				}
+			}
 		}
-		saleMsts = append(saleMsts, saleMst)
+		if check {
+			saleMsts = append(saleMsts, saleMst)
+		} else {
+			continue
+		}
 	}
 	return models.SaleMstsAndSaleDtls{
 		SaleMsts: saleMsts,
