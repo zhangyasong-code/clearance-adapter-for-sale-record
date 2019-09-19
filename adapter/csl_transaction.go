@@ -101,7 +101,8 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 // Transform ...
 func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
 	var endSeq int
-	var startStr, strSeqNo, saleMode, eventTypeCode, eANCode, normalSaleTypeCode, primaryEventTypeCode, secondaryEventTypeCode string
+	var startStr, strSeqNo, saleMode, eventTypeCode, eANCode, normalSaleTypeCode, primaryEventTypeCode, secondaryEventTypeCode,
+		secondaryEventSettleTypeCode, primaryEventSettleTypeCode string
 	var eventNo, primaryCustEventNo, secondaryCustEventNo int64
 	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
 		discountAmt, saleEventDiscountAmtForConsumer, actualSaleAmt float64
@@ -255,6 +256,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				saleVentDecisionDiscountAmt = 0
 				discountAmt = 0
 				saleEventDiscountAmtForConsumer = 0
+				primaryEventSettleTypeCode = "0"
+				secondaryEventSettleTypeCode = "0"
 				if saleTransactionDtl.TotalDiscountPrice != 0 {
 					appliedOrderItemOffer, err := models.AppliedOrderItemOffer{}.GetAppliedOrderItemOffer(saleTransactionDtl.OrderItemId)
 					if err != nil {
@@ -265,6 +268,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						continue
 					}
 					if appliedOrderItemOffer.OfferNo != "" {
+						primaryEventSettleTypeCode = "1"
+						secondaryEventSettleTypeCode = "1"
 						promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(appliedOrderItemOffer.OfferNo)
 						if err != nil {
 							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " OfferNo:" + appliedOrderItemOffer.OfferNo}
@@ -375,8 +380,10 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					NormalSaleTypeCode:                normalSaleTypeCode,
 					PrimaryCustEventNo:                primaryCustEventNo,
 					PrimaryEventTypeCode:              primaryEventTypeCode,
+					PrimaryEventSettleTypeCode:        primaryEventSettleTypeCode,
 					SecondaryCustEventNo:              secondaryCustEventNo,
 					SecondaryEventTypeCode:            secondaryEventTypeCode,
+					SecondaryEventSettleTypeCode:      secondaryEventSettleTypeCode,
 					SaleEventNo:                       eventNo,
 					SaleEventTypeCode:                 eventTypeCode,
 					SaleReturnReasonCode:              "",
