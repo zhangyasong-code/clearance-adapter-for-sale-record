@@ -4,6 +4,7 @@ import (
 	"clearance/clearance-adapter-for-sale-record/factory"
 	"clearance/clearance-adapter-for-sale-record/models"
 	"context"
+	"database/sql"
 	"errors"
 	"strconv"
 	"strings"
@@ -101,9 +102,10 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 // Transform ...
 func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
 	var endSeq int
-	var startStr, strSeqNo, saleMode, eventTypeCode, eANCode, normalSaleTypeCode, primaryEventTypeCode, secondaryEventTypeCode,
+	var startStr, strSeqNo, saleMode, eANCode, normalSaleTypeCode,
 		secondaryEventSettleTypeCode, primaryEventSettleTypeCode string
-	var eventNo, primaryCustEventNo, secondaryCustEventNo int64
+	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo sql.NullInt64
+	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode sql.NullString
 	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
 		discountAmt, saleEventDiscountAmtForConsumer, actualSaleAmt float64
 
@@ -186,6 +188,9 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if err != nil {
 			return nil, err
 		}
+		if mileage.CustMileagePolicyNo != 0 {
+			custMileagePolicyNo = sql.NullInt64{mileage.CustMileagePolicyNo, true}
+		}
 		var brand models.Brand
 		if mileage.BrandId != 0 {
 			brand, err = models.Product{}.GetBrandById(mileage.BrandId)
@@ -210,8 +215,10 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			ShopCode:                   store.Code,
 			SaleMode:                   saleMode,
 			CustNo:                     strconv.FormatInt(saleTransaction.CustomerId, 10),
-			CustCardNo:                 "",
-			CustMileagePolicyNo:        mileage.CustMileagePolicyNo,
+			CustCardNo:                 sql.NullString{"", false},
+			CustMileagePolicyNo:        custMileagePolicyNo,
+			PrimaryCustEventNo:         sql.NullInt64{0, false},
+			SecondaryCustEventNo:       sql.NullInt64{0, false},
 			DepartStoreReceiptNo:       saleTransaction.OuterOrderNo,
 			CustDivisionCode:           MILEAGE_CUSTOMER,
 			CustGradeCode:              strconv.FormatInt(mileage.GradeId, 10),
@@ -242,12 +249,12 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		for _, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {
 			if saleTransactionDtl.TransactionId == saleTransaction.TransactionId {
 				saleMst.BrandCode = saleTransactionDtl.BrandCode
-				eventNo = 0
-				primaryCustEventNo = 0
-				primaryEventTypeCode = ""
-				secondaryCustEventNo = 0
-				secondaryEventTypeCode = ""
-				eventTypeCode = ""
+				eventNo = sql.NullInt64{0, false}
+				primaryCustEventNo = sql.NullInt64{0, false}
+				primaryEventTypeCode = sql.NullString{"", false}
+				secondaryCustEventNo = sql.NullInt64{0, false}
+				secondaryEventTypeCode = sql.NullString{"", false}
+				eventTypeCode = sql.NullString{"", false}
 				saleEventSaleBaseAmt = 0
 				saleEventDiscountBaseAmt = 0
 				normalSaleTypeCode = "0"
@@ -286,16 +293,28 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						saleEventDiscountBaseAmt = promotionEvent.DiscountBaseAmt
 						if promotionEvent.EventTypeCode == "01" || promotionEvent.EventTypeCode == "02" || promotionEvent.EventTypeCode == "03" {
 							normalSaleTypeCode = "1"
-							eventNo = eventN
-							eventTypeCode = promotionEvent.EventTypeCode
+							if eventN != 0 {
+								eventNo = sql.NullInt64{eventN, true}
+							}
+							if promotionEvent.EventTypeCode != "" {
+								eventTypeCode = sql.NullString{promotionEvent.EventTypeCode, true}
+							}
 						} else if promotionEvent.EventTypeCode == "B" || promotionEvent.EventTypeCode == "C" ||
 							promotionEvent.EventTypeCode == "G" || promotionEvent.EventTypeCode == "M" || promotionEvent.EventTypeCode == "P" ||
 							promotionEvent.EventTypeCode == "R" || promotionEvent.EventTypeCode == "V" {
 							normalSaleTypeCode = "2"
-							primaryCustEventNo = eventN
-							primaryEventTypeCode = promotionEvent.EventTypeCode
-							secondaryCustEventNo = eventN
-							secondaryEventTypeCode = promotionEvent.EventTypeCode
+							if eventN != 0 {
+								primaryCustEventNo = sql.NullInt64{eventN, true}
+							}
+							if promotionEvent.EventTypeCode != "" {
+								primaryEventTypeCode = sql.NullString{promotionEvent.EventTypeCode, true}
+							}
+							if eventN != 0 {
+								secondaryCustEventNo = sql.NullInt64{eventN, true}
+							}
+							if promotionEvent.EventTypeCode != "" {
+								secondaryEventTypeCode = sql.NullString{promotionEvent.EventTypeCode, true}
+							}
 						}
 					}
 				}
@@ -374,6 +393,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					ShopCode:                          store.Code,
 					BrandCode:                         saleTransactionDtl.BrandCode,
 					DtSeq:                             int64(len(saleDtls) + 1),
+					CustMileagePolicyNo:               sql.NullInt64{0, false},
 					SeqNo:                             seqNo,
 					Dates:                             saleDate,
 					PosNo:                             MSLV2_POS,
@@ -386,7 +406,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					SecondaryEventSettleTypeCode:      secondaryEventSettleTypeCode,
 					SaleEventNo:                       eventNo,
 					SaleEventTypeCode:                 eventTypeCode,
-					SaleReturnReasonCode:              "",
+					SaleReturnReasonCode:              sql.NullString{"", false},
 					ProdCode:                          sku.Code,
 					EANCode:                           eANCode,
 					PriceTypeCode:                     priceTypeCode,
@@ -432,14 +452,12 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			}
 		}
 		check := false
-		for i, saleDtl := range saleDtls {
+		for _, saleDtl := range saleDtls {
 			if saleNo == saleDtl.SaleNo {
 				check = true
-				if i == 0 {
-					saleRecordIdSuccessMapping := &models.SaleRecordIdSuccessMapping{SaleNo: saleNo, CreatedBy: "batch-job", TransactionId: saleTransaction.TransactionId}
-					if err := saleRecordIdSuccessMapping.CheckAndSave(); err != nil {
-						return nil, err
-					}
+				saleRecordIdSuccessMapping := &models.SaleRecordIdSuccessMapping{SaleNo: saleNo, CreatedBy: "batch-job", TransactionId: saleTransaction.TransactionId}
+				if err := saleRecordIdSuccessMapping.CheckAndSave(); err != nil {
+					return nil, err
 				}
 			}
 		}
@@ -485,11 +503,13 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 			session.Rollback()
 			return err
 		}
-	}
-	for _, saleDtl := range saleMstsAndSaleDtls.SaleDtls {
-		if _, err := session.Table("dbo.SaleDtl").Insert(&saleDtl); err != nil {
-			session.Rollback()
-			return err
+		for _, saleDtl := range saleMstsAndSaleDtls.SaleDtls {
+			if saleDtl.SaleNo == saleMst.SaleNo {
+				if _, err := session.Table("dbo.SaleDtl").Insert(&saleDtl); err != nil {
+					session.Rollback()
+					return err
+				}
+			}
 		}
 	}
 	//commit session
