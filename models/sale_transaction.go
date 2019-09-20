@@ -10,6 +10,7 @@ type SaleTransaction struct {
 	OrderId                int64     `json:"orderId" xorm:"index default 0" validate:"required"`
 	RefundId               int64     `json:"refundId" xorm:"index default 0" validate:"required"`
 	StoreId                int64     `json:"storeId" xorm:"index default 0" validate:"required"`
+	SalesmanId             int64     `json:"salesmanId" xorm:"index default 0" validate:"required"`
 	CustomerId             int64     `json:"customerId" xorm:"index default 0" validate:"required"`
 	TotalSalePrice         float64   `json:"totalSalePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	TotalTransactionPrice  float64   `json:"totalTransactionPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
@@ -35,6 +36,8 @@ type SaleTransactionDtl struct {
 	ItemFee                        float64 `json:"itemFee" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	TotalTransactionPrice          float64 `json:"totalTransactionPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	TotalDistributedCartOfferPrice float64 `json:"totalDistributedCartOfferPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	TotalDistributedItemOfferPrice float64 `json:"totalDistributedItemOfferPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	TotalDistributedPaymentPrice   float64 `json:"totalDistributedPaymentPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	TotalSalePrice                 float64 `json:"totalSalePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	TransactionId                  int64   `json:"transactionId" xorm:"index default 0" validate:"required"`
 }
