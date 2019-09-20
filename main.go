@@ -48,6 +48,20 @@ func main() {
 	factory.SetPmEngine(pmDb)
 	defer pmDb.Close()
 
+	productDB, err := initDB(c.ProductDatabase.Driver, c.ProductDatabase.Connection)
+	if err != nil {
+		panic(err)
+	}
+	factory.SetProductEngine(productDB)
+	defer productDB.Close()
+
+	colleagueAuthDB, err := initDB(c.ColleagueAuthDatabase.Driver, c.ColleagueAuthDatabase.Connection)
+	if err != nil {
+		panic(err)
+	}
+	factory.SetColleagueAuthEngine(colleagueAuthDB)
+	defer colleagueAuthDB.Close()
+
 	fmt.Println("Start :========================")
 	// etl := goetl.New(adapter.SrToClearanceETL{})
 	// etl.After(adapter.SrToClearanceETL{}.ReadyToLoad)

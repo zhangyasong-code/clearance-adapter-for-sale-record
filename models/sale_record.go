@@ -102,14 +102,15 @@ type PostMileage struct {
 }
 
 type PostMileageDtl struct {
-	Id               int64   `json:"id"`
-	PostMileageId    int64   `json:"postMileageId"`
-	TransactionDtlId int64   `json:"transactionDtlId" xorm:"index default 0"`
-	OrderItemId      int64   `json:"orderItemId" xorm:"index default 0"`
-	RefundItemId     int64   `json:"refundItemId" xorm:"index default 0"`
-	UseType          string  `json:"useType" xorm:"VARCHAR(25)"`
-	Point            float64 `json:"point" xorm:"decimal(19,2)"`
-	PointPrice       float64 `json:"pointPrice" xorm:"decimal(19,2)"`
+	Id                  int64   `json:"id"`
+	PostMileageId       int64   `json:"postMileageId"`
+	TransactionDtlId    int64   `json:"transactionDtlId" xorm:"index default 0"`
+	OrderItemId         int64   `json:"orderItemId" xorm:"index default 0"`
+	RefundItemId        int64   `json:"refundItemId" xorm:"index default 0"`
+	CustMileagePolicyNo int64   `json:"custMileagePolicyNo"`
+	UseType             string  `json:"useType" xorm:"VARCHAR(25)"`
+	Point               float64 `json:"point" xorm:"decimal(19,2)"`
+	PointPrice          float64 `json:"pointPrice" xorm:"decimal(19,2)"`
 }
 
 type AppliedOrderItemOffer struct {
@@ -159,6 +160,29 @@ type PostSaleRecordFee struct {
 	AppliedFeeRate         float64 `json:"appliedFeeRate"`
 	FeeAmount              float64 `json:"feeAmount"`
 	TransactionChannelType string  `json:"transactionChannelType"`
+}
+type PostPayment struct {
+	Id                 int64     `json:"id"`
+	TransactionId      int64     `json:"transactionId"`
+	SeqNo              int64     `json:"seqNo"`
+	PaymentCode        string    `json:"paymentCode"`
+	PaymentAmt         float64   `json:"paymentAmt"`
+	InUserID           string    `json:"inUserId"`
+	InDateTime         time.Time `json:"inDateTime"`
+	ModiUserID         string    `json:"modiUserID"`
+	ModiDateTime       time.Time `json:"modiDateTime"`
+	CreditCardFirmCode string    `json:"creditCardFirmCode"`
+}
+
+func (PostPayment) GetPostPayment(transactionId int64) ([]PostPayment, error) {
+	var postPayments []PostPayment
+	if err := factory.GetSrEngine().Where("transaction_id = ?", transactionId).Find(&postPayments); err != nil {
+		return nil, err
+	}
+	if len(postPayments) == 0 {
+		return nil, errors.New("PostPayment is not exist!")
+	}
+	return postPayments, nil
 }
 
 func (PostMileage) GetMileage(customerId, transactionId int64, use_type UseType) (PostMileage, error) {

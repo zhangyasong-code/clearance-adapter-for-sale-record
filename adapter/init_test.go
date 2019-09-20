@@ -58,6 +58,12 @@ func init() {
 		panic(err)
 	}
 	factory.SetProductEngine(productDB)
+
+	colleagueAuthDB, err := initDB(c.ColleagueAuthDatabase.Driver, c.ColleagueAuthDatabase.Connection)
+	if err != nil {
+		panic(err)
+	}
+	factory.SetColleagueAuthEngine(colleagueAuthDB)
 }
 
 func initDB(driver, connection string) (*xorm.Engine, error) {
