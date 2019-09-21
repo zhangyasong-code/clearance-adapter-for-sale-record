@@ -109,6 +109,7 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 			MileagePrice:           assortedSaleRecord.MileagePrice,
 			OuterOrderNo:           assortedSaleRecord.OuterOrderNo,
 			TransactionChannelType: assortedSaleRecord.TransactionChannelType,
+			TotalDiscountPrice:     assortedSaleRecord.TotalDiscountPrice,
 		})
 	}
 	for _, assortedSaleRecordDtl := range assortedSaleRecordAndDtls.AssortedSaleRecordDtls {

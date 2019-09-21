@@ -103,11 +103,12 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
 	var endSeq int
 	var dtSeq int64
+	var saleEventNormalSaleRecognitionChk bool
 	var startStr, strSeqNo, saleMode, eANCode, normalSaleTypeCode, useMileageSettleType, offerNo string
 	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo, preSaleDtSeq sql.NullInt64
 	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode, secondaryEventSettleTypeCode, preSaleNo, creditCardFirmCode sql.NullString
 	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
-		discountAmt, saleEventDiscountAmtForConsumer, actualSaleAmt float64
+		discountAmt, saleEventDiscountAmtForConsumer, actualSaleAmt, saleEventFee, normalFee, normalFeeRate, saleEventFeeRate float64
 
 	saleTAndSaleTDtls, ok := source.(models.SaleTAndSaleTDtls)
 	if !ok {
@@ -251,7 +252,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			PreSaleNo:                   preSaleNo,
 			SaleQty:                     int64(res[0]),
 			SaleAmt:                     res[1],
-			DiscountAmt:                 res[2],
+			DiscountAmt:                 saleTransaction.TotalDiscountPrice,
 			ChinaFISaleAmt:              saleTransaction.TotalSalePrice,
 			EstimateSaleAmt:             saleTransaction.TotalTransactionPrice,
 			SellingAmt:                  saleTransaction.TotalTransactionPrice,
@@ -300,6 +301,11 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				useMileageSettleType = "1"
 				custMileagePolicyNo = sql.NullInt64{0, false}
 				offerNo = ""
+				saleEventFee = 0
+				normalFee = 0
+				normalFeeRate = 0
+				saleEventFeeRate = 0
+				saleEventNormalSaleRecognitionChk = false
 				if saleTransactionDtl.TotalDiscountPrice != 0 || saleTransactionDtl.TotalDistributedItemOfferPrice != 0 || saleTransactionDtl.TotalDistributedCartOfferPrice != 0 {
 					if saleTransactionDtl.TotalDistributedItemOfferPrice != 0 {
 						appliedOrderItemOffer, err := models.AppliedOrderItemOffer{}.GetAppliedOrderItemOffer(saleTransactionDtl.OrderItemId)
@@ -324,8 +330,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						offerNo = appliedOrderCartOffer.OfferNo
 					}
 					if offerNo != "" {
-						primaryEventSettleTypeCode = sql.NullString{"1", true}
-						secondaryEventSettleTypeCode = sql.NullString{"1", true}
 						promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(offerNo)
 						if err != nil {
 							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " OfferNo:" + offerNo}
@@ -338,11 +342,12 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						if err != nil {
 							return nil, err
 						}
-						saleEventSaleBaseAmt = promotionEvent.SaleBaseAmt
-						saleEventDiscountBaseAmt = promotionEvent.DiscountBaseAmt
 						if promotionEvent.EventTypeCode == "01" || promotionEvent.EventTypeCode == "02" || promotionEvent.EventTypeCode == "03" {
 							normalSaleTypeCode = "1"
 							useMileageSettleType = "0"
+							saleEventSaleBaseAmt = promotionEvent.SaleBaseAmt
+							saleEventDiscountBaseAmt = promotionEvent.DiscountBaseAmt
+							saleEventNormalSaleRecognitionChk = true
 							if eventN != 0 {
 								eventNo = sql.NullInt64{eventN, true}
 							}
@@ -356,10 +361,12 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 							if eventN != 0 && (promotionEvent.EventTypeCode == "B" || promotionEvent.EventTypeCode == "C" || promotionEvent.EventTypeCode == "P" || promotionEvent.EventTypeCode == "V") {
 								primaryCustEventNo = sql.NullInt64{eventN, true}
 								primaryEventTypeCode = sql.NullString{promotionEvent.EventTypeCode, true}
+								primaryEventSettleTypeCode = sql.NullString{"1", true}
 							}
 							if eventN != 0 && (promotionEvent.EventTypeCode == "G" || promotionEvent.EventTypeCode == "M" || promotionEvent.EventTypeCode == "R") {
 								secondaryCustEventNo = sql.NullInt64{eventN, true}
 								secondaryEventTypeCode = sql.NullString{promotionEvent.EventTypeCode, true}
+								secondaryEventSettleTypeCode = sql.NullString{"1", true}
 							}
 						}
 					}
@@ -406,12 +413,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					}
 					continue
 				}
-				if normalSaleTypeCode == "1" {
-					saleEventAutoDiscountAmt = saleTransactionDtl.TotalDistributedCartOfferPrice
-					saleEventManualDiscountAmt = saleTransactionDtl.TotalDistributedCartOfferPrice
-					saleVentDecisionDiscountAmt = saleTransactionDtl.TotalDistributedCartOfferPrice
-					saleEventDiscountAmtForConsumer = saleTransactionDtl.TotalDistributedCartOfferPrice
-				}
 				discountAmt = saleTransactionDtl.TotalTransactionPrice - saleTransactionDtl.TotalDistributedPaymentPrice
 				postMileageDtl, err := models.PostMileage{}.GetPostMileageDtl(saleTransactionDtl.Id, models.UseTypeUsed)
 				if err != nil {
@@ -428,6 +429,17 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						return nil, err
 					}
 					continue
+				}
+				if normalSaleTypeCode == "1" {
+					saleEventFee = postSaleRecordFee.FeeAmount
+					saleEventAutoDiscountAmt = saleTransactionDtl.TotalDistributedCartOfferPrice
+					saleEventManualDiscountAmt = saleTransactionDtl.TotalDistributedCartOfferPrice
+					saleVentDecisionDiscountAmt = saleTransactionDtl.TotalDistributedCartOfferPrice
+					saleEventDiscountAmtForConsumer = saleTransactionDtl.TotalDistributedCartOfferPrice
+					saleEventFeeRate = postSaleRecordFee.AppliedFeeRate
+				} else {
+					normalFee = postSaleRecordFee.FeeAmount
+					normalFeeRate = postSaleRecordFee.AppliedFeeRate
 				}
 				actualSaleAmt = 0
 				if postSaleRecordFee.EventFeeRate != 0 {
@@ -482,7 +494,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					EventDecisionDiscountAmt:          saleTransactionDtl.TotalDistributedCartOfferPrice,
 					SaleEventSaleBaseAmt:              saleEventSaleBaseAmt,
 					SaleEventDiscountBaseAmt:          saleEventDiscountBaseAmt,
-					SaleEventNormalSaleRecognitionChk: false,
+					SaleEventNormalSaleRecognitionChk: saleEventNormalSaleRecognitionChk,
 					SaleEventInterShopSalePermitChk:   false,
 					SaleEventAutoDiscountAmt:          saleEventAutoDiscountAmt,
 					SaleEventManualDiscountAmt:        saleEventManualDiscountAmt,
@@ -490,14 +502,14 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					ChinaFISaleAmt:                    saleTransactionDtl.TotalDistributedPaymentPrice,
 					EstimateSaleAmt:                   saleTransactionDtl.TotalDistributedPaymentPrice,
 					SellingAmt:                        saleTransactionDtl.TotalDistributedPaymentPrice,
-					NormalFee:                         saleTransactionDtl.ItemFee,
-					SaleEventFee:                      postSaleRecordFee.AppliedFeeRate * saleTransactionDtl.TotalSalePrice,
+					NormalFee:                         normalFee,
+					SaleEventFee:                      saleEventFee,
 					ActualSaleAmt:                     actualSaleAmt,
 					UseMileage:                        postMileageDtl.PointPrice,
 					PreSaleNo:                         preSaleNo,
 					PreSaleDtSeq:                      preSaleDtSeq,
-					NormalFeeRate:                     postSaleRecordFee.ItemFeeRate,
-					SaleEventFeeRate:                  postSaleRecordFee.EventFeeRate,
+					NormalFeeRate:                     normalFeeRate,
+					SaleEventFeeRate:                  saleEventFeeRate,
 					InUserID:                          colleagues.UserName,
 					InDateTime:                        saleTransaction.SaleDate,
 					ModiUserID:                        colleagues.UserName,

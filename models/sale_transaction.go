@@ -19,6 +19,7 @@ type SaleTransaction struct {
 	CustomerId             int64     `json:"customerId" xorm:"index default 0" validate:"required"`
 	TotalSalePrice         float64   `json:"totalSalePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	TotalTransactionPrice  float64   `json:"totalTransactionPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	TotalDiscountPrice     float64   `json:"totalDiscountPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	SaleDate               time.Time `json:"saleDate"`
 	Mileage                float64   `json:"mileage" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	MileagePrice           float64   `json:"mileagePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
