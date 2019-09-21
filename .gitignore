@@ -10,3 +10,5 @@ debug
 .idea/
 mysql/
 mssql/
+cmd/api-app/api-app
+clearance-adapter-for-sale-record
