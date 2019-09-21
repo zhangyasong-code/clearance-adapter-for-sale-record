@@ -52,7 +52,7 @@ func TestSrToClearanceForSaleRecordETL(t *testing.T) {
 			etl := buildSrToClearanceETL()
 			ctx := context.Background()
 			// data := map[string]string{"brandCode": "PB", "channelType": "POS", "startAt": "2019-08-27 05:42:08", "endAt": "2019-08-27 06:55:33"}
-			data := map[string]string{"brandCode": "PC", "channelType": "POS", "startAt": "2019-09-19 00:00:00", "endAt": "2019-09-21 05:40:00"}
+			data := map[string]string{"brandCode": "EE", "channelType": "POS", "startAt": "2019-09-21 10:52:00", "endAt": "2019-09-21 10:55:00"}
 			etl.After(SrToClearanceETL{}.ReadyToLoad)
 			err := etl.Run(context.WithValue(ctx, "data", data))
 			fmt.Println(err)

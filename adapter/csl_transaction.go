@@ -67,7 +67,8 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 			if startAt != "" && endAt != "" {
 				st, _ := time.Parse("2006-01-02 15:04:05", startAt)
 				et, _ := time.Parse("2006-01-02 15:04:05", endAt)
-				q.And("sale_transaction.sale_date >= ?", st).And("sale_transaction.sale_date < ?", et)
+				h, _ := time.ParseDuration("-8h")
+				q.And("sale_transaction.sale_date >= ?", st.Add(h)).And("sale_transaction.sale_date < ?", et.Add(h))
 			}
 			return q
 		}
@@ -103,7 +104,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 	var endSeq int
 	var startStr, strSeqNo, saleMode, eANCode, normalSaleTypeCode, useMileageSettleType string
 	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo sql.NullInt64
-	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode, secondaryEventSettleTypeCode, preSaleNo sql.NullString
+	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode, secondaryEventSettleTypeCode, preSaleNo, creditCardFirmCode sql.NullString
 	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
 		discountAmt, saleEventDiscountAmtForConsumer, actualSaleAmt float64
 
@@ -489,21 +490,25 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			continue
 		}
 		for _, pop := range postOrderPayments {
+			creditCardFirmCode = sql.NullString{"", false}
+			if pop.CreditCardFirmCode != "" {
+				creditCardFirmCode = sql.NullString{pop.CreditCardFirmCode, true}
+			}
 			salePayment := models.SalePayment{
 				SaleNo:             saleNo,
 				SeqNo:              pop.SeqNo,
 				PaymentCode:        pop.PaymentCode,
 				PaymentAmt:         pop.PaymentAmt,
-				InUserID:           pop.InUserID,
+				InUserID:           colleagues.UserName,
 				InDateTime:         pop.InDateTime,
-				ModiUserID:         pop.ModiUserID,
+				ModiUserID:         colleagues.UserName,
 				ModiDateTime:       pop.ModiDateTime,
-				SendState:          sql.NullString{"", false},
 				SendFlag:           "R",
-				CreditCardFirmCode: pop.CreditCardFirmCode,
+				CreditCardFirmCode: creditCardFirmCode,
 			}
 			salePayments = append(salePayments, salePayment)
 		}
+
 		check := false
 		for _, saleDtl := range saleDtls {
 			if saleNo == saleDtl.SaleNo {

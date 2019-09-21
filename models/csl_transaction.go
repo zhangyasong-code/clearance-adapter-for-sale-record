@@ -129,19 +129,19 @@ type SaleMst struct {
 }
 
 type SalePayment struct {
-	SaleNo             string         `query:"saleNo" json:"saleNo" xorm:"pk"`
-	SeqNo              int64          `query:"seqNo" json:"seqNo" xorm:"pk"`
-	PaymentCode        string         `query:"paymentCode" json:"paymentCode"`
-	PaymentAmt         float64        `query:"paymentAmt" json:"paymentAmt"`
-	InUserID           string         `query:"inUserID" json:"inUserID"`
-	InDateTime         time.Time      `query:"inDateTime" json:"inDateTime"`
-	ModiUserID         string         `query:"modiUserID" json:"modiUserID"`
-	ModiDateTime       time.Time      `query:"modiDateTime" json:"modiDateTime"`
-	SendState          sql.NullString `query:"sendState" json:"sendState"`
-	SendFlag           string         `query:"sendFlag" json:"sendFlag"`
-	SendSeqNo          int64          `query:"sendSeqNo" json:"sendSeqNo"`
+	SaleNo       string    `query:"saleNo" json:"saleNo" xorm:"pk"`
+	SeqNo        int64     `query:"seqNo" json:"seqNo" xorm:"pk"`
+	PaymentCode  string    `query:"paymentCode" json:"paymentCode"`
+	PaymentAmt   float64   `query:"paymentAmt" json:"paymentAmt"`
+	InUserID     string    `query:"inUserID" json:"inUserID"`
+	InDateTime   time.Time `query:"inDateTime" json:"inDateTime"`
+	ModiUserID   string    `query:"modiUserID" json:"modiUserID"`
+	ModiDateTime time.Time `query:"modiDateTime" json:"modiDateTime"`
+	// SendState    sql.NullString `query:"sendState" json:"sendState"`
+	SendFlag string `query:"sendFlag" json:"sendFlag"`
+	// SendSeqNo          int64          `query:"sendSeqNo" json:"sendSeqNo"`
 	SendDateTime       time.Time      `query:"sendDateTime" json:"sendDateTime"`
-	CreditCardFirmCode string         `query:"creditCardFirmCode" json:"creditCardFirmCode"`
+	CreditCardFirmCode sql.NullString `query:"creditCardFirmCode" json:"creditCardFirmCode"`
 }
 
 type SaleMstsAndSaleDtls struct {
