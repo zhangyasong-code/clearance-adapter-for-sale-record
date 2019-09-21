@@ -1,9 +1,11 @@
 package models
 
 import (
-	"clearance/clearance-adapter-for-sale-record/factory"
+	"context"
 	"errors"
 	"time"
+
+	"clearance/clearance-adapter-for-sale-record/factory"
 
 	"github.com/go-xorm/xorm"
 )
@@ -22,6 +24,8 @@ type SaleTransaction struct {
 	MileagePrice           float64   `json:"mileagePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	OuterOrderNo           string    `json:"outerOrderNo" xorm:"index VARCHAR(30) notnull" validate:"required"`
 	TransactionChannelType string    `json:"transactionChannelType" xorm:"index VARCHAR(30) notnull"`
+
+	Dtls []SaleTransactionDtl `json:"dtls"`
 }
 
 type SaleTransactionDtl struct {
@@ -113,4 +117,31 @@ func (SaleRecordIdSuccessMapping) Get(orderId int64, itemId int64) ([]SaleRecord
 		return nil, errors.New("SaleRecordIdSuccessMapping is not exist!")
 	}
 	return success, nil
+}
+func (SaleTransaction) GetAll(ctx context.Context, maxResultCount, skipCount int) (int64, []SaleTransaction, error) {
+	var saleTransactions []SaleTransaction
+	totalCount, err := factory.GetCfsrEngine().Desc("transaction_id").Limit(maxResultCount, skipCount).FindAndCount(&saleTransactions)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	var transactionIds []interface{}
+	for _, t := range saleTransactions {
+		transactionIds = append(transactionIds, t.TransactionId)
+	}
+
+	var dtls []SaleTransactionDtl
+	if err := factory.GetCfsrEngine().In("transaction_id", transactionIds...).Find(&dtls); err != nil {
+		return 0, nil, err
+	}
+
+	for i := range saleTransactions {
+		for j := range dtls {
+			if saleTransactions[i].TransactionId == dtls[j].TransactionId {
+				saleTransactions[i].Dtls = append(saleTransactions[i].Dtls, dtls[j])
+			}
+		}
+	}
+
+	return totalCount, saleTransactions, nil
 }
