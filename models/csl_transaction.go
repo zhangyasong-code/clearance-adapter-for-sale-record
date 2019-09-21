@@ -78,6 +78,9 @@ type SaleDtl struct {
 	TMallEventID                    sql.NullInt64   `query:"tMallEventID" json:"tMallEventID"`
 	TMall_ObtainMileage             sql.NullFloat64 `query:"tMall_ObtainMileage" json:"tMall_ObtainMileage"`
 	SaleOfficeCode                  string          `query:"saleOfficeCode" json:"saleOfficeCode"`
+	OrderItemId                     int64           `json:"itemId" xorm:"-"`
+	RefundItemId                    int64           `json:"itemId" xorm:"-"`
+	TransactionDtlId                int64           `json:"transactionDtlId" xorm:"-"`
 }
 
 type SaleMst struct {
@@ -125,7 +128,8 @@ type SaleMst struct {
 	Freight                     sql.NullFloat64 `query:"freight" json:"freight"`
 	TMall_UseMileage            sql.NullFloat64 `query:"tMall_UseMileage" json:"tMall_UseMileage"`
 	TMall_ObtainMileage         sql.NullFloat64 `query:"tMall_ObtainMileage" json:"tMall_ObtainMileage"`
-	SaleOfficeCode              string          `query:"saleOfficeCode" json:"saleOfficeCode" xorm:""`
+	SaleOfficeCode              string          `query:"saleOfficeCode" json:"saleOfficeCode"`
+	TransactionId               int64           `json:"transactionId" xorm:"-"`
 }
 
 type SalePayment struct {
@@ -142,6 +146,7 @@ type SalePayment struct {
 	// SendSeqNo          int64          `query:"sendSeqNo" json:"sendSeqNo"`
 	SendDateTime       time.Time      `query:"sendDateTime" json:"sendDateTime"`
 	CreditCardFirmCode sql.NullString `query:"creditCardFirmCode" json:"creditCardFirmCode"`
+	TransactionId      int64          `json:"transactionId" xorm:"-"`
 }
 
 type SaleMstsAndSaleDtls struct {
