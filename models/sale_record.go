@@ -121,6 +121,15 @@ type AppliedOrderItemOffer struct {
 	OrderItemId int64  `json:"orderItemId"`
 }
 
+type AppliedOrderCartOffer struct {
+	Id       int64   `json:"id"`
+	CouponNo string  `json:"couponNo"`
+	OfferNo  string  `json:"offerNo"`
+	OrderId  int64   `json:"orderId"`
+	RefundId int64   `json:"refundId"`
+	Price    float64 `json:"price"`
+}
+
 type PromotionEvent struct {
 	OfferNo                   string    `json:"offerNo"`
 	BrandCode                 string    `json:"brandCode"`
@@ -217,6 +226,20 @@ func (AppliedOrderItemOffer) GetAppliedOrderItemOffer(orderItemId int64) (*Appli
 		return nil, errors.New("AppliedOrderItemOffer is not exist!")
 	}
 	return &appliedOrderItemOffer, nil
+}
+
+func (AppliedOrderCartOffer) GetAppliedOrderCartOffer(orderId int64) (*AppliedOrderCartOffer, error) {
+	var appliedOrderCartOffer AppliedOrderCartOffer
+	exist, err := factory.GetSrEngine().Where("order_id = ?", orderId).Get(&appliedOrderCartOffer)
+	if err != nil {
+		return nil, err
+	} else if !exist {
+		logrus.WithFields(logrus.Fields{
+			"orderId": orderId,
+		}).Error("Fail to GetAppliedOrderCartOffer")
+		return nil, errors.New("AppliedOrderCartOffer is not exist!")
+	}
+	return &appliedOrderCartOffer, nil
 }
 
 //sum quantity , total_sale_price , total_discount_price

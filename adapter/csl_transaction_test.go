@@ -85,7 +85,7 @@ func TestClearanceToCslETL(t *testing.T) {
 			etl := buildClearanceToCslETL()
 			etl.After(ClearanceToCslETL{}.ReadyToLoad)
 			ctx := context.Background()
-			data := map[string]string{"brandCode": "EE", "channelType": "POS", "startAt": "2019-09-21 12:29:00", "endAt": "2019-09-21 12:30:00"}
+			data := map[string]string{"brandCode": "EE", "channelType": "POS", "startAt": "2019-09-21 16:47:00", "endAt": "2019-09-21 16:49:00"}
 			err := etl.Run(context.WithValue(ctx, "data", data))
 			fmt.Println(err)
 			So(err, ShouldBeNil)

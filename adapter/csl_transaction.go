@@ -103,7 +103,7 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
 	var endSeq int
 	var dtSeq int64
-	var startStr, strSeqNo, saleMode, eANCode, normalSaleTypeCode, useMileageSettleType string
+	var startStr, strSeqNo, saleMode, eANCode, normalSaleTypeCode, useMileageSettleType, offerNo string
 	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo, preSaleDtSeq sql.NullInt64
 	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode, secondaryEventSettleTypeCode, preSaleNo, creditCardFirmCode sql.NullString
 	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
@@ -299,19 +299,34 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				secondaryEventSettleTypeCode = sql.NullString{"", false}
 				useMileageSettleType = "1"
 				custMileagePolicyNo = sql.NullInt64{0, false}
-				if saleTransactionDtl.TotalDiscountPrice != 0 || saleTransactionDtl.TotalDistributedItemOfferPrice != 0 {
-					appliedOrderItemOffer, err := models.AppliedOrderItemOffer{}.GetAppliedOrderItemOffer(saleTransactionDtl.OrderItemId)
-					if err != nil {
-						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10)}
-						if err := SaleRecordIdFailMapping.Save(); err != nil {
-							return nil, err
+				offerNo = ""
+				if saleTransactionDtl.TotalDiscountPrice != 0 || saleTransactionDtl.TotalDistributedItemOfferPrice != 0 || saleTransactionDtl.TotalDistributedCartOfferPrice != 0 {
+					if saleTransactionDtl.TotalDistributedItemOfferPrice != 0 {
+						appliedOrderItemOffer, err := models.AppliedOrderItemOffer{}.GetAppliedOrderItemOffer(saleTransactionDtl.OrderItemId)
+						if err != nil {
+							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10)}
+							if err := SaleRecordIdFailMapping.Save(); err != nil {
+								return nil, err
+							}
+							continue
 						}
-						continue
+						offerNo = appliedOrderItemOffer.OfferNo
 					}
-					if appliedOrderItemOffer.OfferNo != "" {
+					if saleTransactionDtl.TotalDistributedCartOfferPrice != 0 {
+						appliedOrderCartOffer, err := models.AppliedOrderCartOffer{}.GetAppliedOrderCartOffer(saleTransaction.OrderId)
+						if err != nil {
+							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10)}
+							if err := SaleRecordIdFailMapping.Save(); err != nil {
+								return nil, err
+							}
+							continue
+						}
+						offerNo = appliedOrderCartOffer.OfferNo
+					}
+					if offerNo != "" {
 						primaryEventSettleTypeCode = sql.NullString{"1", true}
 						secondaryEventSettleTypeCode = sql.NullString{"1", true}
-						promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(appliedOrderItemOffer.OfferNo)
+						promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(offerNo)
 						if err != nil {
 							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " OfferNo:" + appliedOrderItemOffer.OfferNo}
 							if err := SaleRecordIdFailMapping.Save(); err != nil {
