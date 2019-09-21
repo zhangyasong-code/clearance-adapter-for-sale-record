@@ -2,7 +2,10 @@ package models
 
 import (
 	"clearance/clearance-adapter-for-sale-record/factory"
+	"errors"
 	"time"
+
+	"github.com/go-xorm/xorm"
 )
 
 type SaleTransaction struct {
@@ -49,13 +52,18 @@ type SaleTAndSaleTDtls struct {
 }
 
 type SaleRecordIdSuccessMapping struct {
-	SaleNo        string    `json:"saleNo" xorm:"index VARCHAR(30) notnull pk"`
+	Id            int64     `json:"id"`
+	SaleNo        string    `json:"saleNo" xorm:"index VARCHAR(30) notnull"`
 	TransactionId int64     `json:"transactionId" xorm:"index default 0" validate:"required"`
+	OrderItemId   int64     `json:"orderItemId" xorm:"index default 0" validate:"required"`
+	RefundItemId  int64     `json:"refundItemId" xorm:"index default 0" validate:"required"`
+	DtlSeq        int64     `json:"dtlSeq" xorm:"index default 0" validate:"required"`
 	CreatedAt     time.Time `json:"createdAt" xorm:"created"`
 	CreatedBy     string    `json:"createdBy" xorm:"index VARCHAR(30) notnull"`
 }
 
 type SaleRecordIdFailMapping struct {
+	Id               int64     `json:"id"`
 	TransactionId    int64     `json:"transactionId" xorm:"index default 0" validate:"required"`
 	TransactionDtlId int64     `json:"transactionDtlId" xorm:"index default 0"`
 	Error            string    `json:"error" xorm:"VARCHAR(1000)"`
@@ -66,7 +74,8 @@ type SaleRecordIdFailMapping struct {
 
 func (srsm *SaleRecordIdSuccessMapping) CheckAndSave() error {
 	saleRecordIdSuccessMapping := SaleRecordIdSuccessMapping{}
-	has, err := factory.GetCfsrEngine().Where("sale_no = ?", srsm.SaleNo).Get(&saleRecordIdSuccessMapping)
+	has, err := factory.GetCfsrEngine().Where("sale_no = ?", srsm.SaleNo).And("orderItemId = ?", srsm.OrderItemId).
+		And("refundItemId = ?").Get(&saleRecordIdSuccessMapping)
 	if err != nil {
 		return err
 	}
@@ -83,4 +92,25 @@ func (srfm *SaleRecordIdFailMapping) Save() error {
 		return err
 	}
 	return nil
+}
+
+func (SaleRecordIdSuccessMapping) Get(orderId int64, itemId int64) ([]SaleRecordIdSuccessMapping, error) {
+	var success []SaleRecordIdSuccessMapping
+	queryBuilder := func() xorm.Interface {
+		q := factory.GetCfsrEngine().Where("1 = 1")
+		if orderId != 0 {
+			q.And("transaction_id = ?", orderId)
+		}
+		if itemId != 0 {
+			q.And("orderItemId = ?", itemId)
+		}
+		return q
+	}
+	if err := queryBuilder().Find(&success); err != nil {
+		return nil, err
+	}
+	if len(success) == 0 {
+		return nil, errors.New("SaleRecordIdSuccessMapping is not exist!")
+	}
+	return success, nil
 }

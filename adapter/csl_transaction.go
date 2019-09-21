@@ -102,8 +102,9 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 // Transform ...
 func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
 	var endSeq int
+	var dtSeq int64
 	var startStr, strSeqNo, saleMode, eANCode, normalSaleTypeCode, useMileageSettleType string
-	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo sql.NullInt64
+	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo, preSaleDtSeq sql.NullInt64
 	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode, secondaryEventSettleTypeCode, preSaleNo, creditCardFirmCode sql.NullString
 	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
 		discountAmt, saleEventDiscountAmtForConsumer, actualSaleAmt float64
@@ -185,6 +186,16 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			saleMode = Refund
 			use_type = models.UseTypeEarnCancel
 			complexShopSeqNo = strconv.FormatInt(saleTransaction.RefundId, 10)
+			successDtls, err := models.SaleRecordIdSuccessMapping{}.Get(saleTransaction.OrderId, 0)
+			if err != nil {
+				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransaction.TransactionId, CreatedBy: "batch-job",
+					Error: err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10) + " RefundId:" + strconv.FormatInt(saleTransaction.RefundId, 10)}
+				if err := SaleRecordIdFailMapping.Save(); err != nil {
+					return nil, err
+				}
+				continue
+			}
+			preSaleNo = sql.NullString{successDtls[0].SaleNo, true}
 		}
 		//get mileage
 		mileage, err := models.PostMileage{}.GetMileage(saleTransaction.CustomerId, saleTransaction.TransactionId, use_type)
@@ -263,9 +274,12 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			Freight:                     sql.NullFloat64{0, false},
 			TMall_UseMileage:            sql.NullFloat64{0, false},
 			TMall_ObtainMileage:         sql.NullFloat64{0, false},
+			TransactionId:               saleTransaction.TransactionId,
 		}
+		dtSeq = 0
 		for _, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {
 			if saleTransactionDtl.TransactionId == saleTransaction.TransactionId {
+				dtSeq += 1
 				saleMst.BrandCode = saleTransactionDtl.BrandCode
 				eventNo = sql.NullInt64{0, false}
 				primaryCustEventNo = sql.NullInt64{0, false}
@@ -324,16 +338,12 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 							promotionEvent.EventTypeCode == "G" || promotionEvent.EventTypeCode == "M" || promotionEvent.EventTypeCode == "P" ||
 							promotionEvent.EventTypeCode == "R" || promotionEvent.EventTypeCode == "V" {
 							normalSaleTypeCode = "2"
-							if eventN != 0 {
+							if eventN != 0 && (promotionEvent.EventTypeCode == "B" || promotionEvent.EventTypeCode == "C" || promotionEvent.EventTypeCode == "P" || promotionEvent.EventTypeCode == "V") {
 								primaryCustEventNo = sql.NullInt64{eventN, true}
-							}
-							if promotionEvent.EventTypeCode != "" {
 								primaryEventTypeCode = sql.NullString{promotionEvent.EventTypeCode, true}
 							}
-							if eventN != 0 {
+							if eventN != 0 && (promotionEvent.EventTypeCode == "G" || promotionEvent.EventTypeCode == "M" || promotionEvent.EventTypeCode == "R") {
 								secondaryCustEventNo = sql.NullInt64{eventN, true}
-							}
-							if promotionEvent.EventTypeCode != "" {
 								secondaryEventTypeCode = sql.NullString{promotionEvent.EventTypeCode, true}
 							}
 						}
@@ -387,7 +397,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					saleVentDecisionDiscountAmt = saleTransactionDtl.TotalDistributedCartOfferPrice
 					saleEventDiscountAmtForConsumer = saleTransactionDtl.TotalDistributedCartOfferPrice
 				}
-				discountAmt = saleTransactionDtl.TotalDistributedItemOfferPrice + saleTransactionDtl.TotalDiscountPrice
+				discountAmt = saleTransactionDtl.TotalTransactionPrice - saleTransactionDtl.TotalDistributedPaymentPrice
 				postMileageDtl, err := models.PostMileage{}.GetPostMileageDtl(saleTransactionDtl.Id, models.UseTypeUsed)
 				if err != nil {
 					return nil, err
@@ -412,11 +422,23 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					//SellingAmt - NormalFee
 					actualSaleAmt = saleTransactionDtl.TotalDistributedPaymentPrice - saleTransactionDtl.ItemFee
 				}
+				if saleTransaction.RefundId != 0 {
+					successDtls, err := models.SaleRecordIdSuccessMapping{}.Get(saleTransaction.OrderId, saleTransactionDtl.RefundItemId)
+					if err != nil {
+						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId,
+							TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10) + " RefundItemId:" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10)}
+						if err := SaleRecordIdFailMapping.Save(); err != nil {
+							return nil, err
+						}
+						continue
+					}
+					preSaleDtSeq = sql.NullInt64{successDtls[0].DtlSeq, false}
+				}
 				saleDtl := models.SaleDtl{
 					SaleNo:                            saleNo,
 					ShopCode:                          store.Code,
 					BrandCode:                         saleTransactionDtl.BrandCode,
-					DtSeq:                             int64(len(saleDtls) + 1),
+					DtSeq:                             dtSeq,
 					CustMileagePolicyNo:               custMileagePolicyNo,
 					SeqNo:                             seqNo,
 					Dates:                             saleDate,
@@ -441,8 +463,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					PriceDecisionDate:                 saleDate,
 					SaleQty:                           saleTransactionDtl.Quantity,
 					SaleAmt:                           saleTransactionDtl.TotalTransactionPrice,
-					EventAutoDiscountAmt:              saleTransactionDtl.TotalDistributedItemOfferPrice,
-					EventDecisionDiscountAmt:          saleTransactionDtl.TotalDistributedItemOfferPrice,
+					EventAutoDiscountAmt:              saleTransactionDtl.TotalDistributedCartOfferPrice,
+					EventDecisionDiscountAmt:          saleTransactionDtl.TotalDistributedCartOfferPrice,
 					SaleEventSaleBaseAmt:              saleEventSaleBaseAmt,
 					SaleEventDiscountBaseAmt:          saleEventDiscountBaseAmt,
 					SaleEventNormalSaleRecognitionChk: false,
@@ -457,8 +479,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					SaleEventFee:                      postSaleRecordFee.AppliedFeeRate * saleTransactionDtl.TotalSalePrice,
 					ActualSaleAmt:                     actualSaleAmt,
 					UseMileage:                        postMileageDtl.PointPrice,
-					PreSaleNo:                         sql.NullString{"", false},
-					PreSaleDtSeq:                      sql.NullInt64{0, false},
+					PreSaleNo:                         preSaleNo,
+					PreSaleDtSeq:                      preSaleDtSeq,
 					NormalFeeRate:                     postSaleRecordFee.ItemFeeRate,
 					SaleEventFeeRate:                  postSaleRecordFee.EventFeeRate,
 					InUserID:                          colleagues.UserName,
@@ -477,6 +499,9 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					TMallEventID:                      sql.NullInt64{0, false},
 					TMall_ObtainMileage:               sql.NullFloat64{0, false},
 					SaleOfficeCode:                    MSLv2_0,
+					OrderItemId:                       saleTransactionDtl.OrderItemId,
+					RefundItemId:                      saleTransactionDtl.RefundItemId,
+					TransactionDtlId:                  saleTransactionDtl.Id,
 				}
 				saleDtls = append(saleDtls, saleDtl)
 			}
@@ -505,6 +530,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				ModiDateTime:       pop.ModiDateTime,
 				SendFlag:           "R",
 				CreditCardFirmCode: creditCardFirmCode,
+				TransactionId:      saleMst.TransactionId,
 			}
 			salePayments = append(salePayments, salePayment)
 		}
@@ -515,10 +541,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				for _, salePayment := range salePayments {
 					if saleNo == salePayment.SaleNo {
 						check = true
-						saleRecordIdSuccessMapping := &models.SaleRecordIdSuccessMapping{SaleNo: saleNo, CreatedBy: "batch-job", TransactionId: saleTransaction.TransactionId}
-						if err := saleRecordIdSuccessMapping.CheckAndSave(); err != nil {
-							return nil, err
-						}
 					}
 				}
 			}
@@ -526,6 +548,10 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if check {
 			saleMsts = append(saleMsts, saleMst)
 		} else {
+			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleMst.TransactionId, CreatedBy: "batch-job", Error: "SaleMst、SaleDtl、SalePayment数据不一致" + strconv.FormatInt(saleMst.TransactionId, 10)}
+			if err := SaleRecordIdFailMapping.Save(); err != nil {
+				return nil, err
+			}
 			continue
 		}
 	}
@@ -563,26 +589,47 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 
 	for _, saleMst := range saleMstsAndSaleDtls.SaleMsts {
 		if _, err := session.Table("dbo.SaleMst").Insert(&saleMst); err != nil {
+			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleMst.TransactionId, CreatedBy: "batch-job", Error: err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10)}
+			if err := SaleRecordIdFailMapping.Save(); err != nil {
+				return err
+			}
 			session.Rollback()
 			return err
 		}
+		//insert saleDtl
 		for _, saleDtl := range saleMstsAndSaleDtls.SaleDtls {
 			if saleDtl.SaleNo == saleMst.SaleNo {
 				if _, err := session.Table("dbo.SaleDtl").Insert(&saleDtl); err != nil {
+					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleMst.TransactionId, TransactionDtlId: saleDtl.TransactionDtlId, CreatedBy: "batch-job", Error: err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10)}
+					if err := SaleRecordIdFailMapping.Save(); err != nil {
+						return err
+					}
 					session.Rollback()
 					return err
 				}
 			}
 		}
+		//insert salePayMent
 		for _, salePayment := range saleMstsAndSaleDtls.SalePayments {
 			if saleMst.SaleNo == salePayment.SaleNo {
 				if _, err := session.Table("dbo.SalePayment").Insert(&salePayment); err != nil {
+					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleMst.TransactionId, CreatedBy: "batch-job", Error: err.Error() + " SalePaymentTransactionId:" + strconv.FormatInt(salePayment.TransactionId, 10)}
+					if err := SaleRecordIdFailMapping.Save(); err != nil {
+						return err
+					}
 					session.Rollback()
 					return err
 				}
 			}
 		}
-
+		//insert success table
+		for _, salDtl := range saleMstsAndSaleDtls.SaleDtls {
+			saleRecordIdSuccessMapping := &models.SaleRecordIdSuccessMapping{SaleNo: saleMst.SaleNo, CreatedBy: "batch-job",
+				TransactionId: saleMst.TransactionId, OrderItemId: salDtl.OrderItemId, RefundItemId: salDtl.RefundItemId}
+			if err := saleRecordIdSuccessMapping.CheckAndSave(); err != nil {
+				return err
+			}
+		}
 	}
 	//commit session
 	if err := session.Commit(); err != nil {
