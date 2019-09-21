@@ -54,7 +54,8 @@ func (etl SrToClearanceETL) Extract(ctx context.Context) (interface{}, error) {
 			if startAt != "" && endAt != "" {
 				st, _ := time.Parse("2006-01-02 15:04:05", startAt)
 				et, _ := time.Parse("2006-01-02 15:04:05", endAt)
-				q.And("assorted_sale_record.transaction_create_date >= ?", st).And("assorted_sale_record.transaction_create_date < ?", et)
+				h, _ := time.ParseDuration("-8h")
+				q.And("assorted_sale_record.transaction_create_date >= ?", st.Add(h)).And("assorted_sale_record.transaction_create_date < ?", et.Add(h))
 			}
 			return q
 		}
