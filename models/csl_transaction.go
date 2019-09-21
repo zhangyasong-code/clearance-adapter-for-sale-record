@@ -78,8 +78,8 @@ type SaleDtl struct {
 	TMallEventID                    sql.NullInt64   `query:"tMallEventID" json:"tMallEventID"`
 	TMall_ObtainMileage             sql.NullFloat64 `query:"tMall_ObtainMileage" json:"tMall_ObtainMileage"`
 	SaleOfficeCode                  string          `query:"saleOfficeCode" json:"saleOfficeCode"`
-	OrderItemId                     int64           `json:"itemId" xorm:"-"`
-	RefundItemId                    int64           `json:"itemId" xorm:"-"`
+	OrderItemId                     int64           `json:"orderItemId" xorm:"-"`
+	RefundItemId                    int64           `json:"refundItemId" xorm:"-"`
 	TransactionDtlId                int64           `json:"transactionDtlId" xorm:"-"`
 }
 
