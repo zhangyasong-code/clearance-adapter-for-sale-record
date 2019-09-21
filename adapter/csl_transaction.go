@@ -328,7 +328,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						secondaryEventSettleTypeCode = sql.NullString{"1", true}
 						promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(offerNo)
 						if err != nil {
-							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " OfferNo:" + appliedOrderItemOffer.OfferNo}
+							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " OfferNo:" + offerNo}
 							if err := SaleRecordIdFailMapping.Save(); err != nil {
 								return nil, err
 							}
