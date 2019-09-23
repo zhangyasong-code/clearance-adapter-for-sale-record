@@ -441,14 +441,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					normalFee = postSaleRecordFee.FeeAmount
 					normalFeeRate = postSaleRecordFee.AppliedFeeRate
 				}
-				actualSaleAmt = 0
-				if postSaleRecordFee.EventFeeRate != 0 {
-					//SellingAmt-SaleEventFee
-					actualSaleAmt = saleTransactionDtl.TotalDistributedPaymentPrice - postSaleRecordFee.AppliedFeeRate*saleTransactionDtl.TotalSalePrice
-				} else {
-					//SellingAmt - NormalFee
-					actualSaleAmt = saleTransactionDtl.TotalDistributedPaymentPrice - saleTransactionDtl.ItemFee
-				}
+				actualSaleAmt = saleTransactionDtl.TotalDistributedPaymentPrice - (postSaleRecordFee.AppliedFeeRate)/100*saleTransactionDtl.TotalDistributedPaymentPrice
 				if saleTransaction.RefundId != 0 {
 					successDtls, err := models.SaleRecordIdSuccessMapping{}.Get(saleTransaction.OrderId, saleTransactionDtl.RefundItemId)
 					if err != nil {
@@ -490,8 +483,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					PriceDecisionDate:                 saleDate,
 					SaleQty:                           saleTransactionDtl.Quantity,
 					SaleAmt:                           saleTransactionDtl.TotalTransactionPrice,
-					EventAutoDiscountAmt:              saleTransactionDtl.TotalDistributedCartOfferPrice,
-					EventDecisionDiscountAmt:          saleTransactionDtl.TotalDistributedCartOfferPrice,
+					EventAutoDiscountAmt:              saleTransactionDtl.TotalDistributedCartOfferPrice + saleTransactionDtl.TotalDistributedItemOfferPrice,
+					EventDecisionDiscountAmt:          saleTransactionDtl.TotalDistributedCartOfferPrice + saleTransactionDtl.TotalDistributedItemOfferPrice,
 					SaleEventSaleBaseAmt:              saleEventSaleBaseAmt,
 					SaleEventDiscountBaseAmt:          saleEventDiscountBaseAmt,
 					SaleEventNormalSaleRecognitionChk: saleEventNormalSaleRecognitionChk,
