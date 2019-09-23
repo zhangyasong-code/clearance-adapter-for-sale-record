@@ -258,7 +258,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			FeeAmt:                      feeAmt,
 			ActualSaleAmt:               saleTransaction.TotalTransactionPrice - feeAmt,
 			UseMileage:                  saleTransaction.Mileage,
-			ObtainMileage:               mileage.PointAmount,
+			ObtainMileage:               mileage.Point,
 			InUserID:                    colleagues.UserName,
 			InDateTime:                  saleTransaction.SaleDate,
 			ModiUserID:                  colleagues.UserName,
