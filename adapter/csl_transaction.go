@@ -178,7 +178,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		use_type := models.UseTypeEarn
 		complexShopSeqNo := ""
 
-		//目前只考虑了正常销售的，退货没考虑。
 		preSaleNo = sql.NullString{"", false}
 		if saleTransaction.RefundId == 0 {
 			saleMode = Sale
