@@ -643,10 +643,16 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 		}
 		//insert success table
 		for _, salDtl := range saleMstsAndSaleDtls.SaleDtls {
-			saleRecordIdSuccessMapping := &models.SaleRecordIdSuccessMapping{SaleNo: saleMst.SaleNo, CreatedBy: "batch-job",
-				TransactionId: saleMst.TransactionId, OrderItemId: salDtl.OrderItemId, RefundItemId: salDtl.RefundItemId, DtlSeq: salDtl.DtSeq}
-			if err := saleRecordIdSuccessMapping.CheckAndSave(); err != nil {
-				return err
+			if salDtl.SaleNo == saleMst.SaleNo {
+				for _, salePayment := range saleMstsAndSaleDtls.SalePayments {
+					if salePayment.SaleNo == salDtl.SaleNo {
+						saleRecordIdSuccessMapping := &models.SaleRecordIdSuccessMapping{SaleNo: saleMst.SaleNo, CreatedBy: "batch-job",
+							TransactionId: saleMst.TransactionId, OrderItemId: salDtl.OrderItemId, RefundItemId: salDtl.RefundItemId, DtlSeq: salDtl.DtSeq}
+						if err := saleRecordIdSuccessMapping.CheckAndSave(); err != nil {
+							return err
+						}
+					}
+				}
 			}
 		}
 	}
