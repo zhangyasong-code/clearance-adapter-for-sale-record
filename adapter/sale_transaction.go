@@ -131,6 +131,8 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 			TotalDistributedPaymentPrice:   assortedSaleRecordDtl.TotalDistributedPaymentPrice,
 			TransactionId:                  assortedSaleRecordDtl.TransactionId,
 			TotalSalePrice:                 assortedSaleRecordDtl.TotalSalePrice,
+			TotalListPrice:                 assortedSaleRecordDtl.TotalListPrice,
+			DistributedCashPrice:           assortedSaleRecordDtl.DistributedCashPrice,
 		})
 	}
 	return models.SaleTAndSaleTDtls{
