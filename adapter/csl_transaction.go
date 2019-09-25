@@ -322,7 +322,9 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 							}
 							continue
 						}
-						offerNo = appliedOrderItemOffer.OfferNo
+						if appliedOrderItemOffer.CouponNo == "" && appliedOrderItemOffer.OfferNo != "" {
+							offerNo = appliedOrderItemOffer.OfferNo
+						}
 					}
 					if saleTransactionDtl.TotalDistributedCartOfferPrice != 0 {
 						appliedOrderCartOffer, err := models.AppliedOrderCartOffer{}.GetAppliedOrderCartOffer(saleTransaction.OrderId)
@@ -333,7 +335,9 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 							}
 							continue
 						}
-						offerNo = appliedOrderCartOffer.OfferNo
+						if appliedOrderCartOffer.CouponNo == "" && appliedOrderCartOffer.OfferNo != "" {
+							offerNo = appliedOrderCartOffer.OfferNo
+						}
 					}
 					if offerNo != "" {
 						promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(offerNo)
