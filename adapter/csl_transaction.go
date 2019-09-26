@@ -368,8 +368,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 								eventNo = sql.NullInt64{eventN, true}
 							}
 							if promotionEvent.EventTypeCode != "03" {
-								eventAutoDiscountAmt = saleTransactionDtl.TotalDistributedCartOfferPrice + saleTransactionDtl.TotalDistributedItemOfferPrice
-								eventDecisionDiscountAmt = eventAutoDiscountAmt
 								saleEventSaleBaseAmt = promotionEvent.SaleBaseAmt
 								saleEventDiscountBaseAmt = promotionEvent.DiscountBaseAmt
 							}
@@ -387,6 +385,11 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 								secondaryEventTypeCode = sql.NullString{promotionEvent.EventTypeCode, true}
 								secondaryEventSettleTypeCode = sql.NullString{"1", true}
 							}
+						}
+
+						if promotionEvent.EventTypeCode == "01" || promotionEvent.EventTypeCode == "02" || promotionEvent.EventTypeCode == "V" {
+							eventAutoDiscountAmt = saleTransactionDtl.TotalDistributedCartOfferPrice + saleTransactionDtl.TotalDistributedItemOfferPrice
+							eventDecisionDiscountAmt = eventAutoDiscountAmt
 						}
 					}
 				}
@@ -463,7 +466,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					preSaleDtSeq = sql.NullInt64{successDtls[0].DtlSeq, false}
 				}
 				useMileage = saleTransactionDtl.TotalDistributedPaymentPrice - saleTransactionDtl.DistributedCashPrice
-				discountAmt = saleTransactionDtl.TotalDistributedCartOfferPrice + saleTransactionDtl.TotalDistributedItemOfferPrice - useMileage
+				discountAmt = eventAutoDiscountAmt + useMileage
 				estimateSaleAmt = saleTransactionDtl.TotalListPrice - discountAmt
 				sellingAmt = estimateSaleAmt - discountAmtAsCost
 				chinaFISaleAmt = estimateSaleAmt + saleVentDecisionDiscountAmt
@@ -536,7 +539,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					UseMileageSettleType:              useMileageSettleType,
 					EstimateSaleAmtForConsumer:        estimateSaleAmt,
 					SaleEventDiscountAmtForConsumer:   saleVentDecisionDiscountAmt,
-					ShopEmpEstimateSaleAmt:            sellingAmt,
+					ShopEmpEstimateSaleAmt:            sellingAmt + useMileage,
 					PromotionID:                       sql.NullInt64{0, false},
 					TMallEventID:                      sql.NullInt64{0, false},
 					TMall_ObtainMileage:               sql.NullFloat64{0, false},
