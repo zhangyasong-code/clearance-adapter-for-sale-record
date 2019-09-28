@@ -17,6 +17,7 @@ type SaleTransaction struct {
 	StoreId                int64     `json:"storeId" xorm:"index default 0" validate:"required"`
 	SalesmanId             int64     `json:"salesmanId" xorm:"index default 0" validate:"required"`
 	CustomerId             int64     `json:"customerId" xorm:"index default 0" validate:"required"`
+	TotalListPrice         float64   `json:"totalListPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	TotalSalePrice         float64   `json:"totalSalePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	TotalTransactionPrice  float64   `json:"totalTransactionPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	TotalDiscountPrice     float64   `json:"totalDiscountPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
