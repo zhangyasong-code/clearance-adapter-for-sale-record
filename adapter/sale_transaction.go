@@ -101,6 +101,7 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 			StoreId:                assortedSaleRecord.StoreId,
 			SalesmanId:             assortedSaleRecord.SalesmanId,
 			TotalSalePrice:         assortedSaleRecord.TotalSalePrice,
+			TotalListPrice:         assortedSaleRecord.TotalListPrice,
 			TotalTransactionPrice:  assortedSaleRecord.TotalTransactionPrice,
 			SaleDate:               assortedSaleRecord.TransactionCreateDate,
 			TransactionId:          assortedSaleRecord.TransactionId,
