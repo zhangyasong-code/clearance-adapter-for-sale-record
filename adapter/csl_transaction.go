@@ -478,9 +478,9 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					actualSaleAmt = sellingAmt - saleEventFee
 				} else {
 					normalFee = postSaleRecordFee.FeeAmount
-					normalFeeRate = postSaleRecordFee.ItemFeeRate
 					actualSaleAmt = sellingAmt - normalFee
 				}
+				normalFeeRate = postSaleRecordFee.ItemFeeRate
 				saleDtl := models.SaleDtl{
 					SaleNo:                            saleNo,
 					ShopCode:                          store.Code,
