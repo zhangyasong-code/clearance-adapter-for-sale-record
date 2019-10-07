@@ -1,7 +1,7 @@
 # saleRecordDB
 saleRecordConnDatabase:
   driver: mysql
-  connection: pangpang_app:Eland^123@tcp(10.173.208.142:3307)/pangpang_brand_nhub?charset=utf8
+  connection: pangpang_app:Eland^123@tcp(139.196.228.246:3307)/pangpang_brand_nhub?charset=utf8
 # cslDB
 cslConnDatabase:
   driver: mssql
@@ -9,19 +9,19 @@ cslConnDatabase:
 # clearanceForSaleRecordDB
 cfsrConnDatabase:
   driver: mysql
-  connection: mslv2_app:Eland^123@tcp(10.173.208.142:3307)/mslv2_clearance?charset=utf8&parseTime=True&loc=UTC
+  connection: mslv2_app:Eland^123@tcp(139.196.228.246:3307)/mslv2_clearance?charset=utf8&parseTime=True&loc=UTC
 # placeManagementDB
 pmConnDatabase:
   driver: mysql
-  connection: pangpang_app:Eland^123@tcp(10.173.208.142:3307)/pangpang_brand_place_management?charset=utf8
+  connection: pangpang_app:Eland^123@tcp(139.196.228.246:3307)/pangpang_brand_place_management?charset=utf8
 productDatabase:
   driver: mysql
-  connection: pangpang_app:Eland^123@tcp(10.173.208.142:3307)/pangpang_brand_product?charset=utf8&parseTime=True&loc=UTC
+  connection: pangpang_app:Eland^123@tcp(139.196.228.246:3307)/pangpang_brand_product?charset=utf8&parseTime=True&loc=UTC
 colleagueAuthDatabase:
   driver: mysql
-  connection: pangpang_app:Eland^123@tcp(10.173.208.142:3307)/pangpang_common_colleague_auth?charset=utf8&parseTime=True&loc=UTC
+  connection: pangpang_app:Eland^123@tcp(139.196.228.246:3307)/pangpang_common_colleague_auth?charset=utf8&parseTime=True&loc=UTC
 services:
-  placeManagementApi: http://place-management-api.pangpang-brand-staging:8080
+  placeManagementApi: https://staging.p2shop.com.cn/pangpang-brand/place-management-api
   getTokenApi: https://staging.p2shop.com.cn/pangpang-common/portal-api/login?tenantCode=pangpang
 getTokenUser:
   userName: staging.pangpang
