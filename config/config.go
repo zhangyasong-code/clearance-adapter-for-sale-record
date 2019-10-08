@@ -1,7 +1,10 @@
 package config
 
 import (
+	"log"
+
 	configutil "github.com/pangpanglabs/goutils/config"
+	"github.com/pangpanglabs/goutils/echomiddleware"
 	"github.com/sirupsen/logrus"
 )
 
@@ -15,6 +18,11 @@ func Init(appEnv, configPath string, options ...func(*C)) C {
 	if err := configutil.Read(appEnv, &config); err != nil {
 		logrus.WithError(err).Warn("Fail to load config file")
 	}
+
+	log.Println("APP_ENV:", appEnv)
+	log.Printf("config: %+v\n", config)
+
+
 	for _, option := range options {
 		option(&config)
 	}
@@ -46,6 +54,10 @@ type C struct {
 		Driver     string
 		Connection string
 	}
+	ColleagueAuthDatabase struct {
+		Driver     string
+		Connection string
+	}
 	Services struct {
 		PlaceManagementApi string
 		GetTokenApi        string
@@ -53,6 +65,9 @@ type C struct {
 	GetTokenUser struct {
 		UserName string
 		Password string
+	}
+	BehaviorLog struct {
+		Kafka echomiddleware.KafkaConfig
 	}
 	AppEnv      string
 	ServiceName string

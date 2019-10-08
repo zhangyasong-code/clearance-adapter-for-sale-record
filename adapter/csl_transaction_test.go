@@ -84,7 +84,9 @@ func TestClearanceToCslETL(t *testing.T) {
 		Convey("可以把DATA 从Clearance导入到csl", func() {
 			etl := buildClearanceToCslETL()
 			etl.After(ClearanceToCslETL{}.ReadyToLoad)
-			err := etl.Run(context.Background())
+			ctx := context.Background()
+			data := map[string]string{"brandCode": "EE", "channelType": "POS", "startAt": "2019-09-21 16:47:00", "endAt": "2019-09-21 16:49:00"}
+			err := etl.Run(context.WithValue(ctx, "data", data))
 			fmt.Println(err)
 			So(err, ShouldBeNil)
 		})

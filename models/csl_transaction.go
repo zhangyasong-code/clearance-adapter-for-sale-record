@@ -2,6 +2,7 @@ package models
 
 import (
 	"clearance/clearance-adapter-for-sale-record/factory"
+	"database/sql"
 	"errors"
 	"strconv"
 	"strings"
@@ -11,141 +12,147 @@ import (
 )
 
 type SaleDtl struct {
-	SaleNo                            string    `query:"saleNo" json:"saleNo" xorm:"pk"`
-	DtSeq                             int64     `query:"dtSeq" json:"dtSeq" xorm:"pk"`
-	BrandCode                         string    `query:"brandCode" json:"brandCode"`
-	ShopCode                          string    `query:"shopCode" json:"shopCode"`
-	Dates                             string    `query:"dates" json:"dates"`
-	PosNo                             string    `query:"posNo" json:"posNo"`
-	SeqNo                             int64     `query:"seqNo" json:"seqNo"`
-	NormalSaleTypeCode                string    `query:"normalSaleTypeCode" json:"normalSaleTypeCode"`
-	CustMileagePolicyNo               int64     `query:"custMileagePolicyNo" json:"custMileagePolicyNo"`
-	PrimaryCustEventNo                int64     `query:"primaryCustEventNo" json:"primaryCustEventNo"`
-	PrimaryEventTypeCode              string    `query:"primaryEventTypeCode" json:"primaryEventTypeCode"`
-	PrimaryEventSettleTypeCode        string    `query:"primaryEventSettleTypeCode" json:"primaryEventSettleTypeCode"`
-	SecondaryCustEventNo              int64     `query:"secondaryCustEventNo" json:"secondaryCustEventNo"`
-	SecondaryEventTypeCode            string    `query:"secondaryEventTypeCode" json:"secondaryEventTypeCode"`
-	SecondaryEventSettleTypeCode      string    `query:"secondaryEventSettleTypeCode" json:"secondaryEventSettleTypeCode"`
-	SaleEventNo                       int64     `query:"saleEventNo" json:"saleEventNo"`
-	SaleEventTypeCode                 string    `query:"saleEventTypeCode" json:"saleEventTypeCode"`
-	SaleReturnReasonCode              string    `query:"saleReturnReasonCode" json:"saleReturnReasonCode"`
-	ProdCode                          string    `query:"prodCode" json:"prodCode"`
-	EANCode                           string    `query:"eANCode" json:"eANCode"`
-	PriceTypeCode                     string    `query:"priceTypeCode" json:"priceTypeCode"`
-	SupGroupCode                      string    `query:"supGroupCode" json:"supGroupCode"`
-	SaipType                          string    `query:"saipType" json:"saipType"`
-	NormalPrice                       float64   `query:"normalPrice" json:"normalPrice"`
-	Price                             float64   `query:"price" json:"price"`
-	PriceDecisionDate                 string    `query:"priceDecisionDate" json:"priceDecisionDate"`
-	SaleQty                           int64     `query:"saleQty" json:"saleQty"`
-	SaleAmt                           float64   `query:"saleAmt" json:"saleAmt"`
-	EventAutoDiscountAmt              float64   `query:"eventAutoDiscountAmt" json:"eventAutoDiscountAmt"`
-	EventDecisionDiscountAmt          float64   `query:"eventDecisionDiscountAmt" json:"eventDecisionDiscountAmt"`
-	SaleEventSaleBaseAmt              float64   `query:"saleEventSaleBaseAmt" json:"saleEventSaleBaseAmt"`
-	SaleEventDiscountBaseAmt          float64   `query:"saleEventDiscountBaseAmt" json:"saleEventDiscountBaseAmt"`
-	SaleEventNormalSaleRecognitionChk bool      `query:"saleEventNormalSaleRecognitionChk" json:"saleEventNormalSaleRecognitionChk"`
-	SaleEventInterShopSalePermitChk   bool      `query:"saleEventInterShopSalePermitChk" json:"saleEventInterShopSalePermitChk"`
-	SaleEventAutoDiscountAmt          float64   `query:"saleEventAutoDiscountAmt" json:"saleEventAutoDiscountAmt"`
-	SaleEventManualDiscountAmt        float64   `query:"saleEventManualDiscountAmt" json:"saleEventManualDiscountAmt"`
-	SaleVentDecisionDiscountAmt       float64   `query:"saleVentDecisionDiscountAmt" json:"saleVentDecisionDiscountAmt"`
-	ChinaFISaleAmt                    float64   `query:"chinaFISaleAmt" json:"chinaFISaleAmt"`
-	EstimateSaleAmt                   float64   `query:"estimateSaleAmt" json:"estimateSaleAmt"`
-	SellingAmt                        float64   `query:"sellingAmt" json:"sellingAmt"`
-	NormalFee                         float64   `query:"normalFee" json:"normalFee"`
-	SaleEventFee                      float64   `query:"saleEventFee" json:"saleEventFee"`
-	ActualSaleAmt                     float64   `query:"actualSaleAmt" json:"actualSaleAmt"`
-	UseMileage                        float64   `query:"useMileage" json:"useMileage"`
-	PreSaleNo                         string    `query:"preSaleNo" json:"preSaleNo"`
-	PreSaleDtSeq                      int64     `query:"preSaleDtSeq" json:"preSaleDtSeq"`
-	NormalFeeRate                     float64   `query:"normalFeeRate" json:"normalFeeRate"`
-	SaleEventFeeRate                  float64   `query:"saleEventFeeRate" json:"saleEventFeeRate"`
-	InUserID                          string    `query:"inUserID" json:"inUserID"`
-	InDateTime                        time.Time `query:"inDateTime" json:"inDateTime"`
-	ModiUserID                        string    `query:"modiUserID" json:"modiUserID"`
-	ModiDateTime                      time.Time `query:"modiDateTime" json:"modiDateTime"`
-	SendState                         string    `query:"sendState" json:"sendState"`
-	SendFlag                          string    `query:"sendFlag" json:"sendFlag"`
+	SaleNo                            string         `query:"saleNo" json:"saleNo" xorm:"pk"`
+	DtSeq                             int64          `query:"dtSeq" json:"dtSeq" xorm:"pk"`
+	BrandCode                         string         `query:"brandCode" json:"brandCode"`
+	ShopCode                          string         `query:"shopCode" json:"shopCode"`
+	Dates                             string         `query:"dates" json:"dates"`
+	PosNo                             string         `query:"posNo" json:"posNo"`
+	SeqNo                             int64          `query:"seqNo" json:"seqNo"`
+	NormalSaleTypeCode                string         `query:"normalSaleTypeCode" json:"normalSaleTypeCode"`
+	CustMileagePolicyNo               sql.NullInt64  `query:"custMileagePolicyNo" json:"custMileagePolicyNo"`
+	PrimaryCustEventNo                sql.NullInt64  `query:"primaryCustEventNo" json:"primaryCustEventNo"`
+	PrimaryEventTypeCode              sql.NullString `query:"primaryEventTypeCode" json:"primaryEventTypeCode"`
+	PrimaryEventSettleTypeCode        sql.NullString `query:"primaryEventSettleTypeCode" json:"primaryEventSettleTypeCode"`
+	SecondaryCustEventNo              sql.NullInt64  `query:"secondaryCustEventNo" json:"secondaryCustEventNo"`
+	SecondaryEventTypeCode            sql.NullString `query:"secondaryEventTypeCode" json:"secondaryEventTypeCode"`
+	SecondaryEventSettleTypeCode      sql.NullString `query:"secondaryEventSettleTypeCode" json:"secondaryEventSettleTypeCode"`
+	SaleEventNo                       sql.NullInt64  `query:"saleEventNo" json:"saleEventNo"`
+	SaleEventTypeCode                 sql.NullString `query:"saleEventTypeCode" json:"saleEventTypeCode"`
+	SaleReturnReasonCode              sql.NullString `query:"saleReturnReasonCode" json:"saleReturnReasonCode"`
+	ProdCode                          string         `query:"prodCode" json:"prodCode"`
+	EANCode                           string         `query:"eANCode" json:"eANCode"`
+	PriceTypeCode                     string         `query:"priceTypeCode" json:"priceTypeCode"`
+	SupGroupCode                      string         `query:"supGroupCode" json:"supGroupCode"`
+	SaipType                          string         `query:"saipType" json:"saipType"`
+	NormalPrice                       float64        `query:"normalPrice" json:"normalPrice"`
+	Price                             float64        `query:"price" json:"price"`
+	PriceDecisionDate                 string         `query:"priceDecisionDate" json:"priceDecisionDate"`
+	SaleQty                           int64          `query:"saleQty" json:"saleQty"`
+	SaleAmt                           float64        `query:"saleAmt" json:"saleAmt"`
+	EventAutoDiscountAmt              float64        `query:"eventAutoDiscountAmt" json:"eventAutoDiscountAmt"`
+	EventDecisionDiscountAmt          float64        `query:"eventDecisionDiscountAmt" json:"eventDecisionDiscountAmt"`
+	SaleEventSaleBaseAmt              float64        `query:"saleEventSaleBaseAmt" json:"saleEventSaleBaseAmt"`
+	SaleEventDiscountBaseAmt          float64        `query:"saleEventDiscountBaseAmt" json:"saleEventDiscountBaseAmt"`
+	SaleEventNormalSaleRecognitionChk bool           `query:"saleEventNormalSaleRecognitionChk" json:"saleEventNormalSaleRecognitionChk"`
+	SaleEventInterShopSalePermitChk   bool           `query:"saleEventInterShopSalePermitChk" json:"saleEventInterShopSalePermitChk"`
+	SaleEventAutoDiscountAmt          float64        `query:"saleEventAutoDiscountAmt" json:"saleEventAutoDiscountAmt"`
+	SaleEventManualDiscountAmt        float64        `query:"saleEventManualDiscountAmt" json:"saleEventManualDiscountAmt"`
+	SaleVentDecisionDiscountAmt       float64        `query:"saleVentDecisionDiscountAmt" json:"saleVentDecisionDiscountAmt"`
+	ChinaFISaleAmt                    float64        `query:"chinaFISaleAmt" json:"chinaFISaleAmt"`
+	EstimateSaleAmt                   float64        `query:"estimateSaleAmt" json:"estimateSaleAmt"`
+	SellingAmt                        float64        `query:"sellingAmt" json:"sellingAmt"`
+	NormalFee                         float64        `query:"normalFee" json:"normalFee"`
+	SaleEventFee                      float64        `query:"saleEventFee" json:"saleEventFee"`
+	ActualSaleAmt                     float64        `query:"actualSaleAmt" json:"actualSaleAmt"`
+	UseMileage                        float64        `query:"useMileage" json:"useMileage"`
+	PreSaleNo                         sql.NullString `query:"preSaleNo" json:"preSaleNo"`
+	PreSaleDtSeq                      sql.NullInt64  `query:"preSaleDtSeq" json:"preSaleDtSeq"`
+	NormalFeeRate                     float64        `query:"normalFeeRate" json:"normalFeeRate"`
+	SaleEventFeeRate                  float64        `query:"saleEventFeeRate" json:"saleEventFeeRate"`
+	InUserID                          string         `query:"inUserID" json:"inUserID"`
+	InDateTime                        time.Time      `query:"inDateTime" json:"inDateTime"`
+	ModiUserID                        string         `query:"modiUserID" json:"modiUserID"`
+	ModiDateTime                      time.Time      `query:"modiDateTime" json:"modiDateTime"`
+	SendState                         string         `query:"sendState" json:"sendState"`
+	SendFlag                          string         `query:"sendFlag" json:"sendFlag"`
 	// SendSeqNo                         int64     `query:"sendSeqNo" json:"sendSeqNo"`
-	SendDateTime                    time.Time `query:"sendDateTime" json:"sendDateTime"`
-	DiscountAmt                     float64   `query:"discountAmt" json:"discountAmt"`
-	DiscountAmtAsCost               float64   `query:"discountAmtAsCost" json:"discountAmtAsCost"`
-	UseMileageSettleType            string    `query:"useMileageSettleType" json:"useMileageSettleType"`
-	EstimateSaleAmtForConsumer      float64   `query:"estimateSaleAmtForConsumer" json:"estimateSaleAmtForConsumer"`
-	SaleEventDiscountAmtForConsumer float64   `query:"saleEventDiscountAmtForConsumer" json:"saleEventDiscountAmtForConsumer"`
-	ShopEmpEstimateSaleAmt          float64   `query:"shopEmpEstimateSaleAmt" json:"shopEmpEstimateSaleAmt"`
-	PromotionID                     int64     `query:"promotionID" json:"promotionID"`
-	TMallEventID                    int64     `query:"tMallEventID" json:"tMallEventID"`
-	TMall_ObtainMileage             float64   `query:"tMall_ObtainMileage" json:"tMall_ObtainMileage"`
-	SaleOfficeCode                  string    `query:"saleOfficeCode" json:"saleOfficeCode"`
+	SendDateTime                    time.Time       `query:"sendDateTime" json:"sendDateTime"`
+	DiscountAmt                     float64         `query:"discountAmt" json:"discountAmt"`
+	DiscountAmtAsCost               float64         `query:"discountAmtAsCost" json:"discountAmtAsCost"`
+	UseMileageSettleType            string          `query:"useMileageSettleType" json:"useMileageSettleType"`
+	EstimateSaleAmtForConsumer      float64         `query:"estimateSaleAmtForConsumer" json:"estimateSaleAmtForConsumer"`
+	SaleEventDiscountAmtForConsumer float64         `query:"saleEventDiscountAmtForConsumer" json:"saleEventDiscountAmtForConsumer"`
+	ShopEmpEstimateSaleAmt          float64         `query:"shopEmpEstimateSaleAmt" json:"shopEmpEstimateSaleAmt"`
+	PromotionID                     sql.NullInt64   `query:"promotionID" json:"promotionID"`
+	TMallEventID                    sql.NullInt64   `query:"tMallEventID" json:"tMallEventID"`
+	TMall_ObtainMileage             sql.NullFloat64 `query:"tMall_ObtainMileage" json:"tMall_ObtainMileage"`
+	SaleOfficeCode                  string          `query:"saleOfficeCode" json:"saleOfficeCode"`
+	OrderItemId                     int64           `json:"orderItemId" xorm:"-"`
+	RefundItemId                    int64           `json:"refundItemId" xorm:"-"`
+	TransactionDtlId                int64           `json:"transactionDtlId" xorm:"-"`
 }
 
 type SaleMst struct {
-	SaleNo               string    `query:"saleNo" json:"saleNo" xorm:"pk"`
-	BrandCode            string    `query:"brandCode" json:"brandCode"`
-	ShopCode             string    `query:"shopCode" json:"shopCode"`
-	Dates                string    `query:"dates" json:"dates"`
-	PosNo                string    `query:"posNo" json:"posNo"`
-	SeqNo                int64     `query:"seqNo" json:"seqNo"`
-	SaleMode             string    `query:"saleMode" json:"saleMode"`
-	CustNo               string    `query:"custNo" json:"custNo"`
-	CustCardNo           string    `query:"custCardNo" json:"custCardNo"`
-	CustMileagePolicyNo  int64     `query:"custMileagePolicyNo" json:"custMileagePolicyNo"`
-	PrimaryCustEventNo   int64     `query:"primaryCustEventNo" json:"primaryCustEventNo"`
-	SecondaryCustEventNo int64     `query:"secondaryCustEventNo" json:"secondaryCustEventNo"`
-	DepartStoreReceiptNo string    `query:"departStoreReceiptNo" json:"departStoreReceiptNo"`
-	SaleQty              int64     `query:"saleQty" json:"saleQty"`
-	SaleAmt              float64   `query:"saleAmt" json:"saleAmt"`
-	DiscountAmt          float64   `query:"discountAmt" json:"discountAmt"`
-	ChinaFISaleAmt       float64   `query:"chinaFISaleAmt" json:"chinaFISaleAmt"`
-	EstimateSaleAmt      float64   `query:"estimateSaleAmt" json:"estimateSaleAmt"`
-	SellingAmt           float64   `query:"sellingAmt" json:"sellingAmt"`
-	FeeAmt               float64   `query:"feeAmt" json:"feeAmt"`
-	ActualSaleAmt        float64   `query:"actualSaleAmt" json:"actualSaleAmt"`
-	UseMileage           float64   `query:"useMileage" json:"useMileage"`
-	ObtainMileage        float64   `query:"obtainMileage" json:"obtainMileage"`
-	InUserID             string    `query:"inUserID" json:"inUserID"`
-	InDateTime           time.Time `query:"inDateTime" json:"inDateTime" xorm:"created"`
-	ModiUserID           string    `query:"modiUserID" json:"modiUserID"`
-	ModiDateTime         time.Time `query:"modiDateTime" json:"modiDateTime" xorm:"created"`
-	SendState            string    `query:"sendState" json:"sendState"`
-	SendFlag             string    `query:"sendFlag" json:"sendFlag"`
+	SaleNo               string         `query:"saleNo" json:"saleNo" xorm:"pk"`
+	BrandCode            string         `query:"brandCode" json:"brandCode"`
+	ShopCode             string         `query:"shopCode" json:"shopCode"`
+	Dates                string         `query:"dates" json:"dates"`
+	PosNo                string         `query:"posNo" json:"posNo"`
+	SeqNo                int64          `query:"seqNo" json:"seqNo"`
+	SaleMode             string         `query:"saleMode" json:"saleMode"`
+	CustNo               string         `query:"custNo" json:"custNo"`
+	CustCardNo           sql.NullString `query:"custCardNo" json:"custCardNo"`
+	CustMileagePolicyNo  sql.NullInt64  `query:"custMileagePolicyNo" json:"custMileagePolicyNo"`
+	PrimaryCustEventNo   sql.NullInt64  `query:"primaryCustEventNo" json:"primaryCustEventNo"`
+	SecondaryCustEventNo sql.NullInt64  `query:"secondaryCustEventNo" json:"secondaryCustEventNo"`
+	DepartStoreReceiptNo string         `query:"departStoreReceiptNo" json:"departStoreReceiptNo"`
+	SaleQty              int64          `query:"saleQty" json:"saleQty"`
+	SaleAmt              float64        `query:"saleAmt" json:"saleAmt"`
+	DiscountAmt          float64        `query:"discountAmt" json:"discountAmt"`
+	ChinaFISaleAmt       float64        `query:"chinaFISaleAmt" json:"chinaFISaleAmt"`
+	EstimateSaleAmt      float64        `query:"estimateSaleAmt" json:"estimateSaleAmt"`
+	SellingAmt           float64        `query:"sellingAmt" json:"sellingAmt"`
+	FeeAmt               float64        `query:"feeAmt" json:"feeAmt"`
+	ActualSaleAmt        float64        `query:"actualSaleAmt" json:"actualSaleAmt"`
+	UseMileage           float64        `query:"useMileage" json:"useMileage"`
+	ObtainMileage        float64        `query:"obtainMileage" json:"obtainMileage"`
+	InUserID             string         `query:"inUserID" json:"inUserID"`
+	InDateTime           time.Time      `query:"inDateTime" json:"inDateTime" xorm:"created"`
+	ModiUserID           string         `query:"modiUserID" json:"modiUserID"`
+	ModiDateTime         time.Time      `query:"modiDateTime" json:"modiDateTime" xorm:"created"`
+	SendState            string         `query:"sendState" json:"sendState"`
+	SendFlag             string         `query:"sendFlag" json:"sendFlag"`
 	// SendSeqNo                   int64     `query:"sendSeqNo" json:"sendSeqNo"`
-	SendDateTime                time.Time `query:"sendDateTime" json:"sendDateTime"`
-	DiscountAmtAsCost           float64   `query:"discountAmtAsCost" json:"discountAmtAsCost"`
-	CustDivisionCode            string    `query:"custDivisionCode" json:"custDivisionCode"`
-	MileageCustChangeStatusCode string    `query:"mileageCustChangeStatusCode" json:"mileageCustChangeStatusCode"`
-	CustGradeCode               string    `query:"custGradeCode" json:"custGradeCode"`
-	PreSaleNo                   string    `query:"preSaleNo" json:"preSaleNo"`
-	ActualSellingAmt            float64   `query:"actualSellingAmt" json:"actualSellingAmt"`
-	EstimateSaleAmtForConsumer  float64   `query:"estimateSaleAmtForConsumer" json:"estimateSaleAmtForConsumer"`
-	ShopEmpEstimateSaleAmt      float64   `query:"shopEmpEstimateSaleAmt" json:"shopEmpEstimateSaleAmt"`
-	ComplexShopSeqNo            string    `query:"complexShopSeqNo" json:"complexShopSeqNo"`
-	CustBrandCode               string    `query:"custBrandCode" json:"custBrandCode"`
-	Freight                     float64   `query:"freight" json:"freight"`
-	TMall_UseMileage            float64   `query:"tMall_UseMileage" json:"tMall_UseMileage"`
-	TMall_ObtainMileage         float64   `query:"tMall_ObtainMileage" json:"tMall_ObtainMileage"`
-	SaleOfficeCode              string    `query:"saleOfficeCode" json:"saleOfficeCode" xorm:""`
+	SendDateTime                time.Time       `query:"sendDateTime" json:"sendDateTime"`
+	DiscountAmtAsCost           float64         `query:"discountAmtAsCost" json:"discountAmtAsCost"`
+	CustDivisionCode            sql.NullString  `query:"custDivisionCode" json:"custDivisionCode"`
+	MileageCustChangeStatusCode sql.NullString  `query:"mileageCustChangeStatusCode" json:"mileageCustChangeStatusCode"`
+	CustGradeCode               sql.NullString  `query:"custGradeCode" json:"custGradeCode"`
+	PreSaleNo                   sql.NullString  `query:"preSaleNo" json:"preSaleNo"`
+	ActualSellingAmt            float64         `query:"actualSellingAmt" json:"actualSellingAmt"`
+	EstimateSaleAmtForConsumer  float64         `query:"estimateSaleAmtForConsumer" json:"estimateSaleAmtForConsumer"`
+	ShopEmpEstimateSaleAmt      float64         `query:"shopEmpEstimateSaleAmt" json:"shopEmpEstimateSaleAmt"`
+	ComplexShopSeqNo            string          `query:"complexShopSeqNo" json:"complexShopSeqNo"`
+	CustBrandCode               string          `query:"custBrandCode" json:"custBrandCode"`
+	Freight                     sql.NullFloat64 `query:"freight" json:"freight"`
+	TMall_UseMileage            sql.NullFloat64 `query:"tMall_UseMileage" json:"tMall_UseMileage"`
+	TMall_ObtainMileage         sql.NullFloat64 `query:"tMall_ObtainMileage" json:"tMall_ObtainMileage"`
+	SaleOfficeCode              string          `query:"saleOfficeCode" json:"saleOfficeCode"`
+	TransactionId               int64           `json:"transactionId" xorm:"-"`
 }
 
 type SalePayment struct {
-	SaleNo             string    `query:"saleNo" json:"saleNo" xorm:"pk"`
-	SeqNo              int64     `query:"seqNo" json:"seqNo" xorm:"pk"`
-	PaymentCode        string    `query:"paymentCode" json:"paymentCode"`
-	PaymentAmt         float64   `query:"paymentAmt" json:"paymentAmt"`
-	InUserID           string    `query:"inUserID" json:"inUserID"`
-	InDateTime         time.Time `query:"inDateTime" json:"inDateTime"`
-	ModiUserID         string    `query:"modiUserID" json:"modiUserID"`
-	ModiDateTime       time.Time `query:"modiDateTime" json:"modiDateTime"`
-	SendState          string    `query:"sendState" json:"sendState"`
-	SendFlag           string    `query:"sendFlag" json:"sendFlag"`
-	SendSeqNo          int64     `query:"sendSeqNo" json:"sendSeqNo"`
-	SendDateTime       time.Time `query:"sendDateTime" json:"sendDateTime"`
-	CreditCardFirmCode string    `query:"creditCardFirmCode" json:"creditCardFirmCode"`
+	SaleNo       string    `query:"saleNo" json:"saleNo" xorm:"pk"`
+	SeqNo        int64     `query:"seqNo" json:"seqNo" xorm:"pk"`
+	PaymentCode  string    `query:"paymentCode" json:"paymentCode"`
+	PaymentAmt   float64   `query:"paymentAmt" json:"paymentAmt"`
+	InUserID     string    `query:"inUserID" json:"inUserID"`
+	InDateTime   time.Time `query:"inDateTime" json:"inDateTime"`
+	ModiUserID   string    `query:"modiUserID" json:"modiUserID"`
+	ModiDateTime time.Time `query:"modiDateTime" json:"modiDateTime"`
+	// SendState    sql.NullString `query:"sendState" json:"sendState"`
+	SendFlag string `query:"sendFlag" json:"sendFlag"`
+	// SendSeqNo          int64          `query:"sendSeqNo" json:"sendSeqNo"`
+	SendDateTime       time.Time      `query:"sendDateTime" json:"sendDateTime"`
+	CreditCardFirmCode sql.NullString `query:"creditCardFirmCode" json:"creditCardFirmCode"`
+	TransactionId      int64          `json:"transactionId" xorm:"-"`
 }
 
 type SaleMstsAndSaleDtls struct {
-	SaleMsts []SaleMst `query:"saleMsts" json:"saleMsts" `
-	SaleDtls []SaleDtl `query:"saleDtls" json:"saleDtls" `
+	SaleMsts     []SaleMst     `query:"saleMsts" json:"saleMsts" `
+	SaleDtls     []SaleDtl     `query:"saleDtls" json:"saleDtls" `
+	SalePayments []SalePayment `query:"salePayments" json:"salePayments"`
 }
 
 type ResultShop struct {

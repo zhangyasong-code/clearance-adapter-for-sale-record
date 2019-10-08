@@ -1,0 +1,23 @@
+FROM pangpanglabs/golang:builder AS builder
+RUN go get github.com/pangpanglabs/goetl
+ADD . /go/src/clearance/clearance-adapter-for-sale-record
+WORKDIR /go/src/clearance/clearance-adapter-for-sale-record/cmd/api-app
+# disable cgo
+ENV CGO_ENABLED=0
+# build steps
+RUN echo ">>> 1: go version" && go version
+RUN echo ">>> 2: go get" && go get -v -d
+RUN echo ">>> 3: go build -o clearance-adapter-for-sale-record-api" && go build -o clearance-adapter-for-sale-record-api
+
+# make application docker image use alpine
+FROM pangpanglabs/alpine-ssl
+# using timezone
+# RUN apk add -U tzdata
+# copy config files to image
+COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/*.yml /go/src/clearance/clearance-adapter-for-sale-record/
+# COPY --from=builder /swagger-ui/ ./swagger-ui/
+# copy execute file to image
+WORKDIR /go/src/clearance/clearance-adapter-for-sale-record/cmd/api-app
+COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/cmd/api-app/clearance-adapter-for-sale-record-api ./
+EXPOSE 8000
+CMD ["./clearance-adapter-for-sale-record-api","api"]

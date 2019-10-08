@@ -102,14 +102,15 @@ type PostMileage struct {
 }
 
 type PostMileageDtl struct {
-	Id               int64   `json:"id"`
-	PostMileageId    int64   `json:"postMileageId"`
-	TransactionDtlId int64   `json:"transactionDtlId" xorm:"index default 0"`
-	OrderItemId      int64   `json:"orderItemId" xorm:"index default 0"`
-	RefundItemId     int64   `json:"refundItemId" xorm:"index default 0"`
-	UseType          string  `json:"useType" xorm:"VARCHAR(25)"`
-	Point            float64 `json:"point" xorm:"decimal(19,2)"`
-	PointPrice       float64 `json:"pointPrice" xorm:"decimal(19,2)"`
+	Id                  int64   `json:"id"`
+	PostMileageId       int64   `json:"postMileageId"`
+	TransactionDtlId    int64   `json:"transactionDtlId" xorm:"index default 0"`
+	OrderItemId         int64   `json:"orderItemId" xorm:"index default 0"`
+	RefundItemId        int64   `json:"refundItemId" xorm:"index default 0"`
+	CustMileagePolicyNo int64   `json:"custMileagePolicyNo"`
+	UseType             string  `json:"useType" xorm:"VARCHAR(25)"`
+	Point               float64 `json:"point" xorm:"decimal(19,2)"`
+	PointPrice          float64 `json:"pointPrice" xorm:"decimal(19,2)"`
 }
 
 type AppliedOrderItemOffer struct {
@@ -118,6 +119,15 @@ type AppliedOrderItemOffer struct {
 	ItemCode    string `json:"itemCode"`
 	OfferNo     string `json:"offerNo"`
 	OrderItemId int64  `json:"orderItemId"`
+}
+
+type AppliedOrderCartOffer struct {
+	Id       int64   `json:"id"`
+	CouponNo string  `json:"couponNo"`
+	OfferNo  string  `json:"offerNo"`
+	OrderId  int64   `json:"orderId"`
+	RefundId int64   `json:"refundId"`
+	Price    float64 `json:"price"`
 }
 
 type PromotionEvent struct {
@@ -160,6 +170,29 @@ type PostSaleRecordFee struct {
 	FeeAmount              float64 `json:"feeAmount"`
 	TransactionChannelType string  `json:"transactionChannelType"`
 }
+type PostPayment struct {
+	Id                 int64     `json:"id"`
+	TransactionId      int64     `json:"transactionId"`
+	SeqNo              int64     `json:"seqNo"`
+	PaymentCode        string    `json:"paymentCode"`
+	PaymentAmt         float64   `json:"paymentAmt"`
+	InUserID           string    `json:"inUserId"`
+	InDateTime         time.Time `json:"inDateTime"`
+	ModiUserID         string    `json:"modiUserID"`
+	ModiDateTime       time.Time `json:"modiDateTime"`
+	CreditCardFirmCode string    `json:"creditCardFirmCode"`
+}
+
+func (PostPayment) GetPostPayment(transactionId int64) ([]PostPayment, error) {
+	var postPayments []PostPayment
+	if err := factory.GetSrEngine().Where("transaction_id = ?", transactionId).Find(&postPayments); err != nil {
+		return nil, err
+	}
+	if len(postPayments) == 0 {
+		return nil, errors.New("PostPayment is not exist!")
+	}
+	return postPayments, nil
+}
 
 func (PostMileage) GetMileage(customerId, transactionId int64, use_type UseType) (PostMileage, error) {
 	var mileage PostMileage
@@ -195,6 +228,20 @@ func (AppliedOrderItemOffer) GetAppliedOrderItemOffer(orderItemId int64) (*Appli
 	return &appliedOrderItemOffer, nil
 }
 
+func (AppliedOrderCartOffer) GetAppliedOrderCartOffer(orderId int64) (*AppliedOrderCartOffer, error) {
+	var appliedOrderCartOffer AppliedOrderCartOffer
+	exist, err := factory.GetSrEngine().Where("order_id = ?", orderId).Get(&appliedOrderCartOffer)
+	if err != nil {
+		return nil, err
+	} else if !exist {
+		logrus.WithFields(logrus.Fields{
+			"orderId": orderId,
+		}).Error("Fail to GetAppliedOrderCartOffer")
+		return nil, errors.New("AppliedOrderCartOffer is not exist!")
+	}
+	return &appliedOrderCartOffer, nil
+}
+
 //sum quantity , total_sale_price , total_discount_price
 func (AssortedSaleRecordDtl) GetSumsFields(transactionId int64) ([]float64, error) {
 	var assortedSaleRecordDtl AssortedSaleRecordDtl
@@ -220,19 +267,12 @@ func (PromotionEvent) GetPromotionEvent(offerNo string) (*PromotionEvent, error)
 	return &promotionEvent, nil
 }
 
-func (PostSaleRecordFee) GetPostSaleRecordFee(orderItemId, refundId int64) (*PostSaleRecordFee, error) {
+func (PostSaleRecordFee) GetPostSaleRecordFee(orderItemId, refundId int64) (PostSaleRecordFee, error) {
 	var postSaleRecordFee PostSaleRecordFee
-	exist, err := factory.GetSrEngine().Where("order_item_id = ?", orderItemId).And("refund_item_id = ?", refundId).Get(&postSaleRecordFee)
-	if err != nil {
-		return nil, err
-	} else if !exist {
-		logrus.WithFields(logrus.Fields{
-			"order_item_id":  orderItemId,
-			"refund_item_id": refundId,
-		}).Error("Fail to GetPostSaleRecordFee")
-		return nil, errors.New("PostSaleRecordFee is not exist!")
+	if _, err := factory.GetSrEngine().Where("order_item_id = ?", orderItemId).And("refund_item_id = ?", refundId).Get(&postSaleRecordFee); err != nil {
+		return PostSaleRecordFee{}, err
 	}
-	return &postSaleRecordFee, nil
+	return postSaleRecordFee, nil
 }
 
 func (PostSaleRecordFee) GetSumFeeAmount(transactionId int64) (float64, error) {

@@ -54,7 +54,8 @@ func (etl SrToClearanceETL) Extract(ctx context.Context) (interface{}, error) {
 			if startAt != "" && endAt != "" {
 				st, _ := time.Parse("2006-01-02 15:04:05", startAt)
 				et, _ := time.Parse("2006-01-02 15:04:05", endAt)
-				q.And("assorted_sale_record.transaction_create_date >= ?", st).And("assorted_sale_record.transaction_create_date < ?", et)
+				h, _ := time.ParseDuration("-8h")
+				q.And("assorted_sale_record.transaction_create_date >= ?", st.Add(h)).And("assorted_sale_record.transaction_create_date < ?", et.Add(h))
 			}
 			return q
 		}
@@ -64,7 +65,7 @@ func (etl SrToClearanceETL) Extract(ctx context.Context) (interface{}, error) {
 		for _, assortedSaleRecordAndDtl := range assortedSaleRecordAndDtls {
 			check := true
 			for _, saleRecord := range saleRecords {
-				if assortedSaleRecordAndDtl.AssortedSaleRecord.OrderId == saleRecord.OrderId {
+				if assortedSaleRecordAndDtl.AssortedSaleRecord.OrderId == saleRecord.OrderId && assortedSaleRecordAndDtl.AssortedSaleRecord.RefundId == saleRecord.RefundId {
 					check = false
 				}
 			}
@@ -95,17 +96,21 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 	saleTransactionDtls := make([]models.SaleTransactionDtl, 0)
 	for _, assortedSaleRecord := range assortedSaleRecordAndDtls.AssortedSaleRecords {
 		saleTransactions = append(saleTransactions, models.SaleTransaction{
-			OrderId:               assortedSaleRecord.OrderId,
-			RefundId:              assortedSaleRecord.RefundId,
-			StoreId:               assortedSaleRecord.StoreId,
-			TotalSalePrice:        assortedSaleRecord.TotalSalePrice,
-			TotalTransactionPrice: assortedSaleRecord.TotalTransactionPrice,
-			SaleDate:              assortedSaleRecord.TransactionCreateDate,
-			TransactionId:         assortedSaleRecord.TransactionId,
-			CustomerId:            assortedSaleRecord.CustomerId,
-			Mileage:               assortedSaleRecord.Mileage,
-			MileagePrice:          assortedSaleRecord.MileagePrice,
-			OuterOrderNo:          assortedSaleRecord.OuterOrderNo,
+			OrderId:                assortedSaleRecord.OrderId,
+			RefundId:               assortedSaleRecord.RefundId,
+			StoreId:                assortedSaleRecord.StoreId,
+			SalesmanId:             assortedSaleRecord.SalesmanId,
+			TotalSalePrice:         assortedSaleRecord.TotalSalePrice,
+			TotalListPrice:         assortedSaleRecord.TotalListPrice,
+			TotalTransactionPrice:  assortedSaleRecord.TotalTransactionPrice,
+			SaleDate:               assortedSaleRecord.TransactionCreateDate,
+			TransactionId:          assortedSaleRecord.TransactionId,
+			CustomerId:             assortedSaleRecord.CustomerId,
+			Mileage:                assortedSaleRecord.Mileage,
+			MileagePrice:           assortedSaleRecord.MileagePrice,
+			OuterOrderNo:           assortedSaleRecord.OuterOrderNo,
+			TransactionChannelType: assortedSaleRecord.TransactionChannelType,
+			TotalDiscountPrice:     assortedSaleRecord.TotalDiscountPrice,
 		})
 	}
 	for _, assortedSaleRecordDtl := range assortedSaleRecordAndDtls.AssortedSaleRecordDtls {
@@ -123,8 +128,12 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 			ItemFee:                        assortedSaleRecordDtl.ItemFee,
 			TotalTransactionPrice:          assortedSaleRecordDtl.TotalTransactionPrice,
 			TotalDistributedCartOfferPrice: assortedSaleRecordDtl.TotalDistributedCartOfferPrice,
+			TotalDistributedItemOfferPrice: assortedSaleRecordDtl.TotalDistributedItemOfferPrice,
+			TotalDistributedPaymentPrice:   assortedSaleRecordDtl.TotalDistributedPaymentPrice,
 			TransactionId:                  assortedSaleRecordDtl.TransactionId,
 			TotalSalePrice:                 assortedSaleRecordDtl.TotalSalePrice,
+			TotalListPrice:                 assortedSaleRecordDtl.TotalListPrice,
+			DistributedCashPrice:           assortedSaleRecordDtl.DistributedCashPrice,
 		})
 	}
 	return models.SaleTAndSaleTDtls{

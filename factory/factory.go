@@ -18,8 +18,9 @@ var (
 	// pmEngine placeManagementDB
 	pmEngine *xorm.Engine
 	// productEngine
-	productEngine *xorm.Engine
-	once          sync.Once
+	productEngine       *xorm.Engine
+	colleagueAuthEngine *xorm.Engine
+	once                sync.Once
 )
 
 // GetCSLEngine 获取CSL数据库引擎
@@ -68,4 +69,12 @@ func GetProductEngine() *xorm.Engine {
 
 func SetProductEngine(engine *xorm.Engine) {
 	productEngine = engine
+}
+
+func GetColleagueAuthEngine() *xorm.Engine {
+	return colleagueAuthEngine
+}
+
+func SetColleagueAuthEngine(engine *xorm.Engine) {
+	colleagueAuthEngine = engine
 }
