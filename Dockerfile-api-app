@@ -20,4 +20,4 @@ COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/*.yml /g
 WORKDIR /go/src/clearance/clearance-adapter-for-sale-record/cmd/api-app
 COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/cmd/api-app/clearance-adapter-for-sale-record-api ./
 EXPOSE 8000
-CMD ["./clearance-adapter-for-sale-record-api"]
+CMD ["./clearance-adapter-for-sale-record-api","api"]
