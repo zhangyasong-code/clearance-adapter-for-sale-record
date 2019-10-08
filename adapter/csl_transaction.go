@@ -386,11 +386,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 								secondaryEventSettleTypeCode = sql.NullString{"1", true}
 							}
 						}
-
-						if promotionEvent.EventTypeCode == "01" || promotionEvent.EventTypeCode == "02" || promotionEvent.EventTypeCode == "V" {
-							eventAutoDiscountAmt = saleTransactionDtl.TotalDistributedCartOfferPrice + saleTransactionDtl.TotalDistributedItemOfferPrice
-							eventDecisionDiscountAmt = eventAutoDiscountAmt
-						}
 					}
 				}
 
@@ -402,7 +397,10 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					}
 					continue
 				}
-
+				if normalSaleTypeCode == "2" {
+					eventAutoDiscountAmt = saleTransactionDtl.TotalDistributedCartOfferPrice + saleTransactionDtl.TotalDistributedItemOfferPrice
+					eventDecisionDiscountAmt = eventAutoDiscountAmt
+				}
 				eANCode = ""
 				if len(sku.Identifiers) != 0 {
 					if sku.Identifiers[0].Uid == "" {
@@ -556,19 +554,21 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		//set value for saleMst "UseMileage", "SellingAmt","ChinaFISaleAmt","ActualSaleAmt"
 		saleMst.UseMileage = 0
 		saleMst.SellingAmt = 0
+		saleMst.DiscountAmt = 0
 		saleMst.ChinaFISaleAmt = 0
 		saleMst.ActualSaleAmt = 0
+		saleMst.EstimateSaleAmt = 0
 		for _, saleDtl := range saleDtls {
 			if saleMst.SaleNo == saleDtl.SaleNo {
 				saleMst.UseMileage += saleDtl.UseMileage
 				saleMst.SellingAmt += saleDtl.SellingAmt
+				saleMst.DiscountAmt += saleDtl.DiscountAmt
 				saleMst.ChinaFISaleAmt += saleDtl.ChinaFISaleAmt
 				saleMst.ActualSaleAmt += saleDtl.ActualSaleAmt
+				saleMst.EstimateSaleAmt += saleDtl.EstimateSaleAmt
 			}
 		}
-		//set value for saleMst "DiscountAmt","EstimateSaleAmt","EstimateSaleAmtForConsumer","ShopEmpEstimateSaleAmt"
-		saleMst.DiscountAmt = saleTransaction.TotalDiscountPrice + saleMst.UseMileage
-		saleMst.EstimateSaleAmt = saleMst.SaleAmt - saleMst.DiscountAmt
+		//set value for saleMst "EstimateSaleAmtForConsumer","ShopEmpEstimateSaleAmt"
 		saleMst.EstimateSaleAmtForConsumer = saleMst.EstimateSaleAmt
 		saleMst.ShopEmpEstimateSaleAmt = saleMst.SellingAmt + saleMst.UseMileage
 
