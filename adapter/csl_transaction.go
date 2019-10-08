@@ -466,7 +466,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				if normalSaleTypeCode != "1" {
 					useMileage = saleTransactionDtl.TotalDistributedPaymentPrice - saleTransactionDtl.DistributedCashPrice
 				}
-				discountAmt = eventAutoDiscountAmt + useMileage
+				discountAmt = eventAutoDiscountAmt + useMileage + saleVentDecisionDiscountAmt
 				estimateSaleAmt = saleTransactionDtl.TotalListPrice - discountAmt
 				sellingAmt = estimateSaleAmt - discountAmtAsCost
 				chinaFISaleAmt = estimateSaleAmt + saleVentDecisionDiscountAmt
