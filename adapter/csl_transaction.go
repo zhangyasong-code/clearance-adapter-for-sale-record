@@ -104,7 +104,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 	var endSeq int
 	var dtSeq int64
 	var saleEventNormalSaleRecognitionChk bool
-	var startStr, strSeqNo, saleMode, eANCode, normalSaleTypeCode, useMileageSettleType, offerNo string
+	var startStr, strSeqNo, saleMode, eANCode, normalSaleTypeCode, useMileageSettleType, offerNo, couponNo string
 	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo, preSaleDtSeq sql.NullInt64
 	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode, secondaryEventSettleTypeCode, preSaleNo, creditCardFirmCode sql.NullString
 	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
@@ -300,6 +300,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				useMileageSettleType = "1"
 				custMileagePolicyNo = sql.NullInt64{0, false}
 				offerNo = ""
+				couponNo = ""
 				saleEventFee = 0
 				normalFee = 0
 				normalFeeRate = 0
@@ -338,7 +339,9 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						if appliedOrderCartOffer.CouponNo == "" && appliedOrderCartOffer.OfferNo != "" {
 							offerNo = appliedOrderCartOffer.OfferNo
 						}
+						couponNo = appliedOrderCartOffer.CouponNo
 					}
+
 					if offerNo != "" {
 						promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(offerNo)
 						if err != nil {
@@ -386,6 +389,22 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 								secondaryEventSettleTypeCode = sql.NullString{"1", true}
 							}
 						}
+					}
+
+					if couponNo != "" {
+						normalSaleTypeCode = "2"
+						//search eventN by brandCode
+						coupenEvent, err := models.PostCouponEvent{}.GetPostCoupenEvent(saleTransactionDtl.BrandCode)
+						if err != nil {
+							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode}
+							if err := SaleRecordIdFailMapping.Save(); err != nil {
+								return nil, err
+							}
+							continue
+						}
+						primaryCustEventNo = sql.NullInt64{coupenEvent.EventNo, true}
+						primaryEventTypeCode = sql.NullString{"C", true}
+						primaryEventSettleTypeCode = sql.NullString{"1", true}
 					}
 				}
 

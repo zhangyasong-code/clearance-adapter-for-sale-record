@@ -183,6 +183,12 @@ type PostPayment struct {
 	CreditCardFirmCode string    `json:"creditCardFirmCode"`
 }
 
+type PostCouponEvent struct {
+	Id        int64  `json:"id"`
+	BrandCode string `json:"brandCode"`
+	EventNo   int64  `json:"eventNo"`
+}
+
 func (PostPayment) GetPostPayment(transactionId int64) ([]PostPayment, error) {
 	var postPayments []PostPayment
 	if err := factory.GetSrEngine().Where("transaction_id = ?", transactionId).Find(&postPayments); err != nil {
@@ -265,6 +271,20 @@ func (PromotionEvent) GetPromotionEvent(offerNo string) (*PromotionEvent, error)
 		return nil, errors.New("PromotionEvent is not exist!")
 	}
 	return &promotionEvent, nil
+}
+
+func (PostCouponEvent) GetPostCoupenEvent(brandCode string) (*PostCouponEvent, error) {
+	var postCouponEvent PostCouponEvent
+	exist, err := factory.GetSrEngine().Where("brand_code = ?", brandCode).Get(&postCouponEvent)
+	if err != nil {
+		return nil, err
+	} else if !exist {
+		logrus.WithFields(logrus.Fields{
+			"brandCode": brandCode,
+		}).Error("Fail to GetPostCoupenEvent")
+		return nil, errors.New("PostCoupenEvent is not exist!")
+	}
+	return &postCouponEvent, nil
 }
 
 func (PostSaleRecordFee) GetPostSaleRecordFee(orderItemId, refundId int64) (PostSaleRecordFee, error) {
