@@ -15,9 +15,11 @@ import (
 
 type TransactionController struct{}
 
+// POST data such as > {"brandCode": "EE", "channelType": "POS", "startAt": "2019-09-21 16:47:00", "endAt": "2019-09-21 16:49:00"}
 func (c TransactionController) Init(g *echo.Group) {
 	g.POST("/sale", c.RunSaleETL)
 	g.POST("/csl", c.RunCslETL)
+	g.POST("/saleAndCsl", c.RunSaleETLAndCslETL)
 	g.GET("/sale", c.GetSaleTransactions)
 }
 
@@ -82,6 +84,41 @@ func (TransactionController) RunCslETL(c echo.Context) error {
 	etl := goetl.New(adapter.ClearanceToCslETL{})
 	etl.After(adapter.ClearanceToCslETL{}.ReadyToLoad)
 	if err := etl.Run(context.WithValue(c.Request().Context(), "data", data)); err != nil {
+		return c.JSON(http.StatusInternalServerError, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
+	}
+
+	return c.JSON(http.StatusOK, api.Result{
+		Success: true,
+	})
+}
+
+func (TransactionController) RunSaleETLAndCslETL(c echo.Context) error {
+	var data map[string]string
+	if err := c.Bind(&data); err != nil {
+		return c.JSON(http.StatusBadRequest, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
+	}
+
+	clearanceETL := goetl.New(adapter.SrToClearanceETL{})
+	clearanceETL.After(adapter.SrToClearanceETL{}.ReadyToLoad)
+	if err := clearanceETL.Run(context.WithValue(c.Request().Context(), "data", data)); err != nil {
+		return c.JSON(http.StatusInternalServerError, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
+	}
+
+	cslETL := goetl.New(adapter.ClearanceToCslETL{})
+	cslETL.After(adapter.ClearanceToCslETL{}.ReadyToLoad)
+	if err := cslETL.Run(context.WithValue(c.Request().Context(), "data", data)); err != nil {
 		return c.JSON(http.StatusInternalServerError, api.Result{
 			Error: api.Error{
 				Message: err.Error(),
