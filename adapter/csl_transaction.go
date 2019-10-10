@@ -447,7 +447,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					continue
 				}
 				discountAmt = saleTransactionDtl.TotalTransactionPrice - saleTransactionDtl.TotalDistributedPaymentPrice
-				postMileageDtl, err := models.PostMileage{}.GetPostMileageDtl(saleTransactionDtl.Id, models.UseTypeUsed)
+				//transactionDtlId = saleTransactionDtl.OrderItemId
+				postMileageDtl, err := models.PostMileage{}.GetPostMileageDtl(saleTransactionDtl.OrderItemId, models.UseTypeUsed)
 				if err != nil {
 					return nil, err
 				}
