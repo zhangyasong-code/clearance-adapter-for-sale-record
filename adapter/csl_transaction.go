@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -252,30 +253,22 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			PreSaleNo:                   preSaleNo,
 			SaleQty:                     int64(res[0]),
 			SaleAmt:                     saleTransaction.TotalListPrice,
-			// DiscountAmt:                 saleTransaction.TotalDiscountPrice + saleTransaction.Mileage,
-			// ChinaFISaleAmt: saleTransaction.TotalSalePrice,
-			// EstimateSaleAmt: saleTransaction.TotalTransactionPrice,
-			// SellingAmt:    saleTransaction.TotalTransactionPrice,
-			FeeAmt:        feeAmt,
-			ActualSaleAmt: saleTransaction.TotalTransactionPrice - feeAmt,
-			// UseMileage:                  saleTransaction.Mileage,
-			ObtainMileage:    mileage.Point,
-			InUserID:         colleagues.UserName,
-			InDateTime:       saleTransaction.SaleDate,
-			ModiUserID:       colleagues.UserName,
-			ModiDateTime:     saleTransaction.SaleDate,
-			SendState:        "",
-			SendFlag:         NotSynChronized,
-			ActualSellingAmt: saleTransaction.TotalTransactionPrice,
-			// EstimateSaleAmtForConsumer: saleTransaction.TotalTransactionPrice,
-			// ShopEmpEstimateSaleAmt: saleTransaction.TotalTransactionPrice,
-			DiscountAmtAsCost:   0,
-			ComplexShopSeqNo:    complexShopSeqNo,
-			SaleOfficeCode:      MSLv2_0,
-			Freight:             sql.NullFloat64{0, false},
-			TMall_UseMileage:    sql.NullFloat64{0, false},
-			TMall_ObtainMileage: sql.NullFloat64{0, false},
-			TransactionId:       saleTransaction.TransactionId,
+			FeeAmt:                      feeAmt,
+			ActualSaleAmt:               saleTransaction.TotalTransactionPrice - feeAmt,
+			ObtainMileage:               mileage.Point,
+			InUserID:                    colleagues.UserName,
+			InDateTime:                  saleTransaction.SaleDate,
+			ModiUserID:                  colleagues.UserName,
+			ModiDateTime:                saleTransaction.SaleDate,
+			SendState:                   "",
+			SendFlag:                    NotSynChronized,
+			DiscountAmtAsCost:           0,
+			ComplexShopSeqNo:            complexShopSeqNo,
+			SaleOfficeCode:              MSLv2_0,
+			Freight:                     sql.NullFloat64{0, false},
+			TMall_UseMileage:            sql.NullFloat64{0, false},
+			TMall_ObtainMileage:         sql.NullFloat64{0, false},
+			TransactionId:               saleTransaction.TransactionId,
 		}
 		dtSeq = 0
 		for _, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {
@@ -484,7 +477,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					preSaleDtSeq = sql.NullInt64{successDtls[0].DtlSeq, false}
 				}
 				if normalSaleTypeCode != "1" {
-					useMileage = saleTransactionDtl.TotalDistributedPaymentPrice - saleTransactionDtl.DistributedCashPrice
+					useMileage = math.Abs(postMileageDtl.Point)
 				}
 				discountAmt = eventAutoDiscountAmt + useMileage + saleVentDecisionDiscountAmt
 				estimateSaleAmt = saleTransactionDtl.TotalListPrice - discountAmt
@@ -591,7 +584,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		//set value for saleMst "EstimateSaleAmtForConsumer","ShopEmpEstimateSaleAmt"
 		saleMst.EstimateSaleAmtForConsumer = saleMst.EstimateSaleAmt
 		saleMst.ShopEmpEstimateSaleAmt = saleMst.SellingAmt + saleMst.UseMileage
-
+		saleMst.ActualSellingAmt = saleMst.SellingAmt
 		postOrderPayments, err := models.PostPayment{}.GetPostPayment(saleTransaction.TransactionId)
 		if err != nil {
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransaction.TransactionId, CreatedBy: "batch-job", Error: err.Error() + " TransactionId:" + strconv.FormatInt(saleTransaction.TransactionId, 10)}
