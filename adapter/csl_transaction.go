@@ -315,20 +315,21 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				saleEventNormalSaleRecognitionChk = false
 				if saleTransactionDtl.TotalDiscountPrice != 0 || saleTransactionDtl.TotalDistributedItemOfferPrice != 0 || saleTransactionDtl.TotalDistributedCartOfferPrice != 0 {
 					if saleTransactionDtl.TotalDistributedItemOfferPrice != 0 {
-						appliedOrderItemOffer, err := models.AppliedOrderItemOffer{}.GetAppliedOrderItemOffer(saleTransactionDtl.OrderItemId)
+						// transactionDtlId = saleTransactionDtl.OrderItemId
+						appliedSaleRecordItemOffer, err := models.AppliedSaleRecordItemOffer{}.GetAppliedSaleRecordItemOffer(saleTransactionDtl.OrderItemId)
 						if err != nil {
-							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10)}
+							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " transaction_dtl_id:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10)}
 							if err := SaleRecordIdFailMapping.Save(); err != nil {
 								return nil, err
 							}
 							continue
 						}
-						if appliedOrderItemOffer.CouponNo == "" && appliedOrderItemOffer.OfferNo != "" {
-							offerNo = appliedOrderItemOffer.OfferNo
+						if appliedSaleRecordItemOffer.CouponNo == "" && appliedSaleRecordItemOffer.OfferNo != "" {
+							offerNo = appliedSaleRecordItemOffer.OfferNo
 						}
 					}
 					if saleTransactionDtl.TotalDistributedCartOfferPrice != 0 {
-						appliedOrderCartOffer, err := models.AppliedOrderCartOffer{}.GetAppliedOrderCartOffer(saleTransaction.OrderId)
+						appliedSaleRecordCartOffer, err := models.AppliedSaleRecordCartOffer{}.GetAppliedSaleRecordCartOffer(saleTransaction.TransactionId)
 						if err != nil {
 							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10)}
 							if err := SaleRecordIdFailMapping.Save(); err != nil {
@@ -336,10 +337,10 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 							}
 							continue
 						}
-						if appliedOrderCartOffer.CouponNo == "" && appliedOrderCartOffer.OfferNo != "" {
-							offerNo = appliedOrderCartOffer.OfferNo
+						if appliedSaleRecordCartOffer.CouponNo == "" && appliedSaleRecordCartOffer.OfferNo != "" {
+							offerNo = appliedSaleRecordCartOffer.OfferNo
 						}
-						couponNo = appliedOrderCartOffer.CouponNo
+						couponNo = appliedSaleRecordCartOffer.CouponNo
 					}
 
 					if offerNo != "" {

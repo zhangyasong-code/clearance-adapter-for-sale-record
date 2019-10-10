@@ -113,21 +113,20 @@ type PostMileageDtl struct {
 	PointPrice          float64 `json:"pointPrice" xorm:"decimal(19,2)"`
 }
 
-type AppliedOrderItemOffer struct {
-	Id          int64  `json:"id"`
-	CouponNo    string `json:"couponNo"`
-	ItemCode    string `json:"itemCode"`
-	OfferNo     string `json:"offerNo"`
-	OrderItemId int64  `json:"orderItemId"`
+type AppliedSaleRecordItemOffer struct {
+	Id               int64  `json:"id"`
+	CouponNo         string `json:"couponNo"`
+	ItemCode         string `json:"itemCode"`
+	OfferNo          string `json:"offerNo"`
+	TransactionDtlId int64  `json:"transactionDtlId"`
 }
 
-type AppliedOrderCartOffer struct {
-	Id       int64   `json:"id"`
-	CouponNo string  `json:"couponNo"`
-	OfferNo  string  `json:"offerNo"`
-	OrderId  int64   `json:"orderId"`
-	RefundId int64   `json:"refundId"`
-	Price    float64 `json:"price"`
+type AppliedSaleRecordCartOffer struct {
+	Id            int64   `json:"id"`
+	CouponNo      string  `json:"couponNo"`
+	OfferNo       string  `json:"offerNo"`
+	Price         float64 `json:"price"`
+	TransactionId int64   `json:"transactionId"`
 }
 
 type PromotionEvent struct {
@@ -220,32 +219,32 @@ func (PostMileage) GetPostMileageDtl(transactionDtlId int64, use_type UseType) (
 	return postMileageDtl, nil
 }
 
-func (AppliedOrderItemOffer) GetAppliedOrderItemOffer(orderItemId int64) (*AppliedOrderItemOffer, error) {
-	var appliedOrderItemOffer AppliedOrderItemOffer
-	exist, err := factory.GetSrEngine().Where("order_item_id = ?", orderItemId).Get(&appliedOrderItemOffer)
+func (AppliedSaleRecordItemOffer) GetAppliedSaleRecordItemOffer(transactionDtlId int64) (*AppliedSaleRecordItemOffer, error) {
+	var appliedSaleRecordItemOffer AppliedSaleRecordItemOffer
+	exist, err := factory.GetSrEngine().Where("transaction_dtl_id = ?", transactionDtlId).Get(&appliedSaleRecordItemOffer)
 	if err != nil {
 		return nil, err
 	} else if !exist {
 		logrus.WithFields(logrus.Fields{
-			"order_item_id": orderItemId,
-		}).Error("Fail to GetAppliedOrderItemOffer")
-		return nil, errors.New("AppliedOrderItemOffer is not exist!")
+			"transaction_dtl_id": transactionDtlId,
+		}).Error("Fail to GetAppliedSaleRecordItemOffer")
+		return nil, errors.New("AppliedSaleRecordItemOffer is not exist!")
 	}
-	return &appliedOrderItemOffer, nil
+	return &appliedSaleRecordItemOffer, nil
 }
 
-func (AppliedOrderCartOffer) GetAppliedOrderCartOffer(orderId int64) (*AppliedOrderCartOffer, error) {
-	var appliedOrderCartOffer AppliedOrderCartOffer
-	exist, err := factory.GetSrEngine().Where("order_id = ?", orderId).Get(&appliedOrderCartOffer)
+func (AppliedSaleRecordCartOffer) GetAppliedSaleRecordCartOffer(transactionId int64) (*AppliedSaleRecordCartOffer, error) {
+	var appliedSaleRecordCartOffer AppliedSaleRecordCartOffer
+	exist, err := factory.GetSrEngine().Where("transaction_id = ?", transactionId).Get(&appliedSaleRecordCartOffer)
 	if err != nil {
 		return nil, err
 	} else if !exist {
 		logrus.WithFields(logrus.Fields{
-			"orderId": orderId,
-		}).Error("Fail to GetAppliedOrderCartOffer")
-		return nil, errors.New("AppliedOrderCartOffer is not exist!")
+			"transactionId": transactionId,
+		}).Error("Fail to GetAppliedSaleRecordCartOffer")
+		return nil, errors.New("AppliedSaleRecordCartOffer is not exist!")
 	}
-	return &appliedOrderCartOffer, nil
+	return &appliedSaleRecordCartOffer, nil
 }
 
 //sum quantity , total_sale_price , total_discount_price
