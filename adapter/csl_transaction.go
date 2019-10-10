@@ -477,7 +477,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					preSaleDtSeq = sql.NullInt64{successDtls[0].DtlSeq, false}
 				}
 				if normalSaleTypeCode != "1" {
-					useMileage = math.Abs(postMileageDtl.Point)
+					useMileage = math.Abs(postMileageDtl.PointPrice)
 				}
 				discountAmt = eventAutoDiscountAmt + useMileage + saleVentDecisionDiscountAmt
 				estimateSaleAmt = saleTransactionDtl.TotalListPrice - discountAmt
