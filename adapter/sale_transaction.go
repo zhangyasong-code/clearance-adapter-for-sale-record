@@ -125,6 +125,7 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 			BrandId:                        assortedSaleRecordDtl.BrandId,
 			ProductId:                      assortedSaleRecordDtl.ProductId,
 			ListPrice:                      assortedSaleRecordDtl.ListPrice,
+			ItemCode:                       assortedSaleRecordDtl.ItemCode,
 			ItemFee:                        assortedSaleRecordDtl.ItemFee,
 			TotalTransactionPrice:          assortedSaleRecordDtl.TotalTransactionPrice,
 			TotalDistributedCartOfferPrice: assortedSaleRecordDtl.TotalDistributedCartOfferPrice,

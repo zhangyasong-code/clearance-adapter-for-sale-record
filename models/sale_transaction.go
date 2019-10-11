@@ -42,6 +42,7 @@ type SaleTransactionDtl struct {
 	SkuId                          int64   `json:"skuId" xorm:"index notnull" validate:"gte=0"`
 	BrandCode                      string  `json:"brandCode" xorm:"index VARCHAR(30) notnull" validate:"required"`
 	BrandId                        int64   `json:"brandId" xorm:"index default 0"`
+	ItemCode                       string  `json:"itemCode" xorm:"index VARCHAR(60)"`
 	ItemFee                        float64 `json:"itemFee" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	TotalListPrice                 float64 `json:"totalListPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	TotalTransactionPrice          float64 `json:"totalTransactionPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
