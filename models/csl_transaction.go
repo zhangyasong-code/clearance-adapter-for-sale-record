@@ -91,7 +91,7 @@ type SaleMst struct {
 	PosNo                string         `query:"posNo" json:"posNo"`
 	SeqNo                int64          `query:"seqNo" json:"seqNo"`
 	SaleMode             string         `query:"saleMode" json:"saleMode"`
-	CustNo               string         `query:"custNo" json:"custNo"`
+	CustNo               sql.NullString `query:"custNo" json:"custNo"`
 	CustCardNo           sql.NullString `query:"custCardNo" json:"custCardNo"`
 	CustMileagePolicyNo  sql.NullInt64  `query:"custMileagePolicyNo" json:"custMileagePolicyNo"`
 	PrimaryCustEventNo   sql.NullInt64  `query:"primaryCustEventNo" json:"primaryCustEventNo"`

@@ -107,7 +107,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 	var saleEventNormalSaleRecognitionChk bool
 	var startStr, strSeqNo, saleMode, eANCode, normalSaleTypeCode, useMileageSettleType, offerNo, couponNo string
 	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo, preSaleDtSeq sql.NullInt64
-	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode, secondaryEventSettleTypeCode, preSaleNo, creditCardFirmCode sql.NullString
+	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode, secondaryEventSettleTypeCode, preSaleNo, creditCardFirmCode, custNo sql.NullString
 	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
 		discountAmt, actualSaleAmt, saleEventFee, normalFee, normalFeeRate, saleEventFeeRate, eventAutoDiscountAmt,
 		eventDecisionDiscountAmt, chinaFISaleAmt, estimateSaleAmt, useMileage, sellingAmt, discountAmtAsCost float64
@@ -232,7 +232,10 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			}
 			continue
 		}
-
+		custNo = sql.NullString{"", false}
+		if saleTransaction.CustomerId != 0 {
+			custNo = sql.NullString{strconv.FormatInt(saleTransaction.CustomerId, 10), true}
+		}
 		saleMst := models.SaleMst{
 			SaleNo:                      saleNo,
 			SeqNo:                       seqNo,
@@ -240,7 +243,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			Dates:                       saleDate,
 			ShopCode:                    store.Code,
 			SaleMode:                    saleMode,
-			CustNo:                      strconv.FormatInt(saleTransaction.CustomerId, 10),
+			CustNo:                      custNo,
 			CustCardNo:                  sql.NullString{"", false},
 			CustMileagePolicyNo:         custMileagePolicyNo,
 			PrimaryCustEventNo:          sql.NullInt64{0, false},
