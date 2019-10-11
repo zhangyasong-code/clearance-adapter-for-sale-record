@@ -273,6 +273,10 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			TMall_ObtainMileage:         sql.NullFloat64{0, false},
 			TransactionId:               saleTransaction.TransactionId,
 		}
+		appliedSaleRecordCartOffers, err := models.AppliedSaleRecordCartOffer{}.GetAppliedSaleRecordCartOffers(saleTransaction.TransactionId)
+		if err != nil {
+			return nil, err
+		}
 		dtSeq = 0
 		for _, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {
 			if saleTransactionDtl.TransactionId == saleTransaction.TransactionId {
@@ -325,21 +329,16 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						}
 					}
 					if saleTransactionDtl.TotalDistributedCartOfferPrice != 0 {
-						appliedSaleRecordCartOffer, err := models.AppliedSaleRecordCartOffer{}.GetAppliedSaleRecordCartOffer(saleTransaction.TransactionId)
-						if err != nil {
-							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10)}
-							if err := SaleRecordIdFailMapping.Save(); err != nil {
-								return nil, err
+						for _, appliedSaleRecordCartOffer := range appliedSaleRecordCartOffers {
+							result := strings.Index(appliedSaleRecordCartOffer.ItemCodes+",", saleTransactionDtl.ItemCode+",")
+							if result != -1 {
+								couponNo = appliedSaleRecordCartOffer.CouponNo
+								offerNo = appliedSaleRecordCartOffer.OfferNo
+								break
 							}
-							continue
 						}
-						if appliedSaleRecordCartOffer.CouponNo == "" && appliedSaleRecordCartOffer.OfferNo != "" {
-							offerNo = appliedSaleRecordCartOffer.OfferNo
-						}
-						couponNo = appliedSaleRecordCartOffer.CouponNo
 					}
-
-					if offerNo != "" {
+					if offerNo != "" && couponNo == "" {
 						promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(offerNo)
 						if err != nil {
 							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " OfferNo:" + offerNo}
@@ -387,7 +386,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 							}
 						}
 					}
-
 					if couponNo != "" {
 						normalSaleTypeCode = "2"
 						//search eventN by brandCode
