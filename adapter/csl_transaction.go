@@ -325,9 +325,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 							}
 							continue
 						}
-						if appliedSaleRecordItemOffer.CouponNo == "" && appliedSaleRecordItemOffer.OfferNo != "" {
-							offerNo = appliedSaleRecordItemOffer.OfferNo
-						}
+						offerNo = appliedSaleRecordItemOffer.OfferNo
 					} else if saleTransactionDtl.TotalDistributedCartOfferPrice != 0 {
 						for _, appliedSaleRecordCartOffer := range appliedSaleRecordCartOffers {
 							result := strings.Index(appliedSaleRecordCartOffer.ItemCodes+",", saleTransactionDtl.ItemCode+",")
