@@ -119,6 +119,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 	saleMsts := make([]models.SaleMst, 0)
 	saleDtls := make([]models.SaleDtl, 0)
 	salePayments := make([]models.SalePayment, 0)
+	local, _ := time.ParseDuration("8h")
 	for i, saleTransaction := range saleTAndSaleTDtls.SaleTransactions {
 		saleDate := saleTransaction.SaleDate.Format("20060102")
 
@@ -260,9 +261,9 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			ActualSaleAmt:               saleTransaction.TotalTransactionPrice - feeAmt,
 			ObtainMileage:               mileage.Point,
 			InUserID:                    colleagues.UserName,
-			InDateTime:                  saleTransaction.SaleDate,
+			InDateTime:                  (saleTransaction.SaleDate).Add(local),
 			ModiUserID:                  colleagues.UserName,
-			ModiDateTime:                saleTransaction.SaleDate,
+			ModiDateTime:                (saleTransaction.SaleDate).Add(local),
 			SendState:                   "",
 			SendFlag:                    NotSynChronized,
 			DiscountAmtAsCost:           0,
@@ -542,9 +543,9 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					NormalFeeRate:                     normalFeeRate,
 					SaleEventFeeRate:                  saleEventFeeRate,
 					InUserID:                          colleagues.UserName,
-					InDateTime:                        saleTransaction.SaleDate,
+					InDateTime:                        (saleTransaction.SaleDate).Add(local),
 					ModiUserID:                        colleagues.UserName,
-					ModiDateTime:                      saleTransaction.SaleDate,
+					ModiDateTime:                      (saleTransaction.SaleDate).Add(local),
 					SendState:                         "",
 					SendFlag:                          NotSynChronized,
 					DiscountAmt:                       discountAmt,
@@ -604,9 +605,9 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				PaymentCode:        pop.PaymentCode,
 				PaymentAmt:         pop.PaymentAmt,
 				InUserID:           colleagues.UserName,
-				InDateTime:         pop.InDateTime,
+				InDateTime:         (pop.InDateTime).Add(local),
 				ModiUserID:         colleagues.UserName,
-				ModiDateTime:       pop.ModiDateTime,
+				ModiDateTime:       (pop.ModiDateTime).Add(local),
 				SendFlag:           "R",
 				CreditCardFirmCode: creditCardFirmCode,
 				TransactionId:      saleMst.TransactionId,
