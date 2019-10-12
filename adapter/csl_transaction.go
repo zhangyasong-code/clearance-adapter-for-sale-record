@@ -315,16 +315,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				saleEventNormalSaleRecognitionChk = false
 				if saleTransactionDtl.TotalDiscountPrice != 0 || saleTransactionDtl.TotalDistributedItemOfferPrice != 0 || saleTransactionDtl.TotalDistributedCartOfferPrice != 0 {
 					//csl logic > ItemOffer and cartOffer cannot be used on the same product at the same time.
-					if saleTransactionDtl.TotalDistributedCartOfferPrice != 0 {
-						for _, appliedSaleRecordCartOffer := range appliedSaleRecordCartOffers {
-							result := strings.Index(appliedSaleRecordCartOffer.ItemCodes+",", saleTransactionDtl.ItemCode+",")
-							if result != -1 {
-								couponNo = appliedSaleRecordCartOffer.CouponNo
-								offerNo = appliedSaleRecordCartOffer.OfferNo
-								break
-							}
-						}
-					} else if saleTransactionDtl.TotalDistributedItemOfferPrice != 0 {
+					if saleTransactionDtl.TotalDistributedItemOfferPrice != 0 {
 						// transactionDtlId = saleTransactionDtl.OrderItemId
 						appliedSaleRecordItemOffer, err := models.AppliedSaleRecordItemOffer{}.GetAppliedSaleRecordItemOffer(saleTransactionDtl.OrderItemId)
 						if err != nil {
@@ -336,6 +327,15 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						}
 						if appliedSaleRecordItemOffer.CouponNo == "" && appliedSaleRecordItemOffer.OfferNo != "" {
 							offerNo = appliedSaleRecordItemOffer.OfferNo
+						}
+					} else if saleTransactionDtl.TotalDistributedCartOfferPrice != 0 {
+						for _, appliedSaleRecordCartOffer := range appliedSaleRecordCartOffers {
+							result := strings.Index(appliedSaleRecordCartOffer.ItemCodes+",", saleTransactionDtl.ItemCode+",")
+							if result != -1 {
+								couponNo = appliedSaleRecordCartOffer.CouponNo
+								offerNo = appliedSaleRecordCartOffer.OfferNo
+								break
+							}
 						}
 					}
 					if offerNo != "" && couponNo == "" {
