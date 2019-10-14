@@ -81,6 +81,15 @@ type SaleRecordIdFailMapping struct {
 	CreatedBy        string    `json:"createdBy" xorm:"index VARCHAR(30)"`
 }
 
+type RequestInput struct {
+	BrandCode   string `json:"brandCode"`
+	ChannelType string `json:"channelType"`
+	OrderId     int64  `json:"orderId"`
+	RefundId    int64  `json:"refundId"`
+	StartAt     string `json:"startAt"`
+	EndAt       string `json:"endAt"`
+}
+
 func (srsm *SaleRecordIdSuccessMapping) CheckAndSave() error {
 	saleRecordIdSuccessMapping := SaleRecordIdSuccessMapping{}
 	has, err := factory.GetCfsrEngine().Where("sale_no = ?", srsm.SaleNo).And("order_item_id = ?", srsm.OrderItemId).
@@ -149,4 +158,27 @@ func (SaleTransaction) GetAll(ctx context.Context, maxResultCount, skipCount int
 	}
 
 	return totalCount, saleTransactions, nil
+}
+
+func (requestInput RequestInput) Validate() error {
+	if requestInput.BrandCode == "" {
+		return errors.New("BrandCode can not be null!")
+	}
+	if requestInput.ChannelType == "" {
+		return errors.New("ChannelType can not be null!")
+	}
+	if requestInput.StartAt != "" && requestInput.EndAt != "" {
+		_, err := time.Parse("2006-01-02 15:04:05", requestInput.StartAt)
+		if err != nil {
+			return errors.New("Please input the correct time format!")
+		}
+		_, err = time.Parse("2006-01-02 15:04:05", requestInput.EndAt)
+		if err != nil {
+			return errors.New("Please input the correct time format!")
+		}
+	}
+	if requestInput.OrderId == 0 && requestInput.RefundId == 0 && requestInput.StartAt == "" && requestInput.EndAt == "" {
+		return errors.New("In orderId and startAt must be have one condition!")
+	}
+	return nil
 }

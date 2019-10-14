@@ -30,13 +30,8 @@ func (etl SrToClearanceETL) Extract(ctx context.Context) (interface{}, error) {
 	//分页查询   一次查1000条
 	skipCount := 0
 	data := ctx.Value("data")
-	dataMap := data.(map[string]string)
-	brandCode := dataMap["brandCode"]
-	transactionChannelType := dataMap["channelType"]
-	startAt := dataMap["startAt"]
-	endAt := dataMap["endAt"]
+	dataInput := data.(models.RequestInput)
 	for {
-		// srs := []models.AssortedSaleRecord{}
 		var assortedSaleRecordAndDtls []struct {
 			AssortedSaleRecord    models.AssortedSaleRecord    `xorm:"extends"`
 			AssortedSaleRecordDtl models.AssortedSaleRecordDtl `xorm:"extends"`
@@ -45,15 +40,21 @@ func (etl SrToClearanceETL) Extract(ctx context.Context) (interface{}, error) {
 			q := factory.GetSrEngine().Table("assorted_sale_record").
 				Join("INNER", "assorted_sale_record_dtl", "assorted_sale_record_dtl.transaction_id = assorted_sale_record.transaction_id").
 				Where("1 = 1")
-			if brandCode != "" {
-				q.And("assorted_sale_record_dtl.brand_code = ?", brandCode)
+			if dataInput.BrandCode != "" {
+				q.And("assorted_sale_record_dtl.brand_code = ?", dataInput.BrandCode)
 			}
-			if transactionChannelType != "" {
-				q.And("assorted_sale_record.transaction_channel_type = ?", transactionChannelType)
+			if dataInput.ChannelType != "" {
+				q.And("assorted_sale_record.transaction_channel_type = ?", dataInput.ChannelType)
 			}
-			if startAt != "" && endAt != "" {
-				st, _ := time.Parse("2006-01-02 15:04:05", startAt)
-				et, _ := time.Parse("2006-01-02 15:04:05", endAt)
+			if dataInput.OrderId != 0 {
+				q.And("assorted_sale_record.order_id = ?", dataInput.OrderId)
+			}
+			if dataInput.RefundId != 0 {
+				q.And("assorted_sale_record.refund_id = ?", dataInput.RefundId)
+			}
+			if dataInput.StartAt != "" && dataInput.EndAt != "" {
+				st, _ := time.Parse("2006-01-02 15:04:05", dataInput.StartAt)
+				et, _ := time.Parse("2006-01-02 15:04:05", dataInput.EndAt)
 				h, _ := time.ParseDuration("-8h")
 				q.And("assorted_sale_record.transaction_create_date >= ?", st.Add(h)).And("assorted_sale_record.transaction_create_date < ?", et.Add(h))
 			}
