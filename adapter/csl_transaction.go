@@ -126,7 +126,13 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		//get store
 		store, err := models.Store{}.GetStore(saleTransaction.StoreId)
 		if err != nil {
-			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransaction.TransactionId, CreatedBy: "batch-job", Error: err.Error() + " StoreId:" + strconv.FormatInt(saleTransaction.StoreId, 10)}
+			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+				StoreId:       saleTransaction.StoreId,
+				TransactionId: saleTransaction.TransactionId,
+				CreatedBy:     "API",
+				Error:         err.Error() + " StoreId:" + strconv.FormatInt(saleTransaction.StoreId, 10),
+				Details:       "卖场信息不存在!",
+			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return nil, err
 			}
@@ -191,8 +197,13 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			complexShopSeqNo = strconv.FormatInt(saleTransaction.RefundId, 10)
 			successDtls, err := models.SaleRecordIdSuccessMapping{}.Get(saleTransaction.OrderId, 0)
 			if err != nil {
-				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransaction.TransactionId, CreatedBy: "batch-job",
-					Error: err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10) + " RefundId:" + strconv.FormatInt(saleTransaction.RefundId, 10)}
+				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+					StoreId:       saleTransaction.StoreId,
+					TransactionId: saleTransaction.TransactionId,
+					CreatedBy:     "API",
+					Error:         err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10) + " RefundId:" + strconv.FormatInt(saleTransaction.RefundId, 10),
+					Details:       "退货处理必须有之前的销售数据！",
+				}
 				if err := SaleRecordIdFailMapping.Save(); err != nil {
 					return nil, err
 				}
@@ -212,7 +223,13 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if mileage.BrandId != 0 {
 			brand, err = models.Product{}.GetBrandById(mileage.BrandId)
 			if err != nil {
-				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransaction.TransactionId, CreatedBy: "batch-job", Error: err.Error() + " BrandId:" + strconv.FormatInt(mileage.BrandId, 10)}
+				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+					StoreId:       saleTransaction.StoreId,
+					TransactionId: saleTransaction.TransactionId,
+					CreatedBy:     "API",
+					Error:         err.Error() + " BrandId:" + strconv.FormatInt(mileage.BrandId, 10),
+					Details:       "品牌信息不存在！",
+				}
 				if err := SaleRecordIdFailMapping.Save(); err != nil {
 					return nil, err
 				}
@@ -227,7 +244,13 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 
 		colleagues, err := models.Colleagues{}.GetColleaguesAuth(saleTransaction.SalesmanId)
 		if err != nil {
-			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransaction.TransactionId, CreatedBy: "batch-job", Error: err.Error() + " SalesmanId:" + strconv.FormatInt(saleTransaction.SalesmanId, 10)}
+			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+				StoreId:       saleTransaction.StoreId,
+				TransactionId: saleTransaction.TransactionId,
+				CreatedBy:     "API",
+				Error:         err.Error() + " SalesmanId:" + strconv.FormatInt(saleTransaction.SalesmanId, 10),
+				Details:       "销售员信息不存在！",
+			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return nil, err
 			}
@@ -273,6 +296,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			TMall_UseMileage:            sql.NullFloat64{0, false},
 			TMall_ObtainMileage:         sql.NullFloat64{0, false},
 			TransactionId:               saleTransaction.TransactionId,
+			StoreId:                     saleTransaction.StoreId,
 		}
 		appliedSaleRecordCartOffers, err := models.AppliedSaleRecordCartOffer{}.GetAppliedSaleRecordCartOffers(saleTransaction.TransactionId)
 		if err != nil {
@@ -320,7 +344,14 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						// transactionDtlId = saleTransactionDtl.OrderItemId
 						appliedSaleRecordItemOffer, err := models.AppliedSaleRecordItemOffer{}.GetAppliedSaleRecordItemOffer(saleTransactionDtl.OrderItemId)
 						if err != nil {
-							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " transaction_dtl_id:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10)}
+							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+								StoreId:          saleTransaction.StoreId,
+								TransactionId:    saleTransactionDtl.TransactionId,
+								TransactionDtlId: saleTransactionDtl.Id,
+								CreatedBy:        "API",
+								Error:            err.Error() + " transaction_dtl_id:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10),
+								Details:          "商品使用的促销不存在！",
+							}
 							if err := SaleRecordIdFailMapping.Save(); err != nil {
 								return nil, err
 							}
@@ -340,7 +371,14 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					if offerNo != "" && couponNo == "" {
 						promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(offerNo)
 						if err != nil {
-							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " OfferNo:" + offerNo}
+							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+								StoreId:          saleTransaction.StoreId,
+								TransactionId:    saleTransactionDtl.TransactionId,
+								TransactionDtlId: saleTransactionDtl.Id,
+								CreatedBy:        "API",
+								Error:            err.Error() + " OfferNo:" + offerNo,
+								Details:          "商品参加的活动不存在！",
+							}
 							if err := SaleRecordIdFailMapping.Save(); err != nil {
 								return nil, err
 							}
@@ -390,7 +428,14 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						//search eventN by brandCode
 						coupenEvent, err := models.PostCouponEvent{}.GetPostCoupenEvent(saleTransactionDtl.BrandCode)
 						if err != nil {
-							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode}
+							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+								StoreId:          saleTransaction.StoreId,
+								TransactionId:    saleTransactionDtl.TransactionId,
+								TransactionDtlId: saleTransactionDtl.Id,
+								CreatedBy:        "API",
+								Error:            err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode,
+								Details:          "优惠券信息不存在！",
+							}
 							if err := SaleRecordIdFailMapping.Save(); err != nil {
 								return nil, err
 							}
@@ -404,7 +449,14 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 
 				sku, err := models.Product{}.GetSkuBySkuId(saleTransactionDtl.SkuId)
 				if err != nil {
-					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " SkuId:" + strconv.FormatInt(saleTransactionDtl.SkuId, 10)}
+					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+						StoreId:          saleTransaction.StoreId,
+						TransactionId:    saleTransactionDtl.TransactionId,
+						TransactionDtlId: saleTransactionDtl.Id,
+						CreatedBy:        "API",
+						Error:            err.Error() + " SkuId:" + strconv.FormatInt(saleTransactionDtl.SkuId, 10),
+						Details:          "商品不存在！",
+					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return nil, err
 					}
@@ -424,7 +476,14 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				}
 				product, err := models.Product{}.GetProductById(saleTransactionDtl.ProductId)
 				if err != nil {
-					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " ProductId:" + strconv.FormatInt(saleTransactionDtl.ProductId, 10)}
+					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+						StoreId:          saleTransaction.StoreId,
+						TransactionId:    saleTransactionDtl.TransactionId,
+						TransactionDtlId: saleTransactionDtl.Id,
+						CreatedBy:        "API",
+						Error:            err.Error() + " ProductId:" + strconv.FormatInt(saleTransactionDtl.ProductId, 10),
+						Details:          "商品款式不存在!",
+					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return nil, err
 					}
@@ -432,7 +491,14 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				}
 				priceTypeCode, err := models.SaleMst{}.GetPriceTypeCode(saleTransactionDtl.BrandCode, product.Code)
 				if err != nil {
-					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode + " productCode:" + product.Code}
+					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+						StoreId:          saleTransaction.StoreId,
+						TransactionId:    saleTransactionDtl.TransactionId,
+						TransactionDtlId: saleTransactionDtl.Id,
+						CreatedBy:        "API",
+						Error:            err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode + " productCode:" + product.Code,
+						Details:          "价格类型编码不存在！",
+					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return nil, err
 					}
@@ -440,7 +506,14 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				}
 				supGroupCode, err := models.SaleMst{}.GetSupGroupCode(saleTransactionDtl.BrandCode, product.Code)
 				if err != nil {
-					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId, TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode + " productCode:" + product.Code}
+					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+						StoreId:          saleTransaction.StoreId,
+						TransactionId:    saleTransactionDtl.TransactionId,
+						TransactionDtlId: saleTransactionDtl.Id,
+						CreatedBy:        "API",
+						Error:            err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode + " productCode:" + product.Code,
+						Details:          "商品品类不存在",
+					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return nil, err
 					}
@@ -457,8 +530,14 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				}
 				postSaleRecordFee, err := models.PostSaleRecordFee{}.GetPostSaleRecordFee(saleTransactionDtl.OrderItemId, saleTransactionDtl.RefundItemId)
 				if err != nil {
-					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId,
-						TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10) + " RefundItemId:" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10)}
+					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+						StoreId:          saleTransaction.StoreId,
+						TransactionId:    saleTransactionDtl.TransactionId,
+						TransactionDtlId: saleTransactionDtl.Id,
+						CreatedBy:        "API",
+						Error:            err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10) + " RefundItemId:" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10),
+						Details:          "",
+					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return nil, err
 					}
@@ -468,8 +547,14 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				if saleTransaction.RefundId != 0 {
 					successDtls, err := models.SaleRecordIdSuccessMapping{}.Get(saleTransaction.OrderId, saleTransactionDtl.RefundItemId)
 					if err != nil {
-						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransactionDtl.TransactionId,
-							TransactionDtlId: saleTransactionDtl.Id, CreatedBy: "batch-job", Error: err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10) + " RefundItemId:" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10)}
+						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+							StoreId:          saleTransaction.StoreId,
+							TransactionId:    saleTransactionDtl.TransactionId,
+							TransactionDtlId: saleTransactionDtl.Id,
+							CreatedBy:        "API",
+							Error:            err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10) + " RefundItemId:" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10),
+							Details:          "退货处理必须有之前的销售数据！",
+						}
 						if err := SaleRecordIdFailMapping.Save(); err != nil {
 							return nil, err
 						}
@@ -588,7 +673,13 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		saleMst.ActualSellingAmt = saleMst.SellingAmt
 		postOrderPayments, err := models.PostPayment{}.GetPostPayment(saleTransaction.TransactionId)
 		if err != nil {
-			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleTransaction.TransactionId, CreatedBy: "batch-job", Error: err.Error() + " TransactionId:" + strconv.FormatInt(saleTransaction.TransactionId, 10)}
+			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+				StoreId:       saleTransaction.StoreId,
+				TransactionId: saleTransaction.TransactionId,
+				CreatedBy:     "API",
+				Error:         err.Error() + " TransactionId:" + strconv.FormatInt(saleTransaction.TransactionId, 10),
+				Details:       "支付信息不存在！",
+			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return nil, err
 			}
@@ -628,7 +719,13 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if check {
 			saleMsts = append(saleMsts, saleMst)
 		} else {
-			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleMst.TransactionId, CreatedBy: "batch-job", Error: "SaleMst、SaleDtl、SalePayment数据不一致" + strconv.FormatInt(saleMst.TransactionId, 10)}
+			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+				StoreId:       saleTransaction.StoreId,
+				TransactionId: saleMst.TransactionId,
+				CreatedBy:     "API",
+				Error:         "SaleMst、SaleDtl、SalePayment数据不一致" + strconv.FormatInt(saleMst.TransactionId, 10),
+				Details:       "数据异常！",
+			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return nil, err
 			}
@@ -669,7 +766,13 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 
 	for _, saleMst := range saleMstsAndSaleDtls.SaleMsts {
 		if _, err := session.Table("dbo.SaleMst").Insert(&saleMst); err != nil {
-			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleMst.TransactionId, CreatedBy: "batch-job", Error: err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10)}
+			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+				StoreId:       saleMst.StoreId,
+				TransactionId: saleMst.TransactionId,
+				CreatedBy:     "API",
+				Error:         err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10),
+				Details:       "数据插入异常！",
+			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return err
 			}
@@ -680,7 +783,14 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 		for _, saleDtl := range saleMstsAndSaleDtls.SaleDtls {
 			if saleDtl.SaleNo == saleMst.SaleNo {
 				if _, err := session.Table("dbo.SaleDtl").Insert(&saleDtl); err != nil {
-					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleMst.TransactionId, TransactionDtlId: saleDtl.TransactionDtlId, CreatedBy: "batch-job", Error: err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10)}
+					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+						StoreId:          saleMst.StoreId,
+						TransactionId:    saleMst.TransactionId,
+						TransactionDtlId: saleDtl.TransactionDtlId,
+						CreatedBy:        "API",
+						Error:            err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10),
+						Details:          "数据插入异常!",
+					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return err
 					}
@@ -693,7 +803,13 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 		for _, salePayment := range saleMstsAndSaleDtls.SalePayments {
 			if saleMst.SaleNo == salePayment.SaleNo {
 				if _, err := session.Table("dbo.SalePayment").Insert(&salePayment); err != nil {
-					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{TransactionId: saleMst.TransactionId, CreatedBy: "batch-job", Error: err.Error() + " SalePaymentTransactionId:" + strconv.FormatInt(salePayment.TransactionId, 10)}
+					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+						StoreId:       saleMst.StoreId,
+						TransactionId: saleMst.TransactionId,
+						CreatedBy:     "API",
+						Error:         err.Error() + " SalePaymentTransactionId:" + strconv.FormatInt(salePayment.TransactionId, 10),
+						Details:       "数据插入异常！",
+					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return err
 					}
@@ -707,8 +823,14 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 			if salDtl.SaleNo == saleMst.SaleNo {
 				for _, salePayment := range saleMstsAndSaleDtls.SalePayments {
 					if salePayment.SaleNo == salDtl.SaleNo {
-						saleRecordIdSuccessMapping := &models.SaleRecordIdSuccessMapping{SaleNo: saleMst.SaleNo, CreatedBy: "batch-job",
-							TransactionId: saleMst.TransactionId, OrderItemId: salDtl.OrderItemId, RefundItemId: salDtl.RefundItemId, DtlSeq: salDtl.DtSeq}
+						saleRecordIdSuccessMapping := &models.SaleRecordIdSuccessMapping{
+							SaleNo:        saleMst.SaleNo,
+							CreatedBy:     "API",
+							TransactionId: saleMst.TransactionId,
+							OrderItemId:   salDtl.OrderItemId,
+							RefundItemId:  salDtl.RefundItemId,
+							DtlSeq:        salDtl.DtSeq,
+						}
 						if err := saleRecordIdSuccessMapping.CheckAndSave(); err != nil {
 							return err
 						}
