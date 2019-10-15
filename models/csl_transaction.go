@@ -130,6 +130,7 @@ type SaleMst struct {
 	TMall_ObtainMileage         sql.NullFloat64 `query:"tMall_ObtainMileage" json:"tMall_ObtainMileage"`
 	SaleOfficeCode              string          `query:"saleOfficeCode" json:"saleOfficeCode"`
 	TransactionId               int64           `json:"transactionId" xorm:"-"`
+	StoreId                     int64           `json:"storeId" xorm:"-"`
 }
 
 type SalePayment struct {
