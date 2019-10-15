@@ -24,7 +24,7 @@ func (c TransactionController) Init(g *echo.Group) {
 }
 
 func (TransactionController) RunSaleETL(c echo.Context) error {
-	var data map[string]string
+	var data models.RequestInput
 	if err := c.Bind(&data); err != nil {
 		return c.JSON(http.StatusBadRequest, api.Result{
 			Error: api.Error{
@@ -33,6 +33,13 @@ func (TransactionController) RunSaleETL(c echo.Context) error {
 		})
 	}
 
+	if err := data.Validate(); err != nil {
+		return c.JSON(http.StatusBadRequest, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
+	}
 	etl := goetl.New(adapter.SrToClearanceETL{})
 	etl.After(adapter.SrToClearanceETL{}.ReadyToLoad)
 	if err := etl.Run(context.WithValue(c.Request().Context(), "data", data)); err != nil {
@@ -72,7 +79,7 @@ func (TransactionController) GetSaleTransactions(c echo.Context) error {
 	})
 }
 func (TransactionController) RunCslETL(c echo.Context) error {
-	var data map[string]string
+	var data models.RequestInput
 	if err := c.Bind(&data); err != nil {
 		return c.JSON(http.StatusBadRequest, api.Result{
 			Error: api.Error{
@@ -81,6 +88,13 @@ func (TransactionController) RunCslETL(c echo.Context) error {
 		})
 	}
 
+	if err := data.Validate(); err != nil {
+		return c.JSON(http.StatusBadRequest, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
+	}
 	etl := goetl.New(adapter.ClearanceToCslETL{})
 	etl.After(adapter.ClearanceToCslETL{}.ReadyToLoad)
 	if err := etl.Run(context.WithValue(c.Request().Context(), "data", data)); err != nil {
@@ -97,7 +111,7 @@ func (TransactionController) RunCslETL(c echo.Context) error {
 }
 
 func (TransactionController) RunSaleETLAndCslETL(c echo.Context) error {
-	var data map[string]string
+	var data models.RequestInput
 	if err := c.Bind(&data); err != nil {
 		return c.JSON(http.StatusBadRequest, api.Result{
 			Error: api.Error{
@@ -106,6 +120,13 @@ func (TransactionController) RunSaleETLAndCslETL(c echo.Context) error {
 		})
 	}
 
+	if err := data.Validate(); err != nil {
+		return c.JSON(http.StatusBadRequest, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
+	}
 	clearanceETL := goetl.New(adapter.SrToClearanceETL{})
 	clearanceETL.After(adapter.SrToClearanceETL{}.ReadyToLoad)
 	if err := clearanceETL.Run(context.WithValue(c.Request().Context(), "data", data)); err != nil {
