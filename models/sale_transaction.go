@@ -184,3 +184,19 @@ func (requestInput RequestInput) Validate() error {
 	}
 	return nil
 }
+
+func (SaleRecordIdFailMapping) GetAll(ctx context.Context, maxResultCount, skipCount, storeId int) (int64, []SaleRecordIdFailMapping, error) {
+	var failDatas []SaleRecordIdFailMapping
+	query := func() xorm.Interface {
+		query := factory.GetCfsrEngine().Where("1 = 1").And("is_create = ?", false)
+		if storeId != 0 {
+			query = query.And("store_id = ?", storeId)
+		}
+		return query
+	}
+	totalCount, err := query().Limit(maxResultCount, skipCount).FindAndCount(&failDatas)
+	if err != nil {
+		return 0, nil, err
+	}
+	return totalCount, failDatas, nil
+}

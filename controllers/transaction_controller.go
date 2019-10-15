@@ -19,8 +19,9 @@ type TransactionController struct{}
 func (c TransactionController) Init(g *echo.Group) {
 	g.POST("/sale", c.RunSaleETL)
 	g.POST("/csl", c.RunCslETL)
-	g.POST("/saleAndCsl", c.RunSaleETLAndCslETL)
+	g.POST("/sale-csl", c.RunSaleETLAndCslETL)
 	g.GET("/sale", c.GetSaleTransactions)
+	g.GET("/fail-log", c.GetFailDataLog)
 }
 
 func (TransactionController) RunSaleETL(c echo.Context) error {
@@ -149,5 +150,30 @@ func (TransactionController) RunSaleETLAndCslETL(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, api.Result{
 		Success: true,
+	})
+}
+
+func (TransactionController) GetFailDataLog(c echo.Context) error {
+	storeId, _ := strconv.Atoi(c.QueryParam("storeId"))
+	maxResultCount, _ := strconv.Atoi(c.QueryParam("maxResultCount"))
+	if maxResultCount == 0 {
+		maxResultCount = 10
+	}
+	skipCount, _ := strconv.Atoi(c.QueryParam("skipCount"))
+
+	totalCount, items, err := models.SaleRecordIdFailMapping{}.GetAll(c.Request().Context(), maxResultCount, skipCount, storeId)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
+	}
+	return c.JSON(http.StatusOK, api.Result{
+		Success: true,
+		Result: api.ArrayResult{
+			TotalCount: totalCount,
+			Items:      items,
+		},
 	})
 }
