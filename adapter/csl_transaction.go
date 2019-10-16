@@ -749,15 +749,17 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 	//get engine
 	engine := factory.GetCSLEngine()
 	engine.SetMapper(core.SameMapper{})
-	engine.TZLocation, _ = time.LoadLocation("Asia/Shanghai")
 	//create session
 	session := engine.NewSession()
 	defer session.Close()
 	if err := session.Begin(); err != nil {
 		return err
 	}
-
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	createTime := time.Now().In(loc)
 	for _, saleMst := range saleMstsAndSaleDtls.SaleMsts {
+		saleMst.InDateTime = createTime
+		saleMst.ModiDateTime = createTime
 		if _, err := session.Table("dbo.SaleMst").Insert(&saleMst); err != nil {
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 				StoreId:       saleMst.StoreId,
@@ -775,6 +777,8 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 		//insert saleDtl
 		for _, saleDtl := range saleMstsAndSaleDtls.SaleDtls {
 			if saleDtl.SaleNo == saleMst.SaleNo {
+				saleDtl.InDateTime = createTime
+				saleDtl.ModiDateTime = createTime
 				if _, err := session.Table("dbo.SaleDtl").Insert(&saleDtl); err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 						StoreId:          saleMst.StoreId,
@@ -795,6 +799,8 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 		//insert salePayMent
 		for _, salePayment := range saleMstsAndSaleDtls.SalePayments {
 			if saleMst.SaleNo == salePayment.SaleNo {
+				salePayment.InDateTime = createTime
+				salePayment.ModiDateTime = createTime
 				if _, err := session.Table("dbo.SalePayment").Insert(&salePayment); err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 						StoreId:       saleMst.StoreId,
