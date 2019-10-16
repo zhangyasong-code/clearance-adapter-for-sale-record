@@ -61,9 +61,9 @@ type SaleDtl struct {
 	NormalFeeRate                     float64        `query:"normalFeeRate" json:"normalFeeRate"`
 	SaleEventFeeRate                  float64        `query:"saleEventFeeRate" json:"saleEventFeeRate"`
 	InUserID                          string         `query:"inUserID" json:"inUserID"`
-	InDateTime                        time.Time      `query:"inDateTime" json:"inDateTime" xorm:"created"`
+	InDateTime                        time.Time      `query:"inDateTime" json:"inDateTime"`
 	ModiUserID                        string         `query:"modiUserID" json:"modiUserID"`
-	ModiDateTime                      time.Time      `query:"modiDateTime" json:"modiDateTime" xorm:"created"`
+	ModiDateTime                      time.Time      `query:"modiDateTime" json:"modiDateTime"`
 	SendState                         string         `query:"sendState" json:"sendState"`
 	SendFlag                          string         `query:"sendFlag" json:"sendFlag"`
 	// SendSeqNo                         int64     `query:"sendSeqNo" json:"sendSeqNo"`
@@ -108,9 +108,9 @@ type SaleMst struct {
 	UseMileage           float64        `query:"useMileage" json:"useMileage"`
 	ObtainMileage        float64        `query:"obtainMileage" json:"obtainMileage"`
 	InUserID             string         `query:"inUserID" json:"inUserID"`
-	InDateTime           time.Time      `query:"inDateTime" json:"inDateTime" xorm:"created"`
+	InDateTime           time.Time      `query:"inDateTime" json:"inDateTime"`
 	ModiUserID           string         `query:"modiUserID" json:"modiUserID"`
-	ModiDateTime         time.Time      `query:"modiDateTime" json:"modiDateTime" xorm:"created"`
+	ModiDateTime         time.Time      `query:"modiDateTime" json:"modiDateTime"`
 	SendState            string         `query:"sendState" json:"sendState"`
 	SendFlag             string         `query:"sendFlag" json:"sendFlag"`
 	// SendSeqNo                   int64     `query:"sendSeqNo" json:"sendSeqNo"`
@@ -139,9 +139,9 @@ type SalePayment struct {
 	PaymentCode  string    `query:"paymentCode" json:"paymentCode"`
 	PaymentAmt   float64   `query:"paymentAmt" json:"paymentAmt"`
 	InUserID     string    `query:"inUserID" json:"inUserID"`
-	InDateTime   time.Time `query:"inDateTime" json:"inDateTime" xorm:"created"`
+	InDateTime   time.Time `query:"inDateTime" json:"inDateTime"`
 	ModiUserID   string    `query:"modiUserID" json:"modiUserID"`
-	ModiDateTime time.Time `query:"modiDateTime" json:"modiDateTime" xorm:"created"`
+	ModiDateTime time.Time `query:"modiDateTime" json:"modiDateTime"`
 	// SendState    sql.NullString `query:"sendState" json:"sendState"`
 	SendFlag string `query:"sendFlag" json:"sendFlag"`
 	// SendSeqNo          int64          `query:"sendSeqNo" json:"sendSeqNo"`
