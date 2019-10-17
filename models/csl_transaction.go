@@ -150,10 +150,21 @@ type SalePayment struct {
 	TransactionId      int64          `json:"transactionId" xorm:"-"`
 }
 
+type StaffSaleRecord struct {
+	Dates      string    `json:"dates"`
+	HREmpNo    string    `json:"hREmpNo"`
+	SaleNo     string    `json:"saleNo"`
+	BrandCode  string    `json:"brandCode"`
+	ShopCode   string    `json:"shopCode"`
+	InUserID   string    `json:"inUserID"`
+	InDateTime time.Time `json:"inDateTime"`
+}
+
 type SaleMstsAndSaleDtls struct {
-	SaleMsts     []SaleMst     `query:"saleMsts" json:"saleMsts" `
-	SaleDtls     []SaleDtl     `query:"saleDtls" json:"saleDtls" `
-	SalePayments []SalePayment `query:"salePayments" json:"salePayments"`
+	SaleMsts         []SaleMst         `json:"saleMsts"`
+	SaleDtls         []SaleDtl         `json:"saleDtls"`
+	SalePayments     []SalePayment     `json:"salePayments"`
+	StaffSaleRecords []StaffSaleRecord `json:"staffSaleRecords"`
 }
 
 type ResultShop struct {

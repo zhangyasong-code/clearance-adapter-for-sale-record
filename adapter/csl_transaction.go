@@ -119,6 +119,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 	saleMsts := make([]models.SaleMst, 0)
 	saleDtls := make([]models.SaleDtl, 0)
 	salePayments := make([]models.SalePayment, 0)
+	staffSaleRecords := make([]models.StaffSaleRecord, 0)
 	for i, saleTransaction := range saleTAndSaleTDtls.SaleTransactions {
 		saleDate := saleTransaction.SaleDate.Format("20060102")
 
@@ -329,11 +330,27 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if err != nil {
 			return nil, err
 		}
+
+		// 是否上传内购到CSL Parameters : empId
+		staffSaleRecord := models.StaffSaleRecord{}
+		if saleTransaction.EmpId != 0 {
+			staffSaleRecord = models.StaffSaleRecord{
+				Dates:    saleDate,
+				HREmpNo:  strconv.FormatInt(saleTransaction.EmpId, 10),
+				SaleNo:   saleMst.SaleNo,
+				ShopCode: saleMst.ShopCode,
+				InUserID: saleMst.InUserID,
+			}
+			// staffSaleRecords = append(staffSaleRecords, staffSaleRecord)
+		}
 		dtSeq = 0
-		for _, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {
+		for i, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {
 			if saleTransactionDtl.TransactionId == saleTransaction.TransactionId {
 				dtSeq += 1
-				saleMst.BrandCode = saleTransactionDtl.BrandCode
+				if i == 0 {
+					saleMst.BrandCode = saleTransactionDtl.BrandCode
+					staffSaleRecord.BrandCode = saleTransactionDtl.BrandCode
+				}
 				eventNo = sql.NullInt64{0, false}
 				primaryCustEventNo = sql.NullInt64{0, false}
 				primaryEventTypeCode = sql.NullString{"", false}
@@ -740,6 +757,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			}
 		}
 		if check {
+			staffSaleRecords = append(staffSaleRecords, staffSaleRecord)
 			saleMsts = append(saleMsts, saleMst)
 		} else {
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
@@ -756,9 +774,10 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		}
 	}
 	return models.SaleMstsAndSaleDtls{
-		SaleMsts:     saleMsts,
-		SaleDtls:     saleDtls,
-		SalePayments: salePayments,
+		SaleMsts:         saleMsts,
+		SaleDtls:         saleDtls,
+		SalePayments:     salePayments,
+		StaffSaleRecords: staffSaleRecords,
 	}, nil
 }
 
@@ -804,6 +823,28 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 			session.Rollback()
 			return err
 		}
+
+		// insert staffSaleRecord > 内购销售上传
+		for _, staffSaleRecord := range saleMstsAndSaleDtls.StaffSaleRecords {
+			if staffSaleRecord.SaleNo == saleMst.SaleNo {
+				staffSaleRecord.InDateTime = createTime
+				if _, err := session.Table("dbo.StaffSaleRecord").Insert(&staffSaleRecord); err != nil {
+					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+						StoreId:       saleMst.StoreId,
+						TransactionId: saleMst.TransactionId,
+						CreatedBy:     "API",
+						Error:         err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10),
+						Details:       "数据插入异常!",
+					}
+					if err := SaleRecordIdFailMapping.Save(); err != nil {
+						return err
+					}
+					session.Rollback()
+					return err
+				}
+			}
+		}
+
 		//insert saleDtl
 		for _, saleDtl := range saleMstsAndSaleDtls.SaleDtls {
 			if saleDtl.SaleNo == saleMst.SaleNo {
@@ -826,6 +867,7 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 				}
 			}
 		}
+
 		//insert salePayMent
 		for _, salePayment := range saleMstsAndSaleDtls.SalePayments {
 			if saleMst.SaleNo == salePayment.SaleNo {
@@ -847,6 +889,7 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 				}
 			}
 		}
+
 		//insert success table
 		for _, salDtl := range saleMstsAndSaleDtls.SaleDtls {
 			if salDtl.SaleNo == saleMst.SaleNo {

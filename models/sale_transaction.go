@@ -14,6 +14,7 @@ type SaleTransaction struct {
 	TransactionId          int64     `json:"transactionId" xorm:"index default 0 pk" validate:"required"`
 	OrderId                int64     `json:"orderId" xorm:"index default 0" validate:"required"`
 	RefundId               int64     `json:"refundId" xorm:"index default 0" validate:"required"`
+	EmpId                  int64     `json:"empId" xorm:"index default 0"`
 	StoreId                int64     `json:"storeId" xorm:"index default 0" validate:"required"`
 	SalesmanId             int64     `json:"salesmanId" xorm:"index default 0" validate:"required"`
 	CustomerId             int64     `json:"customerId" xorm:"index default 0" validate:"required"`
