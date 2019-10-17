@@ -114,6 +114,7 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 			OuterOrderNo:           assortedSaleRecord.OuterOrderNo,
 			TransactionChannelType: assortedSaleRecord.TransactionChannelType,
 			TotalDiscountPrice:     assortedSaleRecord.TotalDiscountPrice,
+			BaseTrimCode:           assortedSaleRecord.BaseTrimCode,
 		})
 	}
 	for _, assortedSaleRecordDtl := range assortedSaleRecordAndDtls.AssortedSaleRecordDtls {
