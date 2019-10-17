@@ -50,6 +50,7 @@ type AssortedSaleRecord struct {
 	TransactionStatus      string    `json:"transactionStatus"`
 	TransactionType        string    `json:"transactionType"`
 	TransactionUpdateDate  time.Time `json:"transactionUpdateDate"`
+	BaseTrimCode           string    `json:"baseTrimCode"`
 }
 
 type AssortedSaleRecordDtl struct {
