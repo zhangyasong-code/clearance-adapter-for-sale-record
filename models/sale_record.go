@@ -124,12 +124,13 @@ type AppliedSaleRecordItemOffer struct {
 }
 
 type AppliedSaleRecordCartOffer struct {
-	Id            int64   `json:"id"`
-	CouponNo      string  `json:"couponNo"`
-	OfferNo       string  `json:"offerNo"`
-	ItemCodes     string  `json:"itemCodes"`
-	Price         float64 `json:"price"`
-	TransactionId int64   `json:"transactionId"`
+	Id              int64   `json:"id"`
+	CouponNo        string  `json:"couponNo"`
+	OfferNo         string  `json:"offerNo"`
+	ItemCodes       string  `json:"itemCodes"`
+	TargetItemCodes string  `json:"targetItemCodes"`
+	Price           float64 `json:"price"`
+	TransactionId   int64   `json:"transactionId"`
 }
 
 type PromotionEvent struct {

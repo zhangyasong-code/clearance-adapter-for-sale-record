@@ -25,6 +25,7 @@ const (
 	Sale             = "S"
 	NotSynChronized  = "R" // R 未同步
 	SaipType         = "00"
+	InUserID         = "MSLV2"
 )
 
 // Clearance到CSL
@@ -105,7 +106,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 	var endSeq int
 	var dtSeq, colleaguesId int64
 	var saleEventNormalSaleRecognitionChk bool
-	var startStr, strSeqNo, saleMode, eANCode, normalSaleTypeCode, useMileageSettleType, offerNo, couponNo string
+	var startStr, strSeqNo, saleMode, eANCode, normalSaleTypeCode, useMileageSettleType, offerNo, couponNo, inUserID, itemCodes string
 	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo, preSaleDtSeq sql.NullInt64
 	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode, secondaryEventSettleTypeCode, preSaleNo, creditCardFirmCode, custNo sql.NullString
 	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
@@ -241,22 +242,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if err != nil {
 			return nil, err
 		}
-		if strings.ToUpper(saleTransaction.TransactionChannelType) == "POS" {
-			if saleTransaction.TransactionCreatedId != 0 {
-				colleaguesId = saleTransaction.TransactionCreatedId
-			} else {
-				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-					StoreId:       saleTransaction.StoreId,
-					TransactionId: saleTransaction.TransactionId,
-					CreatedBy:     "API",
-					Error:         "When transactionChannelType is POS,transactionCreatedId cannot be 0!",
-					Details:       "TransactionCreatedId 不能为0！",
-				}
-				if err := SaleRecordIdFailMapping.Save(); err != nil {
-					return nil, err
-				}
-				continue
-			}
+		if strings.ToUpper(saleTransaction.TransactionChannelType) == "POS" && saleTransaction.TransactionCreatedId != 0 {
+			colleaguesId = saleTransaction.TransactionCreatedId
 		}
 		colleagues, err := models.Colleagues{}.GetColleaguesAuth(colleaguesId, 0)
 		if err != nil {
@@ -271,6 +258,11 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				return nil, err
 			}
 			continue
+		}
+		if colleagues.UserName != "" {
+			inUserID = colleagues.UserName
+		} else {
+			inUserID = InUserID
 		}
 		salesPerson, err := models.Employee{}.GetEmployee(saleTransaction.SalesmanId)
 		if err != nil {
@@ -327,8 +319,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			FeeAmt:                      feeAmt,
 			ActualSaleAmt:               saleTransaction.TotalTransactionPrice - feeAmt,
 			ObtainMileage:               mileage.Point,
-			InUserID:                    colleagues.UserName,
-			ModiUserID:                  colleagues.UserName,
+			InUserID:                    inUserID,
+			ModiUserID:                  inUserID,
 			SendState:                   "",
 			SendFlag:                    NotSynChronized,
 			DiscountAmtAsCost:           0,
@@ -417,7 +409,13 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						offerNo = appliedSaleRecordItemOffer.OfferNo
 					} else if saleTransactionDtl.TotalDistributedCartOfferPrice != 0 {
 						for _, appliedSaleRecordCartOffer := range appliedSaleRecordCartOffers {
-							result := strings.Index(appliedSaleRecordCartOffer.ItemCodes+",", saleTransactionDtl.ItemCode+",")
+							itemCodes = ""
+							if appliedSaleRecordCartOffer.TargetItemCodes != "" {
+								itemCodes = appliedSaleRecordCartOffer.TargetItemCodes
+							} else {
+								itemCodes = appliedSaleRecordCartOffer.ItemCodes
+							}
+							result := strings.Index(itemCodes+",", saleTransactionDtl.ItemCode+",")
 							if result != -1 {
 								couponNo = appliedSaleRecordCartOffer.CouponNo
 								offerNo = appliedSaleRecordCartOffer.OfferNo
