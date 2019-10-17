@@ -241,8 +241,22 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if err != nil {
 			return nil, err
 		}
-		if strings.ToUpper(saleTransaction.TransactionChannelType) == "POS" && saleTransaction.TransactionCreatedId != 0 {
-			colleaguesId = saleTransaction.TransactionCreatedId
+		if strings.ToUpper(saleTransaction.TransactionChannelType) == "POS" {
+			if saleTransaction.TransactionCreatedId != 0 {
+				colleaguesId = saleTransaction.TransactionCreatedId
+			} else {
+				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+					StoreId:       saleTransaction.StoreId,
+					TransactionId: saleTransaction.TransactionId,
+					CreatedBy:     "API",
+					Error:         "When transactionChannelType is POS,transactionCreatedId cannot be 0!",
+					Details:       "TransactionCreatedId 不能为0！",
+				}
+				if err := SaleRecordIdFailMapping.Save(); err != nil {
+					return nil, err
+				}
+				continue
+			}
 		}
 		colleagues, err := models.Colleagues{}.GetColleaguesAuth(colleaguesId, 0)
 		if err != nil {

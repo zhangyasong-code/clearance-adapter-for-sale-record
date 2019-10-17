@@ -23,10 +23,10 @@ type Employee struct {
 	EmpName string `json:"empName"`
 }
 
-func (Colleagues) GetColleaguesAuth(colleaguesId, empId int64) (*Colleagues, error) {
+func (Colleagues) GetColleaguesAuth(colleaguesId, empId int64) (Colleagues, error) {
 	var colleagues Colleagues
 	if colleaguesId == 0 && empId == 0 {
-		return nil, nil
+		return colleagues, nil
 	}
 	query := func() xorm.Interface {
 		q := factory.GetColleagueAuthEngine().Where("1 = 1")
@@ -40,14 +40,14 @@ func (Colleagues) GetColleaguesAuth(colleaguesId, empId int64) (*Colleagues, err
 	}
 	exist, err := query().Get(&colleagues)
 	if err != nil {
-		return nil, err
+		return colleagues, err
 	} else if !exist {
 		logrus.WithFields(logrus.Fields{
 			"colleaguesId": colleaguesId,
 		}).Error("Fail to GetColleaguesAuth")
-		return nil, errors.New("Colleagues is not exist")
+		return colleagues, errors.New("Colleagues is not exist")
 	}
-	return &colleagues, nil
+	return colleagues, nil
 }
 
 func (Employee) GetEmployee(salesmanId int64) (*Employee, error) {
