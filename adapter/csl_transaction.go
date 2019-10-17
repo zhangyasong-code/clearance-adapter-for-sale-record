@@ -103,7 +103,7 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 // Transform ...
 func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
 	var endSeq int
-	var dtSeq int64
+	var dtSeq, colleaguesId int64
 	var saleEventNormalSaleRecognitionChk bool
 	var startStr, strSeqNo, saleMode, eANCode, normalSaleTypeCode, useMileageSettleType, offerNo, couponNo string
 	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo, preSaleDtSeq sql.NullInt64
@@ -240,8 +240,24 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if err != nil {
 			return nil, err
 		}
-
-		colleagues, err := models.Colleagues{}.GetColleaguesAuth(saleTransaction.SalesmanId)
+		if strings.ToUpper(saleTransaction.TransactionChannelType) == "POS" && saleTransaction.TransactionCreatedId != 0 {
+			colleaguesId = saleTransaction.TransactionCreatedId
+		}
+		colleagues, err := models.Colleagues{}.GetColleaguesAuth(colleaguesId, 0)
+		if err != nil {
+			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+				StoreId:       saleTransaction.StoreId,
+				TransactionId: saleTransaction.TransactionId,
+				CreatedBy:     "API",
+				Error:         err.Error() + " TransactionCreatedId:" + strconv.FormatInt(saleTransaction.TransactionCreatedId, 10),
+				Details:       "Colleague信息不存在！",
+			}
+			if err := SaleRecordIdFailMapping.Save(); err != nil {
+				return nil, err
+			}
+			continue
+		}
+		salesPerson, err := models.Employee{}.GetEmployee(saleTransaction.SalesmanId)
 		if err != nil {
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 				StoreId:       saleTransaction.StoreId,
@@ -249,6 +265,20 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				CreatedBy:     "API",
 				Error:         err.Error() + " SalesmanId:" + strconv.FormatInt(saleTransaction.SalesmanId, 10),
 				Details:       "销售员信息不存在！",
+			}
+			if err := SaleRecordIdFailMapping.Save(); err != nil {
+				return nil, err
+			}
+			continue
+		}
+		colleague, err := models.Colleagues{}.GetColleaguesAuth(0, salesPerson.EmpId)
+		if err != nil {
+			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+				StoreId:       saleTransaction.StoreId,
+				TransactionId: saleTransaction.TransactionId,
+				CreatedBy:     "API",
+				Error:         err.Error() + " EmpId:" + strconv.FormatInt(salesPerson.EmpId, 10),
+				Details:       "Colleague信息不存在！",
 			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return nil, err
@@ -624,8 +654,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					PreSaleDtSeq:                      preSaleDtSeq,
 					NormalFeeRate:                     normalFeeRate,
 					SaleEventFeeRate:                  saleEventFeeRate,
-					InUserID:                          colleagues.UserName,
-					ModiUserID:                        colleagues.UserName,
+					InUserID:                          colleague.UserName,
+					ModiUserID:                        colleague.UserName,
 					SendState:                         "",
 					SendFlag:                          NotSynChronized,
 					DiscountAmt:                       discountAmt,

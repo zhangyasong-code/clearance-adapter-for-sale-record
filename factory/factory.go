@@ -20,6 +20,7 @@ var (
 	// productEngine
 	productEngine       *xorm.Engine
 	colleagueAuthEngine *xorm.Engine
+	shopEmployeeEngine  *xorm.Engine
 	once                sync.Once
 )
 
@@ -77,4 +78,12 @@ func GetColleagueAuthEngine() *xorm.Engine {
 
 func SetColleagueAuthEngine(engine *xorm.Engine) {
 	colleagueAuthEngine = engine
+}
+
+func GetShopEmployeeEngine() *xorm.Engine {
+	return shopEmployeeEngine
+}
+
+func SetShopEmployeeEngine(engine *xorm.Engine) {
+	shopEmployeeEngine = engine
 }

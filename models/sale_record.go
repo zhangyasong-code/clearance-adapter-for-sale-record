@@ -26,6 +26,7 @@ type AssortedSaleRecord struct {
 	Modified               time.Time `json:"modified"`
 	ModifiedBy             string    `json:"modifiedBy"`
 	CustomerId             int64     `json:"customerId"`
+	TransactionCreatedId   int64     `json:"transactionCreatedId"`
 	DiscountCouponPrice    float64   `json:"discountCouponPrice"`
 	DiscountOfferPrice     float64   `json:"discountOfferPrice"`
 	FreightPrice           float64   `json:"freightPrice"`
