@@ -333,15 +333,14 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 
 		// 是否上传内购到CSL Parameters : empId
 		staffSaleRecord := models.StaffSaleRecord{}
-		if saleTransaction.EmpId != 0 {
+		if saleTransaction.EmpId != "" {
 			staffSaleRecord = models.StaffSaleRecord{
 				Dates:    saleDate,
-				HREmpNo:  strconv.FormatInt(saleTransaction.EmpId, 10),
+				HREmpNo:  saleTransaction.EmpId,
 				SaleNo:   saleMst.SaleNo,
 				ShopCode: saleMst.ShopCode,
 				InUserID: saleMst.InUserID,
 			}
-			// staffSaleRecords = append(staffSaleRecords, staffSaleRecord)
 		}
 		dtSeq = 0
 		for i, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {

@@ -37,7 +37,7 @@ type AssortedSaleRecord struct {
 	OrderId                int64     `json:"orderId"`
 	OuterOrderNo           string    `json:"outerOrderNo"`
 	RefundId               int64     `json:"refundId"`
-	EmpId                  int64     `json:"empId"`
+	EmpId                  string    `json:"empId"`
 	SalesmanId             int64     `json:"salesmanId"`
 	StoreId                int64     `json:"storeId"`
 	TenantCode             string    `json:"tenantCode"`
