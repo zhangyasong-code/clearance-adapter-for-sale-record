@@ -90,6 +90,13 @@ func main() {
 	factory.SetColleagueAuthEngine(colleagueAuthDB)
 	defer colleagueAuthDB.Close()
 
+	shopEmployeeDatabase, err := initDB(config.ShopEmployeeDatabase.Driver, config.ShopEmployeeDatabase.Connection)
+	if err != nil {
+		panic(err)
+	}
+	factory.SetShopEmployeeEngine(shopEmployeeDatabase)
+	defer shopEmployeeDatabase.Close()
+
 	app := cli.NewApp()
 	app.Name = "clearance-adapter-for-sale-record"
 	app.Commands = []cli.Command{

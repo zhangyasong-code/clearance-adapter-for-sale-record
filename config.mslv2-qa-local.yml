@@ -20,6 +20,9 @@ productDatabase:
 colleagueAuthDatabase:
   driver: mysql
   connection: pangpang_app:Eland^123@tcp(106.14.242.171:3306)/pangpang_common_colleague_auth?charset=utf8&parseTime=True&loc=UTC
+shopEmployeeDatabase:
+  driver: mysql
+  connection: mslv2_app:Eland^123@tcp(106.14.242.171:3306)/mslv2_shop_employee?charset=utf8&parseTime=True&loc=UTC
 services:
   placeManagementApi: https://qa.p2shop.com.cn/pangpang-brand/place-management-api
   getTokenApi: https://qa.p2shop.com.cn/pangpang-common/portal-api/login?tenantCode=pangpang

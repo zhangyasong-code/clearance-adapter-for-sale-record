@@ -22,7 +22,6 @@ func Init(appEnv, configPath string, options ...func(*C)) C {
 	log.Println("APP_ENV:", appEnv)
 	log.Printf("config: %+v\n", config)
 
-
 	for _, option := range options {
 		option(&config)
 	}
@@ -55,6 +54,10 @@ type C struct {
 		Connection string
 	}
 	ColleagueAuthDatabase struct {
+		Driver     string
+		Connection string
+	}
+	ShopEmployeeDatabase struct {
 		Driver     string
 		Connection string
 	}
