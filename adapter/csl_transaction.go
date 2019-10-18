@@ -612,14 +612,14 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				}
 
 				if saleTransaction.RefundId != 0 {
-					successDtls, err := models.SaleRecordIdSuccessMapping{}.Get(saleTransaction.OrderId, saleTransactionDtl.RefundItemId)
+					successDtls, err := models.SaleRecordIdSuccessMapping{}.Get(saleTransaction.OrderId, saleTransactionDtl.OrderItemId)
 					if err != nil {
 						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 							StoreId:          saleTransaction.StoreId,
 							TransactionId:    saleTransactionDtl.TransactionId,
 							TransactionDtlId: saleTransactionDtl.Id,
 							CreatedBy:        "API",
-							Error:            err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10) + " RefundItemId:" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10),
+							Error:            err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10) + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10),
 							Details:          "退货处理必须有之前的销售数据！",
 						}
 						if err := SaleRecordIdFailMapping.Save(); err != nil {
