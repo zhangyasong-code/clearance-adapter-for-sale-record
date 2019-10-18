@@ -822,7 +822,8 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 	if err := session.Begin(); err != nil {
 		return err
 	}
-	createTime := time.Now().Local()
+	local, _ := time.ParseDuration("8h")
+	createTime := (time.Now()).Add(local)
 	for _, saleMst := range saleMstsAndSaleDtls.SaleMsts {
 		saleMst.InDateTime = createTime
 		saleMst.ModiDateTime = createTime
