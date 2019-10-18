@@ -214,10 +214,15 @@ func (PostMileage) GetMileage(customerId, transactionId int64, use_type UseType)
 	return mileage, nil
 }
 
-func (PostMileage) GetPostMileageDtl(transactionDtlId int64, use_type UseType) (PostMileageDtl, error) {
+func (PostMileage) GetPostMileageDtl(orderItemId, refundItemId int64) (PostMileageDtl, error) {
 	var postMileageDtl PostMileageDtl
+	use_type := UseTypeUsed
+	if refundItemId != 0 {
+		use_type = UseTypeUsedCancel
+	}
 	if _, err := factory.GetSrEngine().Where("use_type = ?", string(use_type)).
-		And("transaction_dtl_id = ?", transactionDtlId).
+		And("order_item_id = ?", orderItemId).
+		And("refund_item_id = ?", refundItemId).
 		Get(&postMileageDtl); err != nil {
 		return PostMileageDtl{}, err
 	}
