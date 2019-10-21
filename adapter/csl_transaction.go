@@ -63,9 +63,7 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 			if dataInput.OrderId != 0 {
 				q.And("sale_transaction.order_id = ?", dataInput.OrderId)
 			}
-			if dataInput.RefundId != 0 {
-				q.And("sale_transaction.refund_id = ?", dataInput.RefundId)
-			}
+			q.And("sale_transaction.refund_id = ?", dataInput.RefundId)
 			if dataInput.StartAt != "" && dataInput.EndAt != "" {
 				st, _ := time.Parse("2006-01-02 15:04:05", dataInput.StartAt)
 				et, _ := time.Parse("2006-01-02 15:04:05", dataInput.EndAt)
