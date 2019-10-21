@@ -399,121 +399,99 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				saleQty = 0
 				saleAmt = 0
 				saleEventNormalSaleRecognitionChk = false
-				if saleTransactionDtl.TotalDiscountPrice != 0 || saleTransactionDtl.TotalDistributedItemOfferPrice != 0 || saleTransactionDtl.TotalDistributedCartOfferPrice != 0 {
-					//csl logic > ItemOffer and cartOffer cannot be used on the same product at the same time.
-					if saleTransactionDtl.TotalDistributedItemOfferPrice != 0 {
-						// transactionDtlId = saleTransactionDtl.OrderItemId
-						appliedSaleRecordItemOffer, err := models.AppliedSaleRecordItemOffer{}.GetAppliedSaleRecordItemOffer(saleTransactionDtl.OrderItemId)
-						if err != nil {
-							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-								StoreId:          saleTransaction.StoreId,
-								TransactionId:    saleTransactionDtl.TransactionId,
-								TransactionDtlId: saleTransactionDtl.Id,
-								CreatedBy:        "API",
-								Error:            err.Error() + " transaction_dtl_id:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10),
-								Details:          "商品使用的促销不存在！",
-							}
-							if err := SaleRecordIdFailMapping.Save(); err != nil {
-								return nil, err
-							}
-							continue
-						}
-						offerNo = appliedSaleRecordItemOffer.OfferNo
-					} else if saleTransactionDtl.TotalDistributedCartOfferPrice != 0 {
-						for _, appliedSaleRecordCartOffer := range appliedSaleRecordCartOffers {
-							itemCodes = ""
-							if appliedSaleRecordCartOffer.TargetItemCodes != "" {
-								itemCodes = appliedSaleRecordCartOffer.TargetItemCodes
-							} else {
-								itemCodes = appliedSaleRecordCartOffer.ItemCodes
-							}
-							result := strings.Index(itemCodes+",", saleTransactionDtl.ItemCode+",")
-							if result != -1 {
-								couponNo = appliedSaleRecordCartOffer.CouponNo
-								offerNo = appliedSaleRecordCartOffer.OfferNo
-								break
-							}
-						}
+
+				for _, appliedSaleRecordCartOffer := range appliedSaleRecordCartOffers {
+					itemCodes = ""
+					if appliedSaleRecordCartOffer.TargetItemCodes != "" {
+						itemCodes = appliedSaleRecordCartOffer.TargetItemCodes
+					} else {
+						itemCodes = appliedSaleRecordCartOffer.ItemCodes
 					}
-					if offerNo != "" && couponNo == "" {
-						promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(offerNo)
-						if err != nil {
-							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-								StoreId:          saleTransaction.StoreId,
-								TransactionId:    saleTransactionDtl.TransactionId,
-								TransactionDtlId: saleTransactionDtl.Id,
-								CreatedBy:        "API",
-								Error:            err.Error() + " OfferNo:" + offerNo,
-								Details:          "商品参加的活动不存在！",
-							}
-							if err := SaleRecordIdFailMapping.Save(); err != nil {
-								return nil, err
-							}
-							continue
-						}
-						eventN, err := strconv.ParseInt(promotionEvent.EventNo, 10, 64)
-						if err != nil {
-							return nil, err
-						}
-						if promotionEvent.EventTypeCode == "01" || promotionEvent.EventTypeCode == "02" || promotionEvent.EventTypeCode == "03" {
-							normalSaleTypeCode = "1"
-							useMileageSettleType = "0"
-							eventTypeCode = sql.NullString{promotionEvent.EventTypeCode, true}
-							if promotionEvent.EventTypeCode == "01" {
-								saleEventNormalSaleRecognitionChk = true
-							}
-							if promotionEvent.EventTypeCode != "01" {
-								saleEventAutoDiscountAmt = GetToFixedPrice(saleTransactionDtl.TotalDistributedCartOfferPrice+saleTransactionDtl.TotalDistributedItemOfferPrice, baseTrimCode)
-								saleEventManualDiscountAmt = saleEventAutoDiscountAmt
-								saleVentDecisionDiscountAmt = saleEventAutoDiscountAmt
-							}
-							if eventN != 0 {
-								eventNo = sql.NullInt64{eventN, true}
-							}
-							if promotionEvent.EventTypeCode != "03" {
-								saleEventSaleBaseAmt = promotionEvent.SaleBaseAmt
-								saleEventDiscountBaseAmt = promotionEvent.DiscountBaseAmt
-							}
-						} else if promotionEvent.EventTypeCode == "B" || promotionEvent.EventTypeCode == "C" ||
-							promotionEvent.EventTypeCode == "G" || promotionEvent.EventTypeCode == "M" || promotionEvent.EventTypeCode == "P" ||
-							promotionEvent.EventTypeCode == "R" || promotionEvent.EventTypeCode == "V" {
-							normalSaleTypeCode = "2"
-							if eventN != 0 && (promotionEvent.EventTypeCode == "B" || promotionEvent.EventTypeCode == "C" || promotionEvent.EventTypeCode == "P" || promotionEvent.EventTypeCode == "V") {
-								primaryCustEventNo = sql.NullInt64{eventN, true}
-								primaryEventTypeCode = sql.NullString{promotionEvent.EventTypeCode, true}
-								primaryEventSettleTypeCode = sql.NullString{"1", true}
-							}
-							if eventN != 0 && (promotionEvent.EventTypeCode == "G" || promotionEvent.EventTypeCode == "M" || promotionEvent.EventTypeCode == "R") {
-								secondaryCustEventNo = sql.NullInt64{eventN, true}
-								secondaryEventTypeCode = sql.NullString{promotionEvent.EventTypeCode, true}
-								secondaryEventSettleTypeCode = sql.NullString{"1", true}
-							}
-						}
-					}
-					if couponNo != "" {
-						normalSaleTypeCode = "2"
-						//search eventN by brandCode
-						coupenEvent, err := models.PostCouponEvent{}.GetPostCoupenEvent(saleTransactionDtl.BrandCode)
-						if err != nil {
-							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-								StoreId:          saleTransaction.StoreId,
-								TransactionId:    saleTransactionDtl.TransactionId,
-								TransactionDtlId: saleTransactionDtl.Id,
-								CreatedBy:        "API",
-								Error:            err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode,
-								Details:          "优惠券信息不存在！",
-							}
-							if err := SaleRecordIdFailMapping.Save(); err != nil {
-								return nil, err
-							}
-							continue
-						}
-						primaryCustEventNo = sql.NullInt64{coupenEvent.EventNo, true}
-						primaryEventTypeCode = sql.NullString{"C", true}
-						primaryEventSettleTypeCode = sql.NullString{"1", true}
+					result := strings.Index(itemCodes+",", saleTransactionDtl.ItemCode+",")
+					if result != -1 {
+						couponNo = appliedSaleRecordCartOffer.CouponNo
+						offerNo = appliedSaleRecordCartOffer.OfferNo
+						break
 					}
 				}
-
+				
+				if offerNo != "" && couponNo == "" {
+					promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(offerNo)
+					if err != nil {
+						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+							StoreId:          saleTransaction.StoreId,
+							TransactionId:    saleTransactionDtl.TransactionId,
+							TransactionDtlId: saleTransactionDtl.Id,
+							CreatedBy:        "API",
+							Error:            err.Error() + " OfferNo:" + offerNo,
+							Details:          "商品参加的活动不存在！",
+						}
+						if err := SaleRecordIdFailMapping.Save(); err != nil {
+							return nil, err
+						}
+						continue
+					}
+					eventN, err := strconv.ParseInt(promotionEvent.EventNo, 10, 64)
+					if err != nil {
+						return nil, err
+					}
+					if promotionEvent.EventTypeCode == "01" || promotionEvent.EventTypeCode == "02" || promotionEvent.EventTypeCode == "03" {
+						normalSaleTypeCode = "1"
+						useMileageSettleType = "0"
+						eventTypeCode = sql.NullString{promotionEvent.EventTypeCode, true}
+						if promotionEvent.EventTypeCode == "01" {
+							saleEventNormalSaleRecognitionChk = true
+						}
+						if promotionEvent.EventTypeCode != "01" {
+							saleEventAutoDiscountAmt = GetToFixedPrice(saleTransactionDtl.TotalDistributedCartOfferPrice+saleTransactionDtl.TotalDistributedItemOfferPrice, baseTrimCode)
+							saleEventManualDiscountAmt = saleEventAutoDiscountAmt
+							saleVentDecisionDiscountAmt = saleEventAutoDiscountAmt
+						}
+						if eventN != 0 {
+							eventNo = sql.NullInt64{eventN, true}
+						}
+						if promotionEvent.EventTypeCode != "03" {
+							saleEventSaleBaseAmt = promotionEvent.SaleBaseAmt
+							saleEventDiscountBaseAmt = promotionEvent.DiscountBaseAmt
+						}
+					} else if promotionEvent.EventTypeCode == "B" || promotionEvent.EventTypeCode == "C" ||
+						promotionEvent.EventTypeCode == "G" || promotionEvent.EventTypeCode == "M" || promotionEvent.EventTypeCode == "P" ||
+						promotionEvent.EventTypeCode == "R" || promotionEvent.EventTypeCode == "V" {
+						normalSaleTypeCode = "2"
+						if eventN != 0 && (promotionEvent.EventTypeCode == "B" || promotionEvent.EventTypeCode == "C" || promotionEvent.EventTypeCode == "P" || promotionEvent.EventTypeCode == "V") {
+							primaryCustEventNo = sql.NullInt64{eventN, true}
+							primaryEventTypeCode = sql.NullString{promotionEvent.EventTypeCode, true}
+							primaryEventSettleTypeCode = sql.NullString{"1", true}
+						}
+						if eventN != 0 && (promotionEvent.EventTypeCode == "G" || promotionEvent.EventTypeCode == "M" || promotionEvent.EventTypeCode == "R") {
+							secondaryCustEventNo = sql.NullInt64{eventN, true}
+							secondaryEventTypeCode = sql.NullString{promotionEvent.EventTypeCode, true}
+							secondaryEventSettleTypeCode = sql.NullString{"1", true}
+						}
+					}
+				}
+				if couponNo != "" {
+					normalSaleTypeCode = "2"
+					//search eventN by brandCode
+					coupenEvent, err := models.PostCouponEvent{}.GetPostCoupenEvent(saleTransactionDtl.BrandCode)
+					if err != nil {
+						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+							StoreId:          saleTransaction.StoreId,
+							TransactionId:    saleTransactionDtl.TransactionId,
+							TransactionDtlId: saleTransactionDtl.Id,
+							CreatedBy:        "API",
+							Error:            err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode,
+							Details:          "优惠券信息不存在！",
+						}
+						if err := SaleRecordIdFailMapping.Save(); err != nil {
+							return nil, err
+						}
+						continue
+					}
+					primaryCustEventNo = sql.NullInt64{coupenEvent.EventNo, true}
+					primaryEventTypeCode = sql.NullString{"C", true}
+					primaryEventSettleTypeCode = sql.NullString{"1", true}
+				}
 				sku, err := models.Product{}.GetSkuBySkuId(saleTransactionDtl.SkuId)
 				if err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
