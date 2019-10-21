@@ -193,6 +193,16 @@ type PostCouponEvent struct {
 	EventNo   int64  `json:"eventNo"`
 }
 
+type SaleRecordDtlSalesmanAmount struct {
+	Id                 int64   `json:"id"`
+	TransactionId      int64   `json:"transactionId"`
+	OrderId            int64   `json:"orderId"`
+	RefundId           int64   `json:"refundId"`
+	OrderItemId        int64   `json:"orderItemId"`
+	RefundItemId       int64   `json:"refundItemId"`
+	SalesmanSaleAmount float64 `json:"salesmanSaleAmount"`
+}
+
 func (PostPayment) GetPostPayment(transactionId int64) ([]PostPayment, error) {
 	var postPayments []PostPayment
 	if err := factory.GetSrEngine().Where("transaction_id = ?", transactionId).Find(&postPayments); err != nil {
@@ -306,4 +316,22 @@ func (PostSaleRecordFee) GetSumFeeAmount(transactionId int64) (float64, error) {
 		return 0, err
 	}
 	return res, nil
+}
+
+func (SaleRecordDtlSalesmanAmount) GetSaleRecordDtlSalesmanAmount(orderItemId, refundItemId int64) (SaleRecordDtlSalesmanAmount, error) {
+	var dtlSalesmanAmount SaleRecordDtlSalesmanAmount
+	exist, err := factory.GetSrEngine().Where("order_item_id = ?", orderItemId).
+		And("refund_item_id = ?", refundItemId).
+		Get(&dtlSalesmanAmount)
+	if err != nil {
+		return SaleRecordDtlSalesmanAmount{}, err
+	}
+	if !exist {
+		logrus.WithFields(logrus.Fields{
+			"orderItemId":  orderItemId,
+			"refundItemId": refundItemId,
+		}).Error("Fail to GetSaleRecordDtlSalesmanAmount")
+		return SaleRecordDtlSalesmanAmount{}, errors.New("SaleRecordDtlSalesmanAmount is not exist!")
+	}
+	return dtlSalesmanAmount, nil
 }
