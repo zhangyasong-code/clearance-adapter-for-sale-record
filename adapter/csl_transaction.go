@@ -465,7 +465,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 								saleEventNormalSaleRecognitionChk = true
 							}
 							if promotionEvent.EventTypeCode != "01" {
-								saleEventAutoDiscountAmt = GetToFixedPrice(saleTransactionDtl.TotalListPrice-(saleTransactionDtl.TotalListPrice*(1-promotionEvent.DiscountRate/100)), baseTrimCode)
+								saleEventAutoDiscountAmt = GetToFixedPrice(saleTransactionDtl.TotalDistributedCartOfferPrice+saleTransactionDtl.TotalDistributedItemOfferPrice, baseTrimCode)
 								saleEventManualDiscountAmt = saleEventAutoDiscountAmt
 								saleVentDecisionDiscountAmt = saleEventAutoDiscountAmt
 							}
@@ -649,7 +649,24 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				normalPrice = saleTransactionDtl.ListPrice
 				saleQty = saleTransactionDtl.Quantity
 				saleAmt = saleTransactionDtl.TotalListPrice
-				shopEmpEstimateSaleAmt = GetToFixedPrice(sellingAmt+useMileage, baseTrimCode)
+
+				dtlSalesmanAmount, err := models.SaleRecordDtlSalesmanAmount{}.GetSaleRecordDtlSalesmanAmount(saleTransactionDtl.OrderItemId, saleTransactionDtl.RefundItemId)
+				if err != nil {
+					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+						StoreId:          saleTransaction.StoreId,
+						TransactionId:    saleTransactionDtl.TransactionId,
+						TransactionDtlId: saleTransactionDtl.Id,
+						CreatedBy:        "API",
+						Error:            err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10) + " RefundItemId:" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10),
+						Details:          "营业员销售业绩不存在！",
+					}
+					if err := SaleRecordIdFailMapping.Save(); err != nil {
+						return nil, err
+					}
+					continue
+				}
+				shopEmpEstimateSaleAmt = GetToFixedPrice(dtlSalesmanAmount.SalesmanSaleAmount, baseTrimCode)
+
 				if saleTransactionDtl.RefundItemId != 0 {
 					normalPrice = normalPrice * -1
 					saleQty = saleQty * -1
