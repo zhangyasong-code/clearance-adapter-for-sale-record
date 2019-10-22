@@ -53,7 +53,7 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 			q := factory.GetCfsrEngine().Table("sale_transaction").
 				Select("sale_transaction.*,sale_transaction_dtl.*").
 				Join("INNER", "sale_transaction_dtl", "sale_transaction_dtl.transaction_id = sale_transaction.transaction_id").
-				Where("1 = 1")
+				Where("sale_transaction.whether_send = ?", false)
 			if dataInput.BrandCode != "" {
 				q.And("sale_transaction_dtl.brand_code = ?", dataInput.BrandCode)
 			}
@@ -963,6 +963,16 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 					}
 				}
 			}
+		}
+
+		//To update "WhetherSend" field in clearance db
+		saleTransaction, err := models.SaleTransaction{}.Get(saleMst.TransactionId)
+		if err != nil {
+			return err
+		}
+		saleTransaction.WhetherSend = true
+		if err := saleTransaction.Update(); err != nil {
+			return err
 		}
 	}
 	//commit session

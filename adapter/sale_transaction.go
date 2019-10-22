@@ -5,6 +5,7 @@ import (
 	"clearance/clearance-adapter-for-sale-record/models"
 	"context"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/go-xorm/xorm"
@@ -168,17 +169,34 @@ func (etl SrToClearanceETL) Load(ctx context.Context, source interface{}) error 
 	}
 
 	for _, saleTransaction := range saleTAndSaleTDtls.SaleTransactions {
-		if _, err := session.Insert(&saleTransaction); err != nil {
-			session.Rollback()
+		dbSaleTransaction, err := models.SaleTransaction{}.Get(saleTransaction.TransactionId)
+		if err != nil {
 			return err
 		}
-	}
-	for _, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {
-		if _, err := session.Insert(&saleTransactionDtl); err != nil {
-			session.Rollback()
-			return err
+		if dbSaleTransaction.TransactionId != 0 {
+			if dbSaleTransaction.WhetherSend == false {
+				if err := saleTransaction.Update(); err != nil {
+					return err
+				}
+			} else {
+				return errors.New("Sended to CSL ! TransactionId:" + strconv.FormatInt(dbSaleTransaction.TransactionId, 10))
+			}
+		} else {
+			if _, err := session.Insert(&saleTransaction); err != nil {
+				session.Rollback()
+				return err
+			}
+			for _, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {
+				if saleTransactionDtl.TransactionId == saleTransaction.TransactionId {
+					if _, err := session.Insert(&saleTransactionDtl); err != nil {
+						session.Rollback()
+						return err
+					}
+				}
+			}
 		}
 	}
+
 	if err := session.Commit(); err != nil {
 		return err
 	}
