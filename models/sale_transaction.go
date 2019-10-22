@@ -30,6 +30,7 @@ type SaleTransaction struct {
 	TransactionChannelType string               `json:"transactionChannelType" xorm:"index VARCHAR(30) notnull"`
 	BaseTrimCode           string               `json:"baseTrimCode" xorm:"index VARCHAR(30)"`
 	Dtls                   []SaleTransactionDtl `json:"dtls" xorm:"-"`
+	WhetherSend            bool                 `json:"whetherSend" xorm:"index default false"`
 }
 
 type SaleTransactionDtl struct {
@@ -201,4 +202,36 @@ func (SaleRecordIdFailMapping) GetAll(ctx context.Context, maxResultCount, skipC
 		return 0, nil, err
 	}
 	return totalCount, failDatas, nil
+}
+
+func (saleTransaction *SaleTransaction) Update() error {
+	if _, err := factory.GetCfsrEngine().ID(saleTransaction.TransactionId).AllCols().Update(saleTransaction); err != nil {
+		return err
+	}
+	for _, saleTransactionDtl := range saleTransaction.Dtls {
+		if _, err := factory.GetCfsrEngine().Where("transaction_id = ?", saleTransaction.TransactionId).AllCols().Update(saleTransactionDtl); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (SaleTransaction) Get(transactionId int64) (SaleTransaction, error) {
+	var saleTransactions []struct {
+		SaleTransaction    SaleTransaction    `xorm:"extends"`
+		SaleTransactionDtl SaleTransactionDtl `xorm:"extends"`
+	}
+	if err := factory.GetCfsrEngine().Table("sale_transaction").
+		Join("INNER", "sale_transaction_dtl", "sale_transaction_dtl.transaction_id = sale_transaction.transaction_id").
+		Where("sale_transaction.transaction_id = ? ", transactionId).Find(&saleTransactions); err != nil {
+		return SaleTransaction{}, err
+	}
+	var saleTransaction SaleTransaction
+	for i, sale := range saleTransactions {
+		if i == 0 {
+			saleTransaction = sale.SaleTransaction
+		}
+		saleTransaction.Dtls = append(saleTransaction.Dtls, sale.SaleTransactionDtl)
+	}
+	return saleTransaction, nil
 }
