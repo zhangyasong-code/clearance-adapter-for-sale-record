@@ -175,6 +175,11 @@ func (etl SrToClearanceETL) Load(ctx context.Context, source interface{}) error 
 		}
 		if dbSaleTransaction.TransactionId != 0 {
 			if dbSaleTransaction.WhetherSend == false {
+				for _, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {
+					if saleTransaction.TransactionId == saleTransactionDtl.TransactionId {
+						saleTransaction.Dtls = append(saleTransaction.Dtls, saleTransactionDtl)
+					}
+				}
 				if err := saleTransaction.Update(); err != nil {
 					return err
 				}
