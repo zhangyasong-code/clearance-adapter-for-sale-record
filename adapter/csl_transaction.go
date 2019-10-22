@@ -429,7 +429,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						if err := SaleRecordIdFailMapping.Save(); err != nil {
 							return nil, err
 						}
-						continue
+						return nil, err
 					}
 					eventN, err := strconv.ParseInt(promotionEvent.EventNo, 10, 64)
 					if err != nil {
@@ -486,7 +486,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						if err := SaleRecordIdFailMapping.Save(); err != nil {
 							return nil, err
 						}
-						continue
+						return nil, err
 					}
 					primaryCustEventNo = sql.NullInt64{coupenEvent.EventNo, true}
 					primaryEventTypeCode = sql.NullString{"C", true}
@@ -505,7 +505,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return nil, err
 					}
-					continue
+					return nil, err
 				}
 				if normalSaleTypeCode == "2" {
 					eventAutoDiscountAmt = GetToFixedPrice(saleTransactionDtl.TotalDistributedCartOfferPrice+saleTransactionDtl.TotalDistributedItemOfferPrice, baseTrimCode)
@@ -532,7 +532,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return nil, err
 					}
-					continue
+					return nil, err
 				}
 				priceTypeCode, err := models.SaleMst{}.GetPriceTypeCode(saleTransactionDtl.BrandCode, product.Code)
 				if err != nil {
@@ -547,7 +547,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return nil, err
 					}
-					continue
+					return nil, err
 				}
 				supGroupCode, err := models.SaleMst{}.GetSupGroupCode(saleTransactionDtl.BrandCode, product.Code)
 				if err != nil {
@@ -562,7 +562,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return nil, err
 					}
-					continue
+					return nil, err
 				}
 				postMileageDtl, err := models.PostMileage{}.GetPostMileageDtl(saleTransactionDtl.OrderItemId, saleTransactionDtl.RefundItemId)
 				if err != nil {
@@ -584,7 +584,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return nil, err
 					}
-					continue
+					return nil, err
 				}
 
 				if saleTransaction.RefundId != 0 {
@@ -601,7 +601,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						if err := SaleRecordIdFailMapping.Save(); err != nil {
 							return nil, err
 						}
-						continue
+						return nil, err
 					}
 					preSaleDtSeq = sql.NullInt64{successDtls[0].DtlSeq, false}
 				}
@@ -639,7 +639,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return nil, err
 					}
-					continue
+					return nil, err
 				}
 				shopEmpEstimateSaleAmt = GetToFixedPrice(dtlSalesmanAmount.SalesmanSaleAmount, baseTrimCode)
 
@@ -775,7 +775,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return nil, err
 			}
-			continue
+			return nil, err
 		}
 		for _, pop := range postOrderPayments {
 			creditCardFirmCode = sql.NullString{"", false}
@@ -973,6 +973,18 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 		saleTransaction.WhetherSend = true
 		if err := saleTransaction.Update(); err != nil {
 			return err
+		}
+
+		// update saleRecordIdFailMappings when send to csl success
+		_, saleRecordIdFailMappings, err := models.SaleRecordIdFailMapping{}.GetAll(ctx, models.RequestInput{TransactionId: saleMst.TransactionId})
+		if err != nil {
+			return err
+		}
+		for _, saleRecordIdFailMapping := range saleRecordIdFailMappings {
+			saleRecordIdFailMapping.IsCreate = true
+			if err := saleRecordIdFailMapping.Update(); err != nil {
+				return err
+			}
 		}
 	}
 	//commit session

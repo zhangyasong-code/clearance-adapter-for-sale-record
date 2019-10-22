@@ -87,12 +87,16 @@ type SaleRecordIdFailMapping struct {
 }
 
 type RequestInput struct {
-	BrandCode   string `json:"brandCode"`
-	ChannelType string `json:"channelType"`
-	OrderId     int64  `json:"orderId"`
-	RefundId    int64  `json:"refundId"`
-	StartAt     string `json:"startAt"`
-	EndAt       string `json:"endAt"`
+	BrandCode      string `json:"brandCode"`
+	ChannelType    string `json:"channelType"`
+	OrderId        int64  `json:"orderId"`
+	RefundId       int64  `json:"refundId"`
+	StartAt        string `json:"startAt"`
+	EndAt          string `json:"endAt"`
+	MaxResultCount int    `json:"maxResultCount"`
+	SkipCount      int    `json:"skipCount"`
+	StoreId        int    `json:"storeId"`
+	TransactionId  int64  `json:"transactionId"`
 }
 
 func (srsm *SaleRecordIdSuccessMapping) CheckAndSave() error {
@@ -111,8 +115,19 @@ func (srsm *SaleRecordIdSuccessMapping) CheckAndSave() error {
 }
 
 func (srfm *SaleRecordIdFailMapping) Save() error {
-	if _, err := factory.GetCfsrEngine().Insert(srfm); err != nil {
+	var saleRecordIdFailMapping SaleRecordIdFailMapping
+	has, err := factory.GetCfsrEngine().Where("transaction_id = ?", srfm.TransactionId).And("is_create = ?", false).Get(&saleRecordIdFailMapping)
+	if err != nil {
 		return err
+	}
+	if !has {
+		if _, err := factory.GetCfsrEngine().Insert(srfm); err != nil {
+			return err
+		}
+	} else {
+		if err := srfm.Update(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -188,16 +203,19 @@ func (requestInput RequestInput) Validate() error {
 	return nil
 }
 
-func (SaleRecordIdFailMapping) GetAll(ctx context.Context, maxResultCount, skipCount, storeId int) (int64, []SaleRecordIdFailMapping, error) {
+func (SaleRecordIdFailMapping) GetAll(ctx context.Context, requestInput RequestInput) (int64, []SaleRecordIdFailMapping, error) {
 	var failDatas []SaleRecordIdFailMapping
 	query := func() xorm.Interface {
 		query := factory.GetCfsrEngine().Where("1 = 1").And("is_create = ?", false)
-		if storeId != 0 {
-			query = query.And("store_id = ?", storeId)
+		if requestInput.StoreId != 0 {
+			query.And("store_id = ?", requestInput.StoreId)
+		}
+		if requestInput.TransactionId != 0 {
+			query.And("transaction_id = ?", requestInput.TransactionId)
 		}
 		return query
 	}
-	totalCount, err := query().Limit(maxResultCount, skipCount).FindAndCount(&failDatas)
+	totalCount, err := query().Limit(requestInput.MaxResultCount, requestInput.SkipCount).FindAndCount(&failDatas)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -209,7 +227,8 @@ func (saleTransaction *SaleTransaction) Update() error {
 		return err
 	}
 	for _, saleTransactionDtl := range saleTransaction.Dtls {
-		if _, err := factory.GetCfsrEngine().Where("transaction_id = ?", saleTransaction.TransactionId).AllCols().Update(saleTransactionDtl); err != nil {
+		if _, err := factory.GetCfsrEngine().Where("order_item_id = ?", saleTransactionDtl.OrderItemId).
+			And("refund_item_id = ?", saleTransactionDtl.RefundItemId).AllCols().Update(saleTransactionDtl); err != nil {
 			return err
 		}
 	}
@@ -234,4 +253,11 @@ func (SaleTransaction) Get(transactionId int64) (SaleTransaction, error) {
 		saleTransaction.Dtls = append(saleTransaction.Dtls, sale.SaleTransactionDtl)
 	}
 	return saleTransaction, nil
+}
+
+func (saleRecordIdFailMapping *SaleRecordIdFailMapping) Update() error {
+	if _, err := factory.GetCfsrEngine().Where("transaction_id = ?", saleRecordIdFailMapping.TransactionId).AllCols().Update(saleRecordIdFailMapping); err != nil {
+		return err
+	}
+	return nil
 }
