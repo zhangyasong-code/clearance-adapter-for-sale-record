@@ -414,7 +414,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						break
 					}
 				}
-				
+
 				if offerNo != "" && couponNo == "" {
 					promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(offerNo)
 					if err != nil {
@@ -662,7 +662,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					actualSaleAmt = actualSaleAmt * -1
 					useMileage = useMileage * -1
 					discountAmt = discountAmt * -1
-					estimateSaleAmt = estimateSaleAmt * -1
 					saleVentDecisionDiscountAmt = saleVentDecisionDiscountAmt * -1
 					shopEmpEstimateSaleAmt = shopEmpEstimateSaleAmt * -1
 				}
