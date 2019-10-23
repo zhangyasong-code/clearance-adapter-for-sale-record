@@ -603,7 +603,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						}
 						return nil, err
 					}
-					preSaleDtSeq = sql.NullInt64{successDtls[0].DtlSeq, false}
+					preSaleDtSeq = sql.NullInt64{successDtls[0].DtlSeq, true}
 				}
 				if normalSaleTypeCode != "1" {
 					useMileage = math.Abs(postMileageDtl.PointPrice)
@@ -649,8 +649,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					saleAmt = saleAmt * -1
 					eventAutoDiscountAmt = eventAutoDiscountAmt * -1
 					eventDecisionDiscountAmt = eventDecisionDiscountAmt * -1
-					saleEventSaleBaseAmt = saleEventSaleBaseAmt * -1
-					saleEventDiscountBaseAmt = saleEventDiscountBaseAmt * -1
 					saleEventAutoDiscountAmt = saleEventAutoDiscountAmt * -1
 					saleEventManualDiscountAmt = saleEventManualDiscountAmt * -1
 					saleVentDecisionDiscountAmt = saleVentDecisionDiscountAmt * -1
@@ -742,6 +740,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		saleMst.ChinaFISaleAmt = 0
 		saleMst.ActualSaleAmt = 0
 		saleMst.EstimateSaleAmt = 0
+		saleMst.ShopEmpEstimateSaleAmt = 0
 		for _, saleDtl := range saleDtls {
 			if saleMst.SaleNo == saleDtl.SaleNo {
 				saleMst.UseMileage += saleDtl.UseMileage
@@ -750,6 +749,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				saleMst.ChinaFISaleAmt += saleDtl.ChinaFISaleAmt
 				saleMst.ActualSaleAmt += saleDtl.ActualSaleAmt
 				saleMst.EstimateSaleAmt += saleDtl.EstimateSaleAmt
+				saleMst.ShopEmpEstimateSaleAmt += saleDtl.ShopEmpEstimateSaleAmt
 			}
 		}
 		saleMst.UseMileage = GetToFixedPrice(saleMst.UseMileage, baseTrimCode)
@@ -761,7 +761,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 
 		//set value for saleMst "EstimateSaleAmtForConsumer","ShopEmpEstimateSaleAmt"
 		saleMst.EstimateSaleAmtForConsumer = saleMst.EstimateSaleAmt
-		saleMst.ShopEmpEstimateSaleAmt = GetToFixedPrice(saleMst.SellingAmt+saleMst.UseMileage, baseTrimCode)
 		saleMst.ActualSellingAmt = saleMst.SellingAmt
 		postOrderPayments, err := models.PostPayment{}.GetPostPayment(saleTransaction.TransactionId)
 		if err != nil {
@@ -791,8 +790,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				SeqNo:              pop.SeqNo,
 				PaymentCode:        pop.PaymentCode,
 				PaymentAmt:         paymentAmt,
-				InUserID:           colleagues.UserName,
-				ModiUserID:         colleagues.UserName,
+				InUserID:           inUserID,
+				ModiUserID:         inUserID,
 				SendFlag:           "R",
 				CreditCardFirmCode: creditCardFirmCode,
 				TransactionId:      saleMst.TransactionId,
