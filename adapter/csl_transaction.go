@@ -107,7 +107,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 	var saleEventNormalSaleRecognitionChk bool
 	var startStr, strSeqNo, saleMode, eANCode, normalSaleTypeCode, useMileageSettleType, offerNo, couponNo, inUserID, itemCodes, baseTrimCode string
 	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo, preSaleDtSeq sql.NullInt64
-	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode, secondaryEventSettleTypeCode, preSaleNo, creditCardFirmCode, custNo sql.NullString
+	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode, secondaryEventSettleTypeCode, preSaleNo, creditCardFirmCode, custNo, complexShopSeqNo sql.NullString
 	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
 		discountAmt, actualSaleAmt, saleEventFee, normalFee, normalFeeRate, saleEventFeeRate, eventAutoDiscountAmt,
 		eventDecisionDiscountAmt, chinaFISaleAmt, estimateSaleAmt, useMileage, sellingAmt, discountAmtAsCost, saleAmt, normalPrice, shopEmpEstimateSaleAmt, paymentAmt float64
@@ -186,16 +186,16 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		//Sale S 销售  Refund R 退货
 		saleMode = ""
 		use_type := models.UseTypeEarn
-		complexShopSeqNo := ""
+		complexShopSeqNo = sql.NullString{"", false}
 
 		preSaleNo = sql.NullString{"", false}
 		if saleTransaction.RefundId == 0 {
 			saleMode = Sale
-			complexShopSeqNo = strconv.FormatInt(saleTransaction.OrderId, 10)
+			// complexShopSeqNo = strconv.FormatInt(saleTransaction.OrderId, 10)
 		} else {
 			saleMode = Refund
 			use_type = models.UseTypeEarnCancel
-			complexShopSeqNo = strconv.FormatInt(saleTransaction.RefundId, 10)
+			// complexShopSeqNo = strconv.FormatInt(saleTransaction.RefundId, 10)
 			successDtls, err := models.SaleRecordIdSuccessMapping{}.Get(saleTransaction.OrderId, 0)
 			if err != nil {
 				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
