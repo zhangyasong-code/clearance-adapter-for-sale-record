@@ -5,6 +5,7 @@ import (
 	"clearance/clearance-adapter-for-sale-record/models"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"math"
 	"strconv"
@@ -863,12 +864,13 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 		saleMst.InDateTime = createTime
 		saleMst.ModiDateTime = createTime
 		if _, err := session.Table("dbo.SaleMst").Insert(&saleMst); err != nil {
+			str, _ := json.Marshal(saleMst)
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 				StoreId:       saleMst.StoreId,
 				TransactionId: saleMst.TransactionId,
 				CreatedBy:     "API",
 				Error:         err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10),
-				Details:       "数据插入异常！",
+				Details:       "数据插入异常！data json >" + string(str),
 			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return err
@@ -882,12 +884,13 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 			if staffSaleRecord.SaleNo == saleMst.SaleNo {
 				staffSaleRecord.InDateTime = createTime
 				if _, err := session.Table("dbo.StaffSaleRecord").Insert(&staffSaleRecord); err != nil {
+					str, _ := json.Marshal(staffSaleRecord)
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 						StoreId:       saleMst.StoreId,
 						TransactionId: saleMst.TransactionId,
 						CreatedBy:     "API",
 						Error:         err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10),
-						Details:       "数据插入异常!",
+						Details:       "数据插入异常! data json >" + string(str),
 					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return err
@@ -904,13 +907,14 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 				saleDtl.InDateTime = createTime
 				saleDtl.ModiDateTime = createTime
 				if _, err := session.Table("dbo.SaleDtl").Insert(&saleDtl); err != nil {
+					str, _ := json.Marshal(saleDtl)
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 						StoreId:          saleMst.StoreId,
 						TransactionId:    saleMst.TransactionId,
 						TransactionDtlId: saleDtl.TransactionDtlId,
 						CreatedBy:        "API",
 						Error:            err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10),
-						Details:          "数据插入异常!",
+						Details:          "数据插入异常! data json >" + string(str),
 					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return err
@@ -927,12 +931,13 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 				salePayment.InDateTime = createTime
 				salePayment.ModiDateTime = createTime
 				if _, err := session.Table("dbo.SalePayment").Insert(&salePayment); err != nil {
+					str, _ := json.Marshal(salePayment)
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 						StoreId:       saleMst.StoreId,
 						TransactionId: saleMst.TransactionId,
 						CreatedBy:     "API",
 						Error:         err.Error() + " SalePaymentTransactionId:" + strconv.FormatInt(salePayment.TransactionId, 10),
-						Details:       "数据插入异常！",
+						Details:       "数据插入异常！data json >" + string(str),
 					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return err
