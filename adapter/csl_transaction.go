@@ -244,7 +244,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if strings.ToUpper(saleTransaction.TransactionChannelType) == "POS" && saleTransaction.TransactionCreatedId != 0 {
 			colleaguesId = saleTransaction.TransactionCreatedId
 		}
-		colleagues, err := models.Colleagues{}.GetColleaguesAuth(colleaguesId, 0)
+		colleagues, err := models.Colleagues{}.GetColleaguesAuth(colleaguesId, "")
 		if err != nil {
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 				StoreId:       saleTransaction.StoreId,
