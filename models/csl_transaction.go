@@ -123,7 +123,7 @@ type SaleMst struct {
 	ActualSellingAmt            float64         `query:"actualSellingAmt" json:"actualSellingAmt"`
 	EstimateSaleAmtForConsumer  float64         `query:"estimateSaleAmtForConsumer" json:"estimateSaleAmtForConsumer"`
 	ShopEmpEstimateSaleAmt      float64         `query:"shopEmpEstimateSaleAmt" json:"shopEmpEstimateSaleAmt"`
-	ComplexShopSeqNo            string          `query:"complexShopSeqNo" json:"complexShopSeqNo"`
+	ComplexShopSeqNo            sql.NullString  `query:"complexShopSeqNo" json:"complexShopSeqNo"`
 	CustBrandCode               string          `query:"custBrandCode" json:"custBrandCode"`
 	Freight                     sql.NullFloat64 `query:"freight" json:"freight"`
 	TMall_UseMileage            sql.NullFloat64 `query:"tMall_UseMileage" json:"tMall_UseMileage"`
