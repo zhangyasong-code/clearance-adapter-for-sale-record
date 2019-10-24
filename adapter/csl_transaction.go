@@ -283,7 +283,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				StoreId:       saleTransaction.StoreId,
 				TransactionId: saleTransaction.TransactionId,
 				CreatedBy:     "API",
-				Error:         err.Error() + " EmpId:" + strconv.FormatInt(salesPerson.EmpId, 10),
+				Error:         err.Error() + " EmpId:" + salesPerson.EmpId,
 				Details:       "Colleague信息不存在！",
 			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {

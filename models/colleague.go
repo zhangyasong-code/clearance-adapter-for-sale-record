@@ -19,13 +19,13 @@ type Colleagues struct {
 
 type Employee struct {
 	Id      int64  `json:"id"`
-	EmpId   int64  `json:"empId"`
+	EmpId   string `json:"empId"`
 	EmpName string `json:"empName"`
 }
 
-func (Colleagues) GetColleaguesAuth(colleaguesId, empId int64) (Colleagues, error) {
+func (Colleagues) GetColleaguesAuth(colleaguesId int64, empId string) (Colleagues, error) {
 	var colleagues Colleagues
-	if colleaguesId == 0 && empId == 0 {
+	if colleaguesId == 0 && empId == "" {
 		return colleagues, nil
 	}
 	query := func() xorm.Interface {
@@ -33,7 +33,7 @@ func (Colleagues) GetColleaguesAuth(colleaguesId, empId int64) (Colleagues, erro
 		if colleaguesId != 0 {
 			q.And("id = ? ", colleaguesId)
 		}
-		if empId != 0 {
+		if empId != "" {
 			q.And("emp_id = ?", empId)
 		}
 		return q
