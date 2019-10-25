@@ -870,7 +870,8 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 				TransactionId: saleMst.TransactionId,
 				CreatedBy:     "API",
 				Error:         err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10),
-				Details:       "数据插入异常！data json >" + string(str),
+				Details:       "数据插入异常！",
+				Data:          string(str),
 			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return err
@@ -890,7 +891,8 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 						TransactionId: saleMst.TransactionId,
 						CreatedBy:     "API",
 						Error:         err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10),
-						Details:       "数据插入异常! data json >" + string(str),
+						Details:       "数据插入异常!",
+						Data:          string(str),
 					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return err
@@ -914,7 +916,8 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 						TransactionDtlId: saleDtl.TransactionDtlId,
 						CreatedBy:        "API",
 						Error:            err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10),
-						Details:          "数据插入异常! data json >" + string(str),
+						Details:          "数据插入异常!",
+						Data:             string(str),
 					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return err
@@ -937,7 +940,8 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 						TransactionId: saleMst.TransactionId,
 						CreatedBy:     "API",
 						Error:         err.Error() + " SalePaymentTransactionId:" + strconv.FormatInt(salePayment.TransactionId, 10),
-						Details:       "数据插入异常！data json >" + string(str),
+						Details:       "数据插入异常！",
+						Data:          string(str),
 					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return err
