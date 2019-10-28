@@ -160,7 +160,8 @@ func (TransactionController) GetFailDataLog(c echo.Context) error {
 		maxResultCount = 10
 	}
 	skipCount, _ := strconv.Atoi(c.QueryParam("skipCount"))
-	totalCount, items, err := models.SaleRecordIdFailMapping{}.GetAll(c.Request().Context(), models.RequestInput{MaxResultCount: maxResultCount, SkipCount: skipCount, StoreId: storeId})
+	transactionId, _ := strconv.ParseInt(c.QueryParam("transactionId"), 10, 64)
+	totalCount, items, err := models.SaleRecordIdFailMapping{}.GetAll(c.Request().Context(), models.RequestInput{TransactionId: transactionId, MaxResultCount: maxResultCount, SkipCount: skipCount, StoreId: storeId})
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, api.Result{
 			Error: api.Error{
