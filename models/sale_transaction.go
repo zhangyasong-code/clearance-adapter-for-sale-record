@@ -216,7 +216,7 @@ func (SaleRecordIdFailMapping) GetAll(ctx context.Context, requestInput RequestI
 		}
 		return query
 	}
-	totalCount, err := query().Limit(requestInput.MaxResultCount, requestInput.SkipCount).FindAndCount(&failDatas)
+	totalCount, err := query().Desc("id").Limit(requestInput.MaxResultCount, requestInput.SkipCount).FindAndCount(&failDatas)
 	if err != nil {
 		return 0, nil, err
 	}
