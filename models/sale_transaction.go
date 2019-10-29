@@ -262,3 +262,18 @@ func (saleRecordIdFailMapping *SaleRecordIdFailMapping) Update() error {
 	}
 	return nil
 }
+
+func (SaleRecordIdSuccessMapping) GetBySaleNo(salNo string) ([]SaleRecordIdSuccessMapping, error) {
+	var successes []SaleRecordIdSuccessMapping
+	queryBuilder := func() xorm.Interface {
+		q := factory.GetCfsrEngine().Where("1 = 1")
+		if salNo != "" {
+			q.And("sale_no = ?", salNo)
+		}
+		return q
+	}
+	if err := queryBuilder().Find(&successes); err != nil {
+		return nil, err
+	}
+	return successes, nil
+}
