@@ -5,7 +5,6 @@ import (
 	"clearance/clearance-adapter-for-sale-record/models"
 	"context"
 	"errors"
-	"strconv"
 	"time"
 
 	"github.com/go-xorm/xorm"
@@ -184,7 +183,7 @@ func (etl SrToClearanceETL) Load(ctx context.Context, source interface{}) error 
 					return err
 				}
 			} else {
-				return errors.New("Sended to CSL ! TransactionId:" + strconv.FormatInt(dbSaleTransaction.TransactionId, 10))
+				return nil
 			}
 		} else {
 			if _, err := session.Insert(&saleTransaction); err != nil {

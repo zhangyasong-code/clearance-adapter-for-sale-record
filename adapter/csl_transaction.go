@@ -196,6 +196,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			saleMode = Refund
 			use_type = models.UseTypeEarnCancel
 			// complexShopSeqNo = strconv.FormatInt(saleTransaction.RefundId, 10)
+
+			//This logic is use sale orderId to query success table.in success table sale orderID = transaction_id when refund.
 			successDtls, err := models.SaleRecordIdSuccessMapping{}.Get(saleTransaction.OrderId, 0)
 			if err != nil {
 				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
@@ -589,6 +591,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				}
 
 				if saleTransaction.RefundId != 0 {
+					//This logic is use sale orderId to query success table.in success table sale orderID = transaction_id when refund.
 					successDtls, err := models.SaleRecordIdSuccessMapping{}.Get(saleTransaction.OrderId, saleTransactionDtl.OrderItemId)
 					if err != nil {
 						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
@@ -861,6 +864,16 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 	local, _ := time.ParseDuration("8h")
 	createTime := (time.Now()).Add(local)
 	for _, saleMst := range saleMstsAndSaleDtls.SaleMsts {
+		//check saleNo Whether it exists or not
+		successes, err := models.SaleRecordIdSuccessMapping{}.GetBySaleNo(saleMst.SaleNo)
+		if err != nil {
+			return err
+		}
+		//exists
+		if len(successes) != 0 {
+			continue
+		}
+		//not exists
 		saleMst.InDateTime = createTime
 		saleMst.ModiDateTime = createTime
 		if _, err := session.Table("dbo.SaleMst").Insert(&saleMst); err != nil {
