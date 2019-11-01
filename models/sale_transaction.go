@@ -82,7 +82,7 @@ type SaleRecordIdFailMapping struct {
 	TransactionDtlId int64     `json:"transactionDtlId" xorm:"index default 0"`
 	Error            string    `json:"error" xorm:"VARCHAR(1000)"`
 	Details          string    `json:"details" xorm:"VARCHAR(100)"`
-	Data             string    `json:"data" xorm:"VARCHAR(5000)"`
+	Data             string    `json:"data" xorm:"TEXT"`
 	IsCreate         bool      `json:"isCreate" xorm:"index notnull default false"`
 	CreatedAt        time.Time `json:"createdAt" xorm:"created"`
 	CreatedBy        string    `json:"createdBy" xorm:"index VARCHAR(30)"`
