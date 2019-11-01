@@ -55,6 +55,7 @@ type SaleTransactionDtl struct {
 	TotalSalePrice                 float64 `json:"totalSalePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	DistributedCashPrice           float64 `json:"distributedCashPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	TransactionId                  int64   `json:"transactionId" xorm:"index default 0" validate:"required"`
+	TransactionDtlId               int64   `json:"transactionDtlId" xorm:"index default 0" validate:"required"`
 }
 
 //SaleTransactionAndSaleTransactionDtl

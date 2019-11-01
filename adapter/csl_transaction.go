@@ -424,7 +424,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 							StoreId:          saleTransaction.StoreId,
 							TransactionId:    saleTransactionDtl.TransactionId,
-							TransactionDtlId: saleTransactionDtl.Id,
+							TransactionDtlId: saleTransactionDtl.TransactionDtlId,
 							CreatedBy:        "API",
 							Error:            err.Error() + " OfferNo:" + offerNo,
 							Details:          "商品参加的活动不存在！",
@@ -481,7 +481,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 							StoreId:          saleTransaction.StoreId,
 							TransactionId:    saleTransactionDtl.TransactionId,
-							TransactionDtlId: saleTransactionDtl.Id,
+							TransactionDtlId: saleTransactionDtl.TransactionDtlId,
 							CreatedBy:        "API",
 							Error:            err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode,
 							Details:          "优惠券信息不存在！",
@@ -500,7 +500,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 						StoreId:          saleTransaction.StoreId,
 						TransactionId:    saleTransactionDtl.TransactionId,
-						TransactionDtlId: saleTransactionDtl.Id,
+						TransactionDtlId: saleTransactionDtl.TransactionDtlId,
 						CreatedBy:        "API",
 						Error:            err.Error() + " SkuId:" + strconv.FormatInt(saleTransactionDtl.SkuId, 10),
 						Details:          "商品不存在！",
@@ -527,7 +527,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 						StoreId:          saleTransaction.StoreId,
 						TransactionId:    saleTransactionDtl.TransactionId,
-						TransactionDtlId: saleTransactionDtl.Id,
+						TransactionDtlId: saleTransactionDtl.TransactionDtlId,
 						CreatedBy:        "API",
 						Error:            err.Error() + " ProductId:" + strconv.FormatInt(saleTransactionDtl.ProductId, 10),
 						Details:          "商品款式不存在!",
@@ -542,7 +542,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 						StoreId:          saleTransaction.StoreId,
 						TransactionId:    saleTransactionDtl.TransactionId,
-						TransactionDtlId: saleTransactionDtl.Id,
+						TransactionDtlId: saleTransactionDtl.TransactionDtlId,
 						CreatedBy:        "API",
 						Error:            err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode + " productCode:" + product.Code,
 						Details:          "价格类型编码不存在！",
@@ -557,7 +557,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 						StoreId:          saleTransaction.StoreId,
 						TransactionId:    saleTransactionDtl.TransactionId,
-						TransactionDtlId: saleTransactionDtl.Id,
+						TransactionDtlId: saleTransactionDtl.TransactionDtlId,
 						CreatedBy:        "API",
 						Error:            err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode + " productCode:" + product.Code,
 						Details:          "商品品类不存在",
@@ -579,7 +579,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 						StoreId:          saleTransaction.StoreId,
 						TransactionId:    saleTransactionDtl.TransactionId,
-						TransactionDtlId: saleTransactionDtl.Id,
+						TransactionDtlId: saleTransactionDtl.TransactionDtlId,
 						CreatedBy:        "API",
 						Error:            err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10) + " RefundItemId:" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10),
 						Details:          "",
@@ -597,7 +597,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 							StoreId:          saleTransaction.StoreId,
 							TransactionId:    saleTransactionDtl.TransactionId,
-							TransactionDtlId: saleTransactionDtl.Id,
+							TransactionDtlId: saleTransactionDtl.TransactionDtlId,
 							CreatedBy:        "API",
 							Error:            err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10) + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10),
 							Details:          "退货处理必须有之前的销售数据！",
@@ -635,7 +635,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 						StoreId:          saleTransaction.StoreId,
 						TransactionId:    saleTransactionDtl.TransactionId,
-						TransactionDtlId: saleTransactionDtl.Id,
+						TransactionDtlId: saleTransactionDtl.TransactionDtlId,
 						CreatedBy:        "API",
 						Error:            err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10) + " RefundItemId:" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10),
 						Details:          "营业员销售业绩不存在！",
@@ -732,7 +732,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					SaleOfficeCode:                    MSLv2_0,
 					OrderItemId:                       saleTransactionDtl.OrderItemId,
 					RefundItemId:                      saleTransactionDtl.RefundItemId,
-					TransactionDtlId:                  saleTransactionDtl.Id,
+					TransactionDtlId:                  saleTransactionDtl.TransactionDtlId,
 				}
 				saleDtls = append(saleDtls, saleDtl)
 			}
