@@ -81,6 +81,7 @@ type SaleDtl struct {
 	OrderItemId                     int64           `json:"orderItemId" xorm:"-"`
 	RefundItemId                    int64           `json:"refundItemId" xorm:"-"`
 	TransactionDtlId                int64           `json:"transactionDtlId" xorm:"-"`
+	StyleCode                       string          `json:"styleCode" xorm:"-"`
 }
 
 type SaleMst struct {
@@ -351,4 +352,45 @@ func (SaleMst) GetSeqAndStartStr(lastSeq string) (int, string, error) {
 	}
 	seq = 1
 	return seq, startStr, nil
+}
+
+func (SaleMst) CheckShop(brandCode, shopCode string) error {
+	engine := factory.GetCSLEngine()
+	row, err := engine.Query(`EXEC up_CSLK_IF_PPPos_CHECK_Shop @StoreGroupCode = ?,@StoreCode = ?`, brandCode, shopCode)
+	if err != nil {
+		return err
+	}
+
+	//"PPPos100" -- true
+	resultText := string((row[0])[""])
+	if resultText != "PPPos100" {
+		return errors.New("Shop is not exist!")
+	}
+	return nil
+}
+
+func (SaleMst) CheckStock(brandCode, shopCode, prodCode, styleCode string) error {
+	engine := factory.GetCSLEngine()
+	row, err := engine.Query(`EXEC up_MSL_SaleUpload_CheckMinusStock 
+	@BrandCode = ?,
+	@ShopCode = ?,
+	@ProdCode = ?, 
+	@StyleCode = ?`, brandCode, shopCode, prodCode, styleCode)
+	if err != nil {
+		return err
+	}
+
+	// PPPos101-负库存不允许销售
+	// PPPos000-商品库存为正，允许销售
+	// PPPos100-商品不存在
+	resultText := string((row[0])["ResultCode"])
+	switch resultText {
+	case "PPPos000":
+		return nil
+	case "PPPos101":
+		return errors.New("负库存不允许销售!")
+	case "PPPos100":
+		return errors.New("商品不存在！")
+	}
+	return nil
 }
