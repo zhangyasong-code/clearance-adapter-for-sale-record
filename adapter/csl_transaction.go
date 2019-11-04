@@ -465,6 +465,22 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 							primaryCustEventNo = sql.NullInt64{eventN, true}
 							primaryEventTypeCode = sql.NullString{promotionEvent.EventTypeCode, true}
 							primaryEventSettleTypeCode = sql.NullString{"1", true}
+
+							//check Customer information
+							if !saleMst.CustNo.Valid {
+								SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+									StoreId:          saleTransaction.StoreId,
+									TransactionId:    saleTransactionDtl.TransactionId,
+									TransactionDtlId: saleTransactionDtl.TransactionDtlId,
+									CreatedBy:        "API",
+									Error:            promotionEvent.EventTypeCode + "类型必须要有顾客信息!",
+									Details:          promotionEvent.EventTypeCode + "类型必须要有顾客信息!",
+								}
+								if err := SaleRecordIdFailMapping.Save(); err != nil {
+									return nil, err
+								}
+								return nil, errors.New("百货店VIP,打折劵Event,品牌折扣型,优秀顾客型,积分型 必须要有顾客信息!")
+							}
 						}
 						if eventN != 0 && (promotionEvent.EventTypeCode == "G" || promotionEvent.EventTypeCode == "M" || promotionEvent.EventTypeCode == "R") {
 							secondaryCustEventNo = sql.NullInt64{eventN, true}
@@ -733,6 +749,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					OrderItemId:                       saleTransactionDtl.OrderItemId,
 					RefundItemId:                      saleTransactionDtl.RefundItemId,
 					TransactionDtlId:                  saleTransactionDtl.TransactionDtlId,
+					StyleCode:                         product.Code,
 				}
 				saleDtls = append(saleDtls, saleDtl)
 			}
@@ -840,6 +857,92 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 
 // ReadyToLoad ...
 func (etl ClearanceToCslETL) ReadyToLoad(ctx context.Context, source interface{}) error {
+	var paymentAmt float64
+	if source == nil {
+		return errors.New("source is nil")
+	}
+	saleMstsAndSaleDtls, ok := source.(models.SaleMstsAndSaleDtls)
+	if !ok {
+		return errors.New("Convert Failed")
+	}
+
+	for _, saleMst := range saleMstsAndSaleDtls.SaleMsts {
+		paymentAmt = 0
+
+		//Check Shop
+		err := models.SaleMst{}.CheckShop(saleMst.BrandCode, saleMst.ShopCode)
+		if err != nil {
+			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+				StoreId:       saleMst.StoreId,
+				TransactionId: saleMst.TransactionId,
+				CreatedBy:     "API",
+				Error:         err.Error() + " BrandCode:" + saleMst.BrandCode + " ShopCode:" + saleMst.ShopCode,
+				Details:       "卖场信息不存在!",
+			}
+			if err := SaleRecordIdFailMapping.Save(); err != nil {
+				return err
+			}
+			return err
+		}
+
+		//Check PaymentAmt
+		for _, salePayment := range saleMstsAndSaleDtls.SalePayments {
+			if saleMst.SaleNo == salePayment.SaleNo {
+				paymentAmt += salePayment.PaymentAmt
+			}
+		}
+		if saleMst.SellingAmt != paymentAmt {
+			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+				StoreId:       saleMst.StoreId,
+				TransactionId: saleMst.TransactionId,
+				CreatedBy:     "API",
+				Error:         "支付金额和SaleMst实际销售金额不一致！",
+				Details:       "支付金额和SaleMst实际销售金额不一致！",
+			}
+			if err := SaleRecordIdFailMapping.Save(); err != nil {
+				return err
+			}
+			return errors.New("支付金额和SaleMst实际销售金额不一致！")
+		}
+		for _, saleDtl := range saleMstsAndSaleDtls.SaleDtls {
+			if saleMst.SaleNo == saleDtl.SaleNo {
+
+				//Check Stock
+
+				// err := models.SaleMst{}.CheckStock(saleDtl.BrandCode, saleDtl.ShopCode, saleDtl.ProdCode, saleDtl.StyleCode)
+				// if err != nil {
+				// 	SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+				// 		StoreId:          saleMst.StoreId,
+				// 		TransactionId:    saleMst.TransactionId,
+				// 		TransactionDtlId: saleDtl.TransactionDtlId,
+				// 		CreatedBy:        "API",
+				// 		Error:            err.Error() + " BrandCode:" + saleDtl.BrandCode + " ShopCode:" + saleDtl.ShopCode + " SKUCode:" + saleDtl.ProdCode + " ProductCode:" + saleDtl.StyleCode,
+				// 		Details:          err.Error(),
+				// 	}
+				// 	if err := SaleRecordIdFailMapping.Save(); err != nil {
+				// 		return err
+				// 	}
+				// 	return err
+				// }
+
+				//Check FeeRate
+				if saleDtl.NormalFeeRate <= 0 {
+					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+						StoreId:          saleMst.StoreId,
+						TransactionId:    saleMst.TransactionId,
+						TransactionDtlId: saleDtl.TransactionDtlId,
+						CreatedBy:        "API",
+						Error:            "卖场扣率不能小于等于0！" + " NormalFeeRate:" + strconv.FormatFloat(saleDtl.NormalFeeRate, 'E', -1, 64),
+						Details:          "卖场扣率不能小于等于0！",
+					}
+					if err := SaleRecordIdFailMapping.Save(); err != nil {
+						return err
+					}
+					return errors.New("卖场扣率不能小于等于0！")
+				}
+			}
+		}
+	}
 	return nil
 }
 
