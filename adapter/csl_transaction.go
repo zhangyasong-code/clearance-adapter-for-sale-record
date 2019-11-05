@@ -368,7 +368,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						return nil, err
 					}
 					if custMileagePolicy.CustMileagePolicyNo != 0 {
-						custMileagePolicyNo = sql.NullInt64{mileage.CustMileagePolicyNo, true}
+						custMileagePolicyNo = sql.NullInt64{custMileagePolicy.CustMileagePolicyNo, true}
 					}
 				}
 				eventNo = sql.NullInt64{0, false}
