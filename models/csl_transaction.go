@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"xorm.io/core"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -403,7 +405,10 @@ func (SaleMst) CheckStock(brandCode, shopCode, prodCode, styleCode string) error
 
 func (CustMileagePolicy) GetCustMileagePolicy(brandCode string) (CustMileagePolicy, error) {
 	custMileagePolicy := CustMileagePolicy{}
-	if _, err := factory.GetCSLEngine().Table("dbo.CustMileagePolicy").
+	engine := factory.GetCSLEngine()
+	engine.SetMapper(core.SameMapper{})
+
+	if _, err := engine.Table("dbo.CustMileagePolicy").
 		Where("BrandCode = ?", brandCode).
 		And("GETDATE() BETWEEN purchasestartdate AND purchaseenddate").
 		And("UseChk = 1").
