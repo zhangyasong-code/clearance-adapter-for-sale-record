@@ -68,6 +68,7 @@ type SaleRecordIdSuccessMapping struct {
 	Id            int64     `json:"id"`
 	SaleNo        string    `json:"saleNo" xorm:"index VARCHAR(30) notnull"`
 	TransactionId int64     `json:"transactionId" xorm:"index default 0" validate:"required"`
+	OrderId       int64     `json:"orderId" xorm:"index default 0" validate:"required"`
 	OrderItemId   int64     `json:"orderItemId" xorm:"index default 0" validate:"required"`
 	RefundItemId  int64     `json:"refundItemId" xorm:"index default 0" validate:"required"`
 	DtlSeq        int64     `json:"dtlSeq" xorm:"index default 0" validate:"required"`
@@ -134,12 +135,12 @@ func (srfm *SaleRecordIdFailMapping) Save() error {
 	return nil
 }
 
-func (SaleRecordIdSuccessMapping) Get(orderId int64, itemId int64) ([]SaleRecordIdSuccessMapping, error) {
+func (SaleRecordIdSuccessMapping) GetSaleSuccessData(orderId int64, itemId int64) ([]SaleRecordIdSuccessMapping, error) {
 	var success []SaleRecordIdSuccessMapping
 	queryBuilder := func() xorm.Interface {
 		q := factory.GetCfsrEngine().Where("1 = 1")
 		if orderId != 0 {
-			q.And("transaction_id = ?", orderId)
+			q.And("order_id = ?", orderId)
 		}
 		if itemId != 0 {
 			q.And("order_item_id = ?", itemId)
