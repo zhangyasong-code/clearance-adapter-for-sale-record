@@ -219,9 +219,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if err != nil {
 			return nil, err
 		}
-		if mileage.CustMileagePolicyNo != 0 {
-			custMileagePolicyNo = sql.NullInt64{mileage.CustMileagePolicyNo, true}
-		}
 		var brand models.Brand
 		if mileage.BrandId != 0 {
 			brand, err = models.Product{}.GetBrandById(mileage.BrandId)
@@ -318,7 +315,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			SaleMode:                    saleMode,
 			CustNo:                      custNo,
 			CustCardNo:                  sql.NullString{"", false},
-			CustMileagePolicyNo:         custMileagePolicyNo,
 			PrimaryCustEventNo:          sql.NullInt64{0, false},
 			SecondaryCustEventNo:        sql.NullInt64{0, false},
 			DepartStoreReceiptNo:        saleTransaction.OuterOrderNo,
@@ -368,6 +364,13 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				if i == 0 {
 					saleMst.BrandCode = saleTransactionDtl.BrandCode
 					staffSaleRecord.BrandCode = saleTransactionDtl.BrandCode
+					custMileagePolicy, err := models.CustMileagePolicy{}.GetCustMileagePolicy(saleTransactionDtl.BrandCode)
+					if err != nil {
+						return nil, err
+					}
+					if custMileagePolicy.CustMileagePolicyNo != 0 {
+						custMileagePolicyNo = sql.NullInt64{mileage.CustMileagePolicyNo, true}
+					}
 				}
 				eventNo = sql.NullInt64{0, false}
 				primaryCustEventNo = sql.NullInt64{0, false}
@@ -385,7 +388,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				primaryEventSettleTypeCode = sql.NullString{"", false}
 				secondaryEventSettleTypeCode = sql.NullString{"", false}
 				useMileageSettleType = "1"
-				custMileagePolicyNo = sql.NullInt64{0, false}
 				offerNo = ""
 				couponNo = ""
 				saleEventFee = 0
@@ -587,9 +589,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				if err != nil {
 					return nil, err
 				}
-				if postMileageDtl.CustMileagePolicyNo != 0 {
-					custMileagePolicyNo = sql.NullInt64{postMileageDtl.CustMileagePolicyNo, true}
-				}
 				postSaleRecordFee, err := models.PostSaleRecordFee{}.GetPostSaleRecordFee(saleTransactionDtl.OrderItemId, saleTransactionDtl.RefundItemId)
 				if err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
@@ -755,6 +754,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			}
 		}
 		//set value for saleMst "UseMileage", "SellingAmt","ChinaFISaleAmt","ActualSaleAmt"
+		saleMst.CustMileagePolicyNo = custMileagePolicyNo
 		saleMst.UseMileage = 0
 		saleMst.SellingAmt = 0
 		saleMst.DiscountAmt = 0

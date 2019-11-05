@@ -151,6 +151,11 @@ type SalePayment struct {
 	TransactionId      int64          `json:"transactionId" xorm:"-"`
 }
 
+type CustMileagePolicy struct {
+	CustMileagePolicyNo int64  `json:"custMileagePolicyNo"`
+	BrandCode           string `json:"brandCode"`
+}
+
 type StaffSaleRecord struct {
 	Dates      string    `json:"dates"`
 	HREmpNo    string    `json:"hREmpNo"`
@@ -393,4 +398,16 @@ func (SaleMst) CheckStock(brandCode, shopCode, prodCode, styleCode string) error
 		return errors.New("商品不存在！")
 	}
 	return nil
+}
+
+func (CustMileagePolicy) GetCustMileagePolicy(brandCode string) (CustMileagePolicy, error) {
+	custMileagePolicy := CustMileagePolicy{}
+	if _, err := factory.GetCSLEngine().Table("dbo.CustMileagePolicy").
+		Where("BrandCode = ?", brandCode).
+		And("GETDATE() BETWEEN purchasestartdate AND purchaseenddate").
+		And("UseChk = 1").
+		Get(&custMileagePolicy); err != nil {
+		return CustMileagePolicy{}, err
+	}
+	return custMileagePolicy, nil
 }
