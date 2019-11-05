@@ -132,6 +132,7 @@ type SaleMst struct {
 	SaleOfficeCode              string          `query:"saleOfficeCode" json:"saleOfficeCode"`
 	TransactionId               int64           `json:"transactionId" xorm:"-"`
 	StoreId                     int64           `json:"storeId" xorm:"-"`
+	OrderId                     int64           `json:"orderId" xorm:"-"`
 }
 
 type SalePayment struct {
