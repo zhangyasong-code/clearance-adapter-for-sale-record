@@ -135,6 +135,7 @@ type SaleMst struct {
 	TransactionId               int64           `json:"transactionId" xorm:"-"`
 	StoreId                     int64           `json:"storeId" xorm:"-"`
 	OrderId                     int64           `json:"orderId" xorm:"-"`
+	RefundId                    int64           `json:"refundId" xorm:"-"`
 }
 
 type SalePayment struct {

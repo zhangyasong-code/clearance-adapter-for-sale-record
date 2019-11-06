@@ -67,19 +67,22 @@ type SaleTAndSaleTDtls struct {
 type SaleRecordIdSuccessMapping struct {
 	Id            int64     `json:"id"`
 	SaleNo        string    `json:"saleNo" xorm:"index VARCHAR(30) notnull"`
-	TransactionId int64     `json:"transactionId" xorm:"index default 0" validate:"required"`
-	OrderId       int64     `json:"orderId" xorm:"index default 0" validate:"required"`
-	OrderItemId   int64     `json:"orderItemId" xorm:"index default 0" validate:"required"`
-	RefundItemId  int64     `json:"refundItemId" xorm:"index default 0" validate:"required"`
-	DtlSeq        int64     `json:"dtlSeq" xorm:"index default 0" validate:"required"`
+	TransactionId int64     `json:"transactionId" xorm:"index default 0"`
+	OrderId       int64     `json:"orderId" xorm:"index default 0"`
+	RefundId      int64     `json:"refundId" xorm:"index default 0"`
+	OrderItemId   int64     `json:"orderItemId" xorm:"index default 0"`
+	RefundItemId  int64     `json:"refundItemId" xorm:"index default 0"`
+	DtlSeq        int64     `json:"dtlSeq" xorm:"index default 0"`
 	CreatedAt     time.Time `json:"createdAt" xorm:"created"`
 	CreatedBy     string    `json:"createdBy" xorm:"index VARCHAR(30) notnull"`
 }
 
 type SaleRecordIdFailMapping struct {
 	Id               int64     `json:"id"`
+	OrderId          int64     `json:"orderId" xorm:"index default 0"`
+	RefundId         int64     `json:"refundId" xorm:"index default 0"`
 	StoreId          int64     `json:"storeId" xorm:"index default 0"`
-	TransactionId    int64     `json:"transactionId" xorm:"index default 0" validate:"required"`
+	TransactionId    int64     `json:"transactionId" xorm:"index default 0"`
 	TransactionDtlId int64     `json:"transactionDtlId" xorm:"index default 0"`
 	Error            string    `json:"error" xorm:"VARCHAR(1000)"`
 	Details          string    `json:"details" xorm:"VARCHAR(100)"`
