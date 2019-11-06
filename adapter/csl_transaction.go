@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -128,6 +129,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		store, err := models.Store{}.GetStore(saleTransaction.StoreId)
 		if err != nil {
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+				OrderId:       saleTransaction.OrderId,
+				RefundId:      saleTransaction.RefundId,
 				StoreId:       saleTransaction.StoreId,
 				TransactionId: saleTransaction.TransactionId,
 				CreatedBy:     "API",
@@ -199,6 +202,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(saleTransaction.OrderId, 0)
 			if err != nil {
 				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+					OrderId:       saleTransaction.OrderId,
+					RefundId:      saleTransaction.RefundId,
 					StoreId:       saleTransaction.StoreId,
 					TransactionId: saleTransaction.TransactionId,
 					CreatedBy:     "API",
@@ -222,6 +227,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			brand, err = models.Product{}.GetBrandById(mileage.BrandId)
 			if err != nil {
 				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+					OrderId:       saleTransaction.OrderId,
+					RefundId:      saleTransaction.RefundId,
 					StoreId:       saleTransaction.StoreId,
 					TransactionId: saleTransaction.TransactionId,
 					CreatedBy:     "API",
@@ -245,6 +252,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		colleagues, err := models.Colleagues{}.GetColleaguesAuth(colleaguesId, "")
 		if err != nil {
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+				OrderId:       saleTransaction.OrderId,
+				RefundId:      saleTransaction.RefundId,
 				StoreId:       saleTransaction.StoreId,
 				TransactionId: saleTransaction.TransactionId,
 				CreatedBy:     "API",
@@ -264,6 +273,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		salesPerson, err := models.Employee{}.GetEmployee(saleTransaction.SalesmanId)
 		if err != nil {
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+				OrderId:       saleTransaction.OrderId,
+				RefundId:      saleTransaction.RefundId,
 				StoreId:       saleTransaction.StoreId,
 				TransactionId: saleTransaction.TransactionId,
 				CreatedBy:     "API",
@@ -278,6 +289,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		colleague, err := models.Colleagues{}.GetColleaguesAuth(0, salesPerson.EmpId)
 		if err != nil {
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+				OrderId:       saleTransaction.OrderId,
+				RefundId:      saleTransaction.RefundId,
 				StoreId:       saleTransaction.StoreId,
 				TransactionId: saleTransaction.TransactionId,
 				CreatedBy:     "API",
@@ -339,6 +352,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			TransactionId:               saleTransaction.TransactionId,
 			StoreId:                     saleTransaction.StoreId,
 			OrderId:                     saleTransaction.OrderId,
+			RefundId:                    saleTransaction.RefundId,
 		}
 		appliedSaleRecordCartOffers, err := models.AppliedSaleRecordCartOffer{}.GetAppliedSaleRecordCartOffers(saleTransaction.TransactionId)
 		if err != nil {
@@ -423,6 +437,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(offerNo)
 					if err != nil {
 						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+							OrderId:          saleTransaction.OrderId,
+							RefundId:         saleTransaction.RefundId,
 							StoreId:          saleTransaction.StoreId,
 							TransactionId:    saleTransactionDtl.TransactionId,
 							TransactionDtlId: saleTransactionDtl.TransactionDtlId,
@@ -470,6 +486,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 							//check Customer information
 							if !saleMst.CustNo.Valid {
 								SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+									OrderId:          saleTransaction.OrderId,
+									RefundId:         saleTransaction.RefundId,
 									StoreId:          saleTransaction.StoreId,
 									TransactionId:    saleTransactionDtl.TransactionId,
 									TransactionDtlId: saleTransactionDtl.TransactionDtlId,
@@ -496,6 +514,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					coupenEvent, err := models.PostCouponEvent{}.GetPostCoupenEvent(saleTransactionDtl.BrandCode)
 					if err != nil {
 						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+							OrderId:          saleTransaction.OrderId,
+							RefundId:         saleTransaction.RefundId,
 							StoreId:          saleTransaction.StoreId,
 							TransactionId:    saleTransactionDtl.TransactionId,
 							TransactionDtlId: saleTransactionDtl.TransactionDtlId,
@@ -515,6 +535,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				sku, err := models.Product{}.GetSkuBySkuId(saleTransactionDtl.SkuId)
 				if err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+						OrderId:          saleTransaction.OrderId,
+						RefundId:         saleTransaction.RefundId,
 						StoreId:          saleTransaction.StoreId,
 						TransactionId:    saleTransactionDtl.TransactionId,
 						TransactionDtlId: saleTransactionDtl.TransactionDtlId,
@@ -542,6 +564,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				product, err := models.Product{}.GetProductById(saleTransactionDtl.ProductId)
 				if err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+						OrderId:          saleTransaction.OrderId,
+						RefundId:         saleTransaction.RefundId,
 						StoreId:          saleTransaction.StoreId,
 						TransactionId:    saleTransactionDtl.TransactionId,
 						TransactionDtlId: saleTransactionDtl.TransactionDtlId,
@@ -557,6 +581,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				priceTypeCode, err := models.SaleMst{}.GetPriceTypeCode(saleTransactionDtl.BrandCode, product.Code)
 				if err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+						OrderId:          saleTransaction.OrderId,
+						RefundId:         saleTransaction.RefundId,
 						StoreId:          saleTransaction.StoreId,
 						TransactionId:    saleTransactionDtl.TransactionId,
 						TransactionDtlId: saleTransactionDtl.TransactionDtlId,
@@ -572,6 +598,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				supGroupCode, err := models.SaleMst{}.GetSupGroupCode(saleTransactionDtl.BrandCode, product.Code)
 				if err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+						OrderId:          saleTransaction.OrderId,
+						RefundId:         saleTransaction.RefundId,
 						StoreId:          saleTransaction.StoreId,
 						TransactionId:    saleTransactionDtl.TransactionId,
 						TransactionDtlId: saleTransactionDtl.TransactionDtlId,
@@ -591,6 +619,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				postSaleRecordFee, err := models.PostSaleRecordFee{}.GetPostSaleRecordFee(saleTransactionDtl.OrderItemId, saleTransactionDtl.RefundItemId)
 				if err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+						OrderId:          saleTransaction.OrderId,
+						RefundId:         saleTransaction.RefundId,
 						StoreId:          saleTransaction.StoreId,
 						TransactionId:    saleTransactionDtl.TransactionId,
 						TransactionDtlId: saleTransactionDtl.TransactionDtlId,
@@ -608,6 +638,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(saleTransaction.OrderId, saleTransactionDtl.OrderItemId)
 					if err != nil {
 						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+							OrderId:          saleTransaction.OrderId,
+							RefundId:         saleTransaction.RefundId,
 							StoreId:          saleTransaction.StoreId,
 							TransactionId:    saleTransactionDtl.TransactionId,
 							TransactionDtlId: saleTransactionDtl.TransactionDtlId,
@@ -646,6 +678,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				dtlSalesmanAmount, err := models.SaleRecordDtlSalesmanAmount{}.GetSaleRecordDtlSalesmanAmount(saleTransactionDtl.OrderItemId, saleTransactionDtl.RefundItemId)
 				if err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+						OrderId:          saleTransaction.OrderId,
+						RefundId:         saleTransaction.RefundId,
 						StoreId:          saleTransaction.StoreId,
 						TransactionId:    saleTransactionDtl.TransactionId,
 						TransactionDtlId: saleTransactionDtl.TransactionDtlId,
@@ -784,6 +818,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		postOrderPayments, err := models.PostPayment{}.GetPostPayment(saleTransaction.TransactionId)
 		if err != nil {
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+				OrderId:       saleTransaction.OrderId,
+				RefundId:      saleTransaction.RefundId,
 				StoreId:       saleTransaction.StoreId,
 				TransactionId: saleTransaction.TransactionId,
 				CreatedBy:     "API",
@@ -833,6 +869,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			saleMsts = append(saleMsts, saleMst)
 		} else {
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+				OrderId:       saleTransaction.OrderId,
+				RefundId:      saleTransaction.RefundId,
 				StoreId:       saleTransaction.StoreId,
 				TransactionId: saleMst.TransactionId,
 				CreatedBy:     "API",
@@ -871,6 +909,8 @@ func (etl ClearanceToCslETL) ReadyToLoad(ctx context.Context, source interface{}
 		err := models.SaleMst{}.CheckShop(saleMst.BrandCode, saleMst.ShopCode)
 		if err != nil {
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+				OrderId:       saleMst.OrderId,
+				RefundId:      saleMst.RefundId,
 				StoreId:       saleMst.StoreId,
 				TransactionId: saleMst.TransactionId,
 				CreatedBy:     "API",
@@ -891,11 +931,13 @@ func (etl ClearanceToCslETL) ReadyToLoad(ctx context.Context, source interface{}
 		}
 		if saleMst.SellingAmt != paymentAmt {
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+				OrderId:       saleMst.OrderId,
+				RefundId:      saleMst.RefundId,
 				StoreId:       saleMst.StoreId,
 				TransactionId: saleMst.TransactionId,
 				CreatedBy:     "API",
-				Error:         "支付金额和SaleMst实际销售金额不一致！",
-				Details:       "支付金额和SaleMst实际销售金额不一致！",
+				Error:         "支付金额:" + fmt.Sprintf("%g", paymentAmt) + "和SaleMst实际销售金额:" + fmt.Sprintf("%g", saleMst.SellingAmt) + "不一致！",
+				Details:       "支付金额:" + fmt.Sprintf("%g", paymentAmt) + "和SaleMst实际销售金额:" + fmt.Sprintf("%g", saleMst.SellingAmt) + "不一致！",
 			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return err
@@ -926,6 +968,8 @@ func (etl ClearanceToCslETL) ReadyToLoad(ctx context.Context, source interface{}
 				//Check FeeRate
 				if saleDtl.NormalFeeRate <= 0 {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+						OrderId:          saleMst.OrderId,
+						RefundId:         saleMst.RefundId,
 						StoreId:          saleMst.StoreId,
 						TransactionId:    saleMst.TransactionId,
 						TransactionDtlId: saleDtl.TransactionDtlId,
@@ -980,6 +1024,8 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 		if _, err := session.Table("dbo.SaleMst").Insert(&saleMst); err != nil {
 			str, _ := json.Marshal(saleMst)
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+				OrderId:       saleMst.OrderId,
+				RefundId:      saleMst.RefundId,
 				StoreId:       saleMst.StoreId,
 				TransactionId: saleMst.TransactionId,
 				CreatedBy:     "API",
@@ -1001,6 +1047,8 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 				if _, err := session.Table("dbo.StaffSaleRecord").Insert(&staffSaleRecord); err != nil {
 					str, _ := json.Marshal(staffSaleRecord)
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+						OrderId:       saleMst.OrderId,
+						RefundId:      saleMst.RefundId,
 						StoreId:       saleMst.StoreId,
 						TransactionId: saleMst.TransactionId,
 						CreatedBy:     "API",
@@ -1025,6 +1073,8 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 				if _, err := session.Table("dbo.SaleDtl").Insert(&saleDtl); err != nil {
 					str, _ := json.Marshal(saleDtl)
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+						OrderId:          saleMst.OrderId,
+						RefundId:         saleMst.RefundId,
 						StoreId:          saleMst.StoreId,
 						TransactionId:    saleMst.TransactionId,
 						TransactionDtlId: saleDtl.TransactionDtlId,
@@ -1050,6 +1100,8 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 				if _, err := session.Table("dbo.SalePayment").Insert(&salePayment); err != nil {
 					str, _ := json.Marshal(salePayment)
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+						OrderId:       saleMst.OrderId,
+						RefundId:      saleMst.RefundId,
 						StoreId:       saleMst.StoreId,
 						TransactionId: saleMst.TransactionId,
 						CreatedBy:     "API",
@@ -1076,6 +1128,7 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 							CreatedBy:     "API",
 							TransactionId: saleMst.TransactionId,
 							OrderId:       saleMst.OrderId,
+							RefundId:      saleMst.RefundId,
 							OrderItemId:   salDtl.OrderItemId,
 							RefundItemId:  salDtl.RefundItemId,
 							DtlSeq:        salDtl.DtSeq,
