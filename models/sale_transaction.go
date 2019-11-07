@@ -158,33 +158,6 @@ func (SaleRecordIdSuccessMapping) GetSaleSuccessData(orderId int64, itemId int64
 	}
 	return success, nil
 }
-func (SaleTransaction) GetAll(ctx context.Context, maxResultCount, skipCount int) (int64, []SaleTransaction, error) {
-	var saleTransactions []SaleTransaction
-	totalCount, err := factory.GetCfsrEngine().Desc("transaction_id").Limit(maxResultCount, skipCount).FindAndCount(&saleTransactions)
-	if err != nil {
-		return 0, nil, err
-	}
-
-	var transactionIds []interface{}
-	for _, t := range saleTransactions {
-		transactionIds = append(transactionIds, t.TransactionId)
-	}
-
-	var dtls []SaleTransactionDtl
-	if err := factory.GetCfsrEngine().In("transaction_id", transactionIds...).Find(&dtls); err != nil {
-		return 0, nil, err
-	}
-
-	for i := range saleTransactions {
-		for j := range dtls {
-			if saleTransactions[i].TransactionId == dtls[j].TransactionId {
-				saleTransactions[i].Dtls = append(saleTransactions[i].Dtls, dtls[j])
-			}
-		}
-	}
-
-	return totalCount, saleTransactions, nil
-}
 
 func (requestInput RequestInput) Validate() error {
 	if requestInput.BrandCode == "" {
@@ -281,4 +254,73 @@ func (SaleRecordIdSuccessMapping) GetBySaleNo(salNo string) ([]SaleRecordIdSucce
 		return nil, err
 	}
 	return successes, nil
+}
+
+func (SaleTransaction) GetSaleTransactions(ctx context.Context, transactionId, orderId, RefundId int64, maxResultCount, skipCount int) (int64, []SaleTransaction, error) {
+
+	queryBuilder := func() xorm.Interface {
+		q := factory.GetCfsrEngine().Where("1=1")
+		if transactionId > 0 {
+			q.And("transaction_id =?", transactionId)
+		}
+		if orderId > 0 {
+			q.And("order_id =?", orderId)
+		}
+		if RefundId > 0 {
+			q.And("refund_id =?", RefundId)
+		}
+		return q
+	}
+	query := queryBuilder()
+
+	if maxResultCount > 0 {
+		query.Limit(maxResultCount, skipCount)
+	}
+
+	query.Desc("transaction_id")
+
+	var saleTransactions []SaleTransaction
+	totalCount, err := query.FindAndCount(&saleTransactions)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	var transactionIds []int64
+	for _, t := range saleTransactions {
+		transactionIds = append(transactionIds, t.TransactionId)
+	}
+
+	saleTransactionDtls, err := SaleTransaction{}.GetSaleTransactionDtls(ctx, transactionIds)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	for i, saleTransaction := range saleTransactions {
+		for _, saleTransactionDtl := range saleTransactionDtls {
+			if saleTransaction.TransactionId == saleTransactionDtl.TransactionId {
+				saleTransactions[i].Dtls = append(saleTransactions[i].Dtls, saleTransactionDtl)
+			}
+		}
+	}
+
+	return totalCount, saleTransactions, nil
+}
+
+func (SaleTransaction) GetSaleTransactionDtls(ctx context.Context, transactionIds []int64) ([]SaleTransactionDtl, error) {
+	queryBuilder := func() xorm.Interface {
+		q := factory.GetCfsrEngine().Where("1=1")
+		if len(transactionIds) > 0 {
+			q.In("transaction_id", transactionIds)
+		}
+		return q
+	}
+	query := queryBuilder()
+	query.Desc("transaction_id").Desc("transaction_dtl_id")
+
+	var saleTransactionDtls []SaleTransactionDtl
+	if err := query.Find(&saleTransactionDtls); err != nil {
+		return nil, err
+	}
+
+	return saleTransactionDtls, nil
 }

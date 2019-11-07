@@ -22,6 +22,7 @@ func (c TransactionController) Init(g *echo.Group) {
 	g.POST("/sale-csl", c.RunSaleETLAndCslETL)
 	g.GET("/sale", c.GetSaleTransactions)
 	g.GET("/fail-log", c.GetFailDataLog)
+	g.GET("/saleTransactions", c.GetSaleTransactions)
 }
 
 func (TransactionController) RunSaleETL(c echo.Context) error {
@@ -56,13 +57,16 @@ func (TransactionController) RunSaleETL(c echo.Context) error {
 	})
 }
 func (TransactionController) GetSaleTransactions(c echo.Context) error {
+	transactionId, _ := strconv.ParseInt(c.QueryParam("transactionId"), 10, 64)
+	orderId, _ := strconv.ParseInt(c.QueryParam("orderId"), 10, 64)
+	RefundId, _ := strconv.ParseInt(c.QueryParam("RefundId"), 10, 64)
 	maxResultCount, _ := strconv.Atoi(c.QueryParam("maxResultCount"))
 	if maxResultCount == 0 {
 		maxResultCount = 10
 	}
 	skipCount, _ := strconv.Atoi(c.QueryParam("skipCount"))
 
-	totalCount, items, err := models.SaleTransaction{}.GetAll(c.Request().Context(), maxResultCount, skipCount)
+	totalCount, items, err := models.SaleTransaction{}.GetSaleTransactions(c.Request().Context(), transactionId, orderId, RefundId, maxResultCount, skipCount)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, api.Result{
 			Error: api.Error{
