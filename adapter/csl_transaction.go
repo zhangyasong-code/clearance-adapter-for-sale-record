@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/go-xorm/core"
 	"github.com/go-xorm/xorm"
 	"github.com/pangpanglabs/goetl"
@@ -353,6 +355,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			StoreId:                     saleTransaction.StoreId,
 			OrderId:                     saleTransaction.OrderId,
 			RefundId:                    saleTransaction.RefundId,
+			SaleTransactionId:           saleTransaction.Id,
 		}
 		appliedSaleRecordCartOffers, err := models.AppliedSaleRecordCartOffer{}.GetAppliedSaleRecordCartOffers(saleTransaction.TransactionId)
 		if err != nil {
@@ -363,11 +366,13 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		staffSaleRecord := models.StaffSaleRecord{}
 		if saleTransaction.EmpId != "" {
 			staffSaleRecord = models.StaffSaleRecord{
-				Dates:    saleDate,
-				HREmpNo:  saleTransaction.EmpId,
-				SaleNo:   saleMst.SaleNo,
-				ShopCode: saleMst.ShopCode,
-				InUserID: saleMst.InUserID,
+				Dates:             saleDate,
+				HREmpNo:           saleTransaction.EmpId,
+				SaleNo:            saleMst.SaleNo,
+				ShopCode:          saleMst.ShopCode,
+				InUserID:          saleMst.InUserID,
+				SaleTransactionId: saleTransaction.Id,
+				TransactionId:     saleTransaction.TransactionId,
 			}
 		}
 		dtSeq = 0
@@ -781,6 +786,9 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					RefundItemId:                      saleTransactionDtl.RefundItemId,
 					TransactionDtlId:                  saleTransactionDtl.TransactionDtlId,
 					StyleCode:                         product.Code,
+					SaleTransactionId:                 saleTransaction.Id,
+					SaleTransactionDtlId:              saleTransactionDtl.Id,
+					TransactionId:                     saleTransaction.TransactionId,
 				}
 				saleDtls = append(saleDtls, saleDtl)
 			}
@@ -850,6 +858,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				SendFlag:           "R",
 				CreditCardFirmCode: creditCardFirmCode,
 				TransactionId:      saleMst.TransactionId,
+				SaleTransactionId:  saleMst.SaleTransactionId,
 			}
 			salePayments = append(salePayments, salePayment)
 		}
@@ -985,6 +994,10 @@ func (etl ClearanceToCslETL) ReadyToLoad(ctx context.Context, source interface{}
 			}
 		}
 	}
+	err := Clearance{}.TransformToClearance(saleMstsAndSaleDtls)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -1118,31 +1131,53 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 			}
 		}
 
+		if err := saveAndUpdateLog(ctx, saleMst.SaleNo, saleMst.TransactionId, saleMstsAndSaleDtls); err != nil {
+			return err
+		}
+	}
+	//commit session
+	if err := session.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func saveAndUpdateLog(ctx context.Context, saleNo string, transactionId int64, saleMstsAndSaleDtls models.SaleMstsAndSaleDtls) error {
+	g := errgroup.Group{}
+
+	g.Go(func() error {
 		//insert success table
-		for _, salDtl := range saleMstsAndSaleDtls.SaleDtls {
-			if salDtl.SaleNo == saleMst.SaleNo {
-				for _, salePayment := range saleMstsAndSaleDtls.SalePayments {
-					if salePayment.SaleNo == salDtl.SaleNo {
-						saleRecordIdSuccessMapping := &models.SaleRecordIdSuccessMapping{
-							SaleNo:        saleMst.SaleNo,
-							CreatedBy:     "API",
-							TransactionId: saleMst.TransactionId,
-							OrderId:       saleMst.OrderId,
-							RefundId:      saleMst.RefundId,
-							OrderItemId:   salDtl.OrderItemId,
-							RefundItemId:  salDtl.RefundItemId,
-							DtlSeq:        salDtl.DtSeq,
-						}
-						if err := saleRecordIdSuccessMapping.CheckAndSave(); err != nil {
-							return err
+		for _, saleMst := range saleMstsAndSaleDtls.SaleMsts {
+			if saleMst.SaleNo == saleNo {
+				for _, salDtl := range saleMstsAndSaleDtls.SaleDtls {
+					if salDtl.SaleNo == saleMst.SaleNo {
+						for _, salePayment := range saleMstsAndSaleDtls.SalePayments {
+							if salePayment.SaleNo == salDtl.SaleNo {
+								saleRecordIdSuccessMapping := &models.SaleRecordIdSuccessMapping{
+									SaleNo:        saleMst.SaleNo,
+									CreatedBy:     "API",
+									TransactionId: saleMst.TransactionId,
+									OrderId:       saleMst.OrderId,
+									RefundId:      saleMst.RefundId,
+									OrderItemId:   salDtl.OrderItemId,
+									RefundItemId:  salDtl.RefundItemId,
+									DtlSeq:        salDtl.DtSeq,
+								}
+								if err := saleRecordIdSuccessMapping.CheckAndSave(); err != nil {
+									return err
+								}
+							}
 						}
 					}
 				}
 			}
 		}
+		return nil
+	})
 
+	g.Go(func() error {
 		//To update "WhetherSend" field in clearance db
-		saleTransaction, err := models.SaleTransaction{}.Get(saleMst.TransactionId)
+		saleTransaction, err := models.SaleTransaction{}.Get(transactionId)
 		if err != nil {
 			return err
 		}
@@ -1150,9 +1185,12 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 		if err := saleTransaction.Update(); err != nil {
 			return err
 		}
+		return nil
+	})
 
+	g.Go(func() error {
 		// update saleRecordIdFailMappings when send to csl success
-		_, saleRecordIdFailMappings, err := models.SaleRecordIdFailMapping{}.GetAll(ctx, models.RequestInput{TransactionId: saleMst.TransactionId})
+		_, saleRecordIdFailMappings, err := models.SaleRecordIdFailMapping{}.GetAll(ctx, models.RequestInput{TransactionId: transactionId})
 		if err != nil {
 			return err
 		}
@@ -1162,9 +1200,10 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 				return err
 			}
 		}
-	}
-	//commit session
-	if err := session.Commit(); err != nil {
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
 		return err
 	}
 	return nil

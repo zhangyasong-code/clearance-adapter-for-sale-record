@@ -84,6 +84,9 @@ type SaleDtl struct {
 	RefundItemId                    int64           `json:"refundItemId" xorm:"-"`
 	TransactionDtlId                int64           `json:"transactionDtlId" xorm:"-"`
 	StyleCode                       string          `json:"styleCode" xorm:"-"`
+	SaleTransactionId               int64           `json:"saleTransactionId" xorm:"-"`
+	SaleTransactionDtlId            int64           `json:"saleTransactionDtlId" xorm:"-"`
+	TransactionId                   int64           `json:"transactionId" xorm:"-"`
 }
 
 type SaleMst struct {
@@ -136,6 +139,7 @@ type SaleMst struct {
 	StoreId                     int64           `json:"storeId" xorm:"-"`
 	OrderId                     int64           `json:"orderId" xorm:"-"`
 	RefundId                    int64           `json:"refundId" xorm:"-"`
+	SaleTransactionId           int64           `json:"saleTransactionId" xorm:"-"`
 }
 
 type SalePayment struct {
@@ -153,6 +157,7 @@ type SalePayment struct {
 	SendDateTime       time.Time      `query:"sendDateTime" json:"sendDateTime"`
 	CreditCardFirmCode sql.NullString `query:"creditCardFirmCode" json:"creditCardFirmCode"`
 	TransactionId      int64          `json:"transactionId" xorm:"-"`
+	SaleTransactionId  int64          `json:"saleTransactionId" xorm:"-"`
 }
 
 type CustMileagePolicy struct {
@@ -161,13 +166,15 @@ type CustMileagePolicy struct {
 }
 
 type StaffSaleRecord struct {
-	Dates      string    `json:"dates"`
-	HREmpNo    string    `json:"hREmpNo"`
-	SaleNo     string    `json:"saleNo"`
-	BrandCode  string    `json:"brandCode"`
-	ShopCode   string    `json:"shopCode"`
-	InUserID   string    `json:"inUserID"`
-	InDateTime time.Time `json:"inDateTime"`
+	Dates             string    `json:"dates"`
+	HREmpNo           string    `json:"hREmpNo"`
+	SaleNo            string    `json:"saleNo"`
+	BrandCode         string    `json:"brandCode"`
+	ShopCode          string    `json:"shopCode"`
+	InUserID          string    `json:"inUserID"`
+	InDateTime        time.Time `json:"inDateTime"`
+	SaleTransactionId int64     `json:"saleTransactionId" xorm:"-"`
+	TransactionId     int64     `json:"transactionId" xorm:"-"`
 }
 
 type SaleMstsAndSaleDtls struct {
