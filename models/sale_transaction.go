@@ -11,9 +11,10 @@ import (
 )
 
 type SaleTransaction struct {
-	TransactionId          int64                `json:"transactionId" xorm:"index default 0 pk" validate:"required"`
+	Id                     int64                `json:"id"`
+	TransactionId          int64                `json:"transactionId" xorm:"index" validate:"required"`
 	OrderId                int64                `json:"orderId" xorm:"index default 0" validate:"required"`
-	RefundId               int64                `json:"refundId" xorm:"index default 0" validate:"required"`
+	RefundId               int64                `json:"refundId" xorm:"index default 0" `
 	EmpId                  string               `json:"empId" xorm:"index VARCHAR(50)"`
 	StoreId                int64                `json:"storeId" xorm:"index default 0" validate:"required"`
 	SalesmanId             int64                `json:"salesmanId" xorm:"index default 0" validate:"required"`
@@ -35,12 +36,13 @@ type SaleTransaction struct {
 
 type SaleTransactionDtl struct {
 	Id                             int64   `json:"id"`
+	SaleTransactionId              int64   `json:"saleTransactionId" xorm:"index" validate:"required"`
 	Quantity                       int64   `json:"quantity" xorm:"notnull" validate:"required"`
 	SalePrice                      float64 `json:"salePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	ListPrice                      float64 `json:"listPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	TotalDiscountPrice             float64 `json:"totalDiscountPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	OrderItemId                    int64   `json:"orderItemId" xorm:"index notnull" validate:"required"`
-	RefundItemId                   int64   `json:"refundItemId" xorm:"index notnull" validate:"required"`
+	RefundItemId                   int64   `json:"refundItemId" xorm:"index default 0" `
 	ProductId                      int64   `json:"productId" xorm:"index notnull" validate:"required"`
 	SkuId                          int64   `json:"skuId" xorm:"index notnull" validate:"gte=0"`
 	BrandCode                      string  `json:"brandCode" xorm:"index VARCHAR(30) notnull" validate:"required"`
@@ -103,6 +105,170 @@ type RequestInput struct {
 	SkipCount      int    `json:"skipCount"`
 	StoreId        int    `json:"storeId"`
 	TransactionId  int64  `json:"transactionId"`
+}
+
+type CslSaleMst struct {
+	Id                          int64     `json:"id"`
+	SaleTransactionId           int64     `json:"saleTransactionId" xorm:"index default 0"`
+	TransactionId               int64     `json:"transactionId" xorm:"index default 0"`
+	StoreId                     int64     `json:"storeId" xorm:"index default 0"`
+	OrderId                     int64     `json:"orderId" xorm:"index default 0"`
+	RefundId                    int64     `json:"refundId" xorm:"index default 0"`
+	SaleNo                      string    `json:"saleNo" xorm:"index"`
+	BrandCode                   string    `json:"brandCode"`
+	ShopCode                    string    `json:"shopCode"`
+	Dates                       string    `json:"dates"`
+	PosNo                       string    `json:"posNo"`
+	SeqNo                       int64     `json:"seqNo"`
+	SaleMode                    string    `json:"saleMode"`
+	CustNo                      string    `json:"custNo"`
+	CustCardNo                  string    `json:"custCardNo"`
+	CustMileagePolicyNo         int64     `json:"custMileagePolicyNo"`
+	PrimaryCustEventNo          int64     `json:"primaryCustEventNo"`
+	SecondaryCustEventNo        int64     `json:"secondaryCustEventNo"`
+	DepartStoreReceiptNo        string    `json:"departStoreReceiptNo"`
+	SaleQty                     int64     `json:"saleQty"`
+	SaleAmt                     float64   `json:"saleAmt"`
+	DiscountAmt                 float64   `json:"discountAmt"`
+	ChinaFISaleAmt              float64   `json:"chinaFISaleAmt"`
+	EstimateSaleAmt             float64   `json:"estimateSaleAmt"`
+	SellingAmt                  float64   `json:"sellingAmt"`
+	FeeAmt                      float64   `json:"feeAmt"`
+	ActualSaleAmt               float64   `json:"actualSaleAmt"`
+	UseMileage                  float64   `json:"useMileage"`
+	ObtainMileage               float64   `json:"obtainMileage"`
+	InUserID                    string    `json:"inUserID"`
+	InDateTime                  time.Time `json:"inDateTime"`
+	ModiUserID                  string    `json:"modiUserID"`
+	ModiDateTime                time.Time `json:"modiDateTime"`
+	SendState                   string    `json:"sendState"`
+	SendFlag                    string    `json:"sendFlag"`
+	SendSeqNo                   int64     `query:"sendSeqNo" json:"sendSeqNo"`
+	SendDateTime                time.Time `json:"sendDateTime"`
+	DiscountAmtAsCost           float64   `json:"discountAmtAsCost"`
+	CustDivisionCode            string    `json:"custDivisionCode"`
+	MileageCustChangeStatusCode string    `json:"mileageCustChangeStatusCode"`
+	CustGradeCode               string    `json:"custGradeCode"`
+	PreSaleNo                   string    `json:"preSaleNo"`
+	ActualSellingAmt            float64   `json:"actualSellingAmt"`
+	EstimateSaleAmtForConsumer  float64   `json:"estimateSaleAmtForConsumer"`
+	ShopEmpEstimateSaleAmt      float64   `json:"shopEmpEstimateSaleAmt"`
+	ComplexShopSeqNo            string    `json:"complexShopSeqNo"`
+	CustBrandCode               string    `json:"custBrandCode"`
+	Freight                     float64   `json:"freight"`
+	TMall_UseMileage            float64   `json:"tMall_UseMileage"`
+	TMall_ObtainMileage         float64   `json:"tMall_ObtainMileage"`
+	SaleOfficeCode              string    `json:"saleOfficeCode"`
+	CreatedAt                   time.Time `json:"createdAt" xorm:"created"`
+}
+
+type CslSaleDtl struct {
+	Id                                int64     `json:"id"`
+	SaleTransactionId                 int64     `json:"saleTransactionId" xorm:"index default 0"`
+	SaleTransactionDtlId              int64     `json:"saleTransactionDtlId" xorm:"index default 0"`
+	TransactionId                     int64     `json:"transactionId" xorm:"index default 0"`
+	OrderItemId                       int64     `json:"orderItemId" xorm:"index default 0"`
+	RefundItemId                      int64     `json:"refundItemId" xorm:"index default 0"`
+	TransactionDtlId                  int64     `json:"transactionDtlId" xorm:"index default 0"`
+	SaleNo                            string    `json:"saleNo" xorm:"index"`
+	DtSeq                             int64     `json:"dtSeq"`
+	BrandCode                         string    `json:"brandCode"`
+	ShopCode                          string    `json:"shopCode"`
+	Dates                             string    `json:"dates"`
+	PosNo                             string    `json:"posNo"`
+	SeqNo                             int64     `json:"seqNo"`
+	NormalSaleTypeCode                string    `json:"normalSaleTypeCode"`
+	CustMileagePolicyNo               int64     `json:"custMileagePolicyNo"`
+	PrimaryCustEventNo                int64     `json:"primaryCustEventNo"`
+	PrimaryEventTypeCode              string    `json:"primaryEventTypeCode"`
+	PrimaryEventSettleTypeCode        string    `json:"primaryEventSettleTypeCode"`
+	SecondaryCustEventNo              int64     `json:"secondaryCustEventNo"`
+	SecondaryEventTypeCode            string    `json:"secondaryEventTypeCode"`
+	SecondaryEventSettleTypeCode      string    `json:"secondaryEventSettleTypeCode"`
+	SaleEventNo                       int64     `json:"saleEventNo"`
+	SaleEventTypeCode                 string    `json:"saleEventTypeCode"`
+	SaleReturnReasonCode              string    `json:"saleReturnReasonCode"`
+	ProdCode                          string    `json:"prodCode"`
+	EANCode                           string    `json:"eANCode"`
+	PriceTypeCode                     string    `json:"priceTypeCode"`
+	SupGroupCode                      string    `json:"supGroupCode"`
+	SaipType                          string    `json:"saipType"`
+	NormalPrice                       float64   `json:"normalPrice"`
+	Price                             float64   `json:"price"`
+	PriceDecisionDate                 string    `json:"priceDecisionDate"`
+	SaleQty                           int64     `json:"saleQty"`
+	SaleAmt                           float64   `json:"saleAmt"`
+	EventAutoDiscountAmt              float64   `json:"eventAutoDiscountAmt"`
+	EventDecisionDiscountAmt          float64   `json:"eventDecisionDiscountAmt"`
+	SaleEventSaleBaseAmt              float64   `json:"saleEventSaleBaseAmt"`
+	SaleEventDiscountBaseAmt          float64   `json:"saleEventDiscountBaseAmt"`
+	SaleEventNormalSaleRecognitionChk bool      `json:"saleEventNormalSaleRecognitionChk"`
+	SaleEventInterShopSalePermitChk   bool      `json:"saleEventInterShopSalePermitChk"`
+	SaleEventAutoDiscountAmt          float64   `json:"saleEventAutoDiscountAmt"`
+	SaleEventManualDiscountAmt        float64   `json:"saleEventManualDiscountAmt"`
+	SaleVentDecisionDiscountAmt       float64   `json:"saleVentDecisionDiscountAmt"`
+	ChinaFISaleAmt                    float64   `json:"chinaFISaleAmt"`
+	EstimateSaleAmt                   float64   `json:"estimateSaleAmt"`
+	SellingAmt                        float64   `json:"sellingAmt"`
+	NormalFee                         float64   `json:"normalFee"`
+	SaleEventFee                      float64   `json:"saleEventFee"`
+	ActualSaleAmt                     float64   `json:"actualSaleAmt"`
+	UseMileage                        float64   `json:"useMileage"`
+	PreSaleNo                         string    `json:"preSaleNo"`
+	PreSaleDtSeq                      int64     `json:"preSaleDtSeq"`
+	NormalFeeRate                     float64   `json:"normalFeeRate"`
+	SaleEventFeeRate                  float64   `json:"saleEventFeeRate"`
+	InUserID                          string    `json:"inUserID"`
+	InDateTime                        time.Time `json:"inDateTime"`
+	ModiUserID                        string    `json:"modiUserID"`
+	ModiDateTime                      time.Time `json:"modiDateTime"`
+	SendState                         string    `json:"sendState"`
+	SendFlag                          string    `json:"sendFlag"`
+	SendSeqNo                         int64     `json:"sendSeqNo"`
+	SendDateTime                      time.Time `json:"sendDateTime"`
+	DiscountAmt                       float64   `json:"discountAmt"`
+	DiscountAmtAsCost                 float64   `json:"discountAmtAsCost"`
+	UseMileageSettleType              string    `json:"useMileageSettleType"`
+	EstimateSaleAmtForConsumer        float64   `json:"estimateSaleAmtForConsumer"`
+	SaleEventDiscountAmtForConsumer   float64   `json:"saleEventDiscountAmtForConsumer"`
+	ShopEmpEstimateSaleAmt            float64   `json:"shopEmpEstimateSaleAmt"`
+	PromotionID                       int64     `json:"promotionID"`
+	TMallEventID                      int64     `json:"tMallEventID"`
+	TMall_ObtainMileage               float64   `json:"tMall_ObtainMileage"`
+	SaleOfficeCode                    string    `json:"saleOfficeCode"`
+	CreatedAt                         time.Time `json:"createdAt" xorm:"created"`
+}
+
+type CslSalePayment struct {
+	Id                 int64     `json:"id"`
+	SaleTransactionId  int64     `json:"saleTransactionId" xorm:"index default 0"`
+	TransactionId      int64     `json:"transactionId" xorm:"index default 0"`
+	SaleNo             string    `json:"saleNo" xorm:"index"`
+	SeqNo              int64     `json:"seqNo"`
+	PaymentCode        string    `json:"paymentCode"`
+	PaymentAmt         float64   `json:"paymentAmt"`
+	InUserID           string    `json:"inUserID"`
+	InDateTime         time.Time `json:"inDateTime"`
+	ModiUserID         string    `json:"modiUserID"`
+	ModiDateTime       time.Time `json:"modiDateTime"`
+	SendFlag           string    `json:"sendFlag"`
+	SendDateTime       time.Time `json:"sendDateTime"`
+	CreditCardFirmCode string    `json:"creditCardFirmCode"`
+	CreatedAt          time.Time `json:"createdAt" xorm:"created"`
+}
+
+type CslStaffSaleRecord struct {
+	Id                int64     `json:"id"`
+	SaleTransactionId int64     `json:"saleTransactionId" xorm:"index default 0"`
+	TransactionId     int64     `json:"transactionId" xorm:"index default 0"`
+	Dates             string    `json:"dates"`
+	HREmpNo           string    `json:"hREmpNo"`
+	SaleNo            string    `json:"saleNo" xorm:"index"`
+	BrandCode         string    `json:"brandCode"`
+	ShopCode          string    `json:"shopCode"`
+	InUserID          string    `json:"inUserID"`
+	InDateTime        time.Time `json:"inDateTime"`
+	CreatedAt         time.Time `json:"createdAt" xorm:"created"`
 }
 
 func (srsm *SaleRecordIdSuccessMapping) CheckAndSave() error {
@@ -202,7 +368,7 @@ func (SaleRecordIdFailMapping) GetAll(ctx context.Context, requestInput RequestI
 }
 
 func (saleTransaction *SaleTransaction) Update() error {
-	if _, err := factory.GetCfsrEngine().ID(saleTransaction.TransactionId).AllCols().Update(saleTransaction); err != nil {
+	if _, err := factory.GetCfsrEngine().ID(saleTransaction.Id).AllCols().Update(saleTransaction); err != nil {
 		return err
 	}
 	for _, saleTransactionDtl := range saleTransaction.Dtls {
@@ -323,4 +489,75 @@ func (SaleTransaction) GetSaleTransactionDtls(ctx context.Context, transactionId
 	}
 
 	return saleTransactionDtls, nil
+}
+func (cslSaleMst *CslSaleMst) Save() error {
+	if _, err := factory.GetCfsrEngine().Insert(cslSaleMst); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (CslSaleMst) GetAll(requestInput RequestInput) ([]CslSaleMst, error) {
+	var cslSaleMsts []CslSaleMst
+	queryBuilder := func() xorm.Interface {
+		q := factory.GetCfsrEngine().Where("1 = 1")
+		if requestInput.TransactionId != 0 {
+			q.And("transaction_id = ?", requestInput.TransactionId)
+		}
+		return q
+	}
+	if requestInput.MaxResultCount > 0 {
+		queryBuilder().Limit(requestInput.MaxResultCount, requestInput.SkipCount)
+	}
+	if err := queryBuilder().Find(&cslSaleMsts); err != nil {
+		return nil, err
+	}
+	if len(cslSaleMsts) == 0 {
+		return nil, nil
+	}
+	return cslSaleMsts, nil
+}
+
+func (CslSaleMst) Delete(requestInput RequestInput) error {
+	queryBuilder := func() xorm.Interface {
+		q := factory.GetCfsrEngine().Where("1 = 1")
+		if requestInput.TransactionId != 0 {
+			q.And("transaction_id = ?", requestInput.TransactionId)
+		}
+		return q
+	}
+	if _, err := queryBuilder().Delete(&CslSaleDtl{}); err != nil {
+		return err
+	}
+	if _, err := queryBuilder().Delete(&CslSaleMst{}); err != nil {
+		return err
+	}
+	if _, err := queryBuilder().Delete(&CslSalePayment{}); err != nil {
+		return err
+	}
+	if _, err := queryBuilder().Delete(&CslStaffSaleRecord{}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (cslSaleDtl *CslSaleDtl) Save() error {
+	if _, err := factory.GetCfsrEngine().Insert(cslSaleDtl); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (cslSalePayment *CslSalePayment) Save() error {
+	if _, err := factory.GetCfsrEngine().Insert(cslSalePayment); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (cslStaffSaleRecord *CslStaffSaleRecord) Save() error {
+	if _, err := factory.GetCfsrEngine().Insert(cslStaffSaleRecord); err != nil {
+		return err
+	}
+	return nil
 }
