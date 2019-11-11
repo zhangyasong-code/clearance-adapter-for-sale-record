@@ -66,8 +66,8 @@ type C struct {
 		GetTokenApi        string
 	}
 	GetTokenUser struct {
-		UserName string
-		Password string
+		AppId        string
+		AppSecretKey string
 	}
 	BehaviorLog struct {
 		Kafka echomiddleware.KafkaConfig

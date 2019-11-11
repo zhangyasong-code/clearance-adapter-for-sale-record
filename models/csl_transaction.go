@@ -202,8 +202,8 @@ type ResultToken struct {
 }
 
 type RequestTokenBody struct {
-	UserName string `json:"userName"`
-	PassWord string `json:"passWord"`
+	AppId        string `json:"appId"`
+	AppSecretKey string `json:"appSecretKey"`
 }
 
 // func (SaleMst) GetShopCode(ctx context.Context, storeId int64, token string) (string, error) {
