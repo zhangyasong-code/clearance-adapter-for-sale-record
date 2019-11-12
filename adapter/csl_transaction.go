@@ -188,13 +188,14 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(saleTransaction.OrderId, 0)
 			if err != nil {
 				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-					OrderId:       saleTransaction.OrderId,
-					RefundId:      saleTransaction.RefundId,
-					StoreId:       saleTransaction.StoreId,
-					TransactionId: saleTransaction.TransactionId,
-					CreatedBy:     "API",
-					Error:         err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10) + " RefundId:" + strconv.FormatInt(saleTransaction.RefundId, 10),
-					Details:       "退货处理必须有之前的销售数据！",
+					SaleTransactionId: saleTransaction.Id,
+					OrderId:           saleTransaction.OrderId,
+					RefundId:          saleTransaction.RefundId,
+					StoreId:           saleTransaction.StoreId,
+					TransactionId:     saleTransaction.TransactionId,
+					CreatedBy:         "API",
+					Error:             err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10) + " RefundId:" + strconv.FormatInt(saleTransaction.RefundId, 10),
+					Details:           "退货处理必须有之前的销售数据！",
 				}
 				if err := SaleRecordIdFailMapping.Save(); err != nil {
 					return nil, err
@@ -242,13 +243,14 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		colleagues, err := models.Colleagues{}.GetColleaguesAuth(colleaguesId, "")
 		if err != nil {
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-				OrderId:       saleTransaction.OrderId,
-				RefundId:      saleTransaction.RefundId,
-				StoreId:       saleTransaction.StoreId,
-				TransactionId: saleTransaction.TransactionId,
-				CreatedBy:     "API",
-				Error:         err.Error() + " TransactionCreatedId:" + strconv.FormatInt(saleTransaction.TransactionCreatedId, 10),
-				Details:       "Colleague信息不存在！",
+				SaleTransactionId: saleTransaction.Id,
+				OrderId:           saleTransaction.OrderId,
+				RefundId:          saleTransaction.RefundId,
+				StoreId:           saleTransaction.StoreId,
+				TransactionId:     saleTransaction.TransactionId,
+				CreatedBy:         "API",
+				Error:             err.Error() + " TransactionCreatedId:" + strconv.FormatInt(saleTransaction.TransactionCreatedId, 10),
+				Details:           "Colleague信息不存在！",
 			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return nil, err
@@ -263,13 +265,14 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		salesPerson, err := models.Employee{}.GetEmployee(saleTransaction.SalesmanId)
 		if err != nil {
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-				OrderId:       saleTransaction.OrderId,
-				RefundId:      saleTransaction.RefundId,
-				StoreId:       saleTransaction.StoreId,
-				TransactionId: saleTransaction.TransactionId,
-				CreatedBy:     "API",
-				Error:         err.Error() + " SalesmanId:" + strconv.FormatInt(saleTransaction.SalesmanId, 10),
-				Details:       "销售员信息不存在！",
+				SaleTransactionId: saleTransaction.Id,
+				OrderId:           saleTransaction.OrderId,
+				RefundId:          saleTransaction.RefundId,
+				StoreId:           saleTransaction.StoreId,
+				TransactionId:     saleTransaction.TransactionId,
+				CreatedBy:         "API",
+				Error:             err.Error() + " SalesmanId:" + strconv.FormatInt(saleTransaction.SalesmanId, 10),
+				Details:           "销售员信息不存在！",
 			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return nil, err
@@ -279,13 +282,14 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		colleague, err := models.Colleagues{}.GetColleaguesAuth(0, salesPerson.EmpId)
 		if err != nil {
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-				OrderId:       saleTransaction.OrderId,
-				RefundId:      saleTransaction.RefundId,
-				StoreId:       saleTransaction.StoreId,
-				TransactionId: saleTransaction.TransactionId,
-				CreatedBy:     "API",
-				Error:         err.Error() + " EmpId:" + salesPerson.EmpId,
-				Details:       "Colleague信息不存在！",
+				SaleTransactionId: saleTransaction.Id,
+				OrderId:           saleTransaction.OrderId,
+				RefundId:          saleTransaction.RefundId,
+				StoreId:           saleTransaction.StoreId,
+				TransactionId:     saleTransaction.TransactionId,
+				CreatedBy:         "API",
+				Error:             err.Error() + " EmpId:" + salesPerson.EmpId,
+				Details:           "Colleague信息不存在！",
 			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return nil, err
@@ -429,14 +433,15 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(offerNo)
 					if err != nil {
 						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-							OrderId:          saleTransaction.OrderId,
-							RefundId:         saleTransaction.RefundId,
-							StoreId:          saleTransaction.StoreId,
-							TransactionId:    saleTransactionDtl.TransactionId,
-							TransactionDtlId: saleTransactionDtl.TransactionDtlId,
-							CreatedBy:        "API",
-							Error:            err.Error() + " OfferNo:" + offerNo,
-							Details:          "商品参加的活动不存在！",
+							SaleTransactionId: saleTransaction.Id,
+							OrderId:           saleTransaction.OrderId,
+							RefundId:          saleTransaction.RefundId,
+							StoreId:           saleTransaction.StoreId,
+							TransactionId:     saleTransactionDtl.TransactionId,
+							TransactionDtlId:  saleTransactionDtl.TransactionDtlId,
+							CreatedBy:         "API",
+							Error:             err.Error() + " OfferNo:" + offerNo,
+							Details:           "商品参加的活动不存在！",
 						}
 						if err := SaleRecordIdFailMapping.Save(); err != nil {
 							return nil, err
@@ -478,14 +483,15 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 							//check Customer information
 							if !saleMst.CustNo.Valid {
 								SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-									OrderId:          saleTransaction.OrderId,
-									RefundId:         saleTransaction.RefundId,
-									StoreId:          saleTransaction.StoreId,
-									TransactionId:    saleTransactionDtl.TransactionId,
-									TransactionDtlId: saleTransactionDtl.TransactionDtlId,
-									CreatedBy:        "API",
-									Error:            promotionEvent.EventTypeCode + "类型必须要有顾客信息!",
-									Details:          promotionEvent.EventTypeCode + "类型必须要有顾客信息!",
+									SaleTransactionId: saleTransaction.Id,
+									OrderId:           saleTransaction.OrderId,
+									RefundId:          saleTransaction.RefundId,
+									StoreId:           saleTransaction.StoreId,
+									TransactionId:     saleTransactionDtl.TransactionId,
+									TransactionDtlId:  saleTransactionDtl.TransactionDtlId,
+									CreatedBy:         "API",
+									Error:             promotionEvent.EventTypeCode + "类型必须要有顾客信息!",
+									Details:           promotionEvent.EventTypeCode + "类型必须要有顾客信息!",
 								}
 								if err := SaleRecordIdFailMapping.Save(); err != nil {
 									return nil, err
@@ -506,14 +512,15 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					coupenEvent, err := models.PostCouponEvent{}.GetPostCoupenEvent(saleTransactionDtl.BrandCode)
 					if err != nil {
 						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-							OrderId:          saleTransaction.OrderId,
-							RefundId:         saleTransaction.RefundId,
-							StoreId:          saleTransaction.StoreId,
-							TransactionId:    saleTransactionDtl.TransactionId,
-							TransactionDtlId: saleTransactionDtl.TransactionDtlId,
-							CreatedBy:        "API",
-							Error:            err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode,
-							Details:          "优惠券信息不存在！",
+							SaleTransactionId: saleTransaction.Id,
+							OrderId:           saleTransaction.OrderId,
+							RefundId:          saleTransaction.RefundId,
+							StoreId:           saleTransaction.StoreId,
+							TransactionId:     saleTransactionDtl.TransactionId,
+							TransactionDtlId:  saleTransactionDtl.TransactionDtlId,
+							CreatedBy:         "API",
+							Error:             err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode,
+							Details:           "优惠券信息不存在！",
 						}
 						if err := SaleRecordIdFailMapping.Save(); err != nil {
 							return nil, err
@@ -527,14 +534,15 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				sku, err := models.Product{}.GetSkuBySkuId(saleTransactionDtl.SkuId)
 				if err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-						OrderId:          saleTransaction.OrderId,
-						RefundId:         saleTransaction.RefundId,
-						StoreId:          saleTransaction.StoreId,
-						TransactionId:    saleTransactionDtl.TransactionId,
-						TransactionDtlId: saleTransactionDtl.TransactionDtlId,
-						CreatedBy:        "API",
-						Error:            err.Error() + " SkuId:" + strconv.FormatInt(saleTransactionDtl.SkuId, 10),
-						Details:          "商品不存在！",
+						SaleTransactionId: saleTransaction.Id,
+						OrderId:           saleTransaction.OrderId,
+						RefundId:          saleTransaction.RefundId,
+						StoreId:           saleTransaction.StoreId,
+						TransactionId:     saleTransactionDtl.TransactionId,
+						TransactionDtlId:  saleTransactionDtl.TransactionDtlId,
+						CreatedBy:         "API",
+						Error:             err.Error() + " SkuId:" + strconv.FormatInt(saleTransactionDtl.SkuId, 10),
+						Details:           "商品不存在！",
 					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return nil, err
@@ -556,14 +564,15 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				product, err := models.Product{}.GetProductById(saleTransactionDtl.ProductId)
 				if err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-						OrderId:          saleTransaction.OrderId,
-						RefundId:         saleTransaction.RefundId,
-						StoreId:          saleTransaction.StoreId,
-						TransactionId:    saleTransactionDtl.TransactionId,
-						TransactionDtlId: saleTransactionDtl.TransactionDtlId,
-						CreatedBy:        "API",
-						Error:            err.Error() + " ProductId:" + strconv.FormatInt(saleTransactionDtl.ProductId, 10),
-						Details:          "商品款式不存在!",
+						SaleTransactionId: saleTransaction.Id,
+						OrderId:           saleTransaction.OrderId,
+						RefundId:          saleTransaction.RefundId,
+						StoreId:           saleTransaction.StoreId,
+						TransactionId:     saleTransactionDtl.TransactionId,
+						TransactionDtlId:  saleTransactionDtl.TransactionDtlId,
+						CreatedBy:         "API",
+						Error:             err.Error() + " ProductId:" + strconv.FormatInt(saleTransactionDtl.ProductId, 10),
+						Details:           "商品款式不存在!",
 					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return nil, err
@@ -573,14 +582,15 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				priceTypeCode, err := models.SaleMst{}.GetPriceTypeCode(saleTransactionDtl.BrandCode, product.Code)
 				if err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-						OrderId:          saleTransaction.OrderId,
-						RefundId:         saleTransaction.RefundId,
-						StoreId:          saleTransaction.StoreId,
-						TransactionId:    saleTransactionDtl.TransactionId,
-						TransactionDtlId: saleTransactionDtl.TransactionDtlId,
-						CreatedBy:        "API",
-						Error:            err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode + " productCode:" + product.Code,
-						Details:          "价格类型编码不存在！",
+						SaleTransactionId: saleTransaction.Id,
+						OrderId:           saleTransaction.OrderId,
+						RefundId:          saleTransaction.RefundId,
+						StoreId:           saleTransaction.StoreId,
+						TransactionId:     saleTransactionDtl.TransactionId,
+						TransactionDtlId:  saleTransactionDtl.TransactionDtlId,
+						CreatedBy:         "API",
+						Error:             err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode + " productCode:" + product.Code,
+						Details:           "价格类型编码不存在！",
 					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return nil, err
@@ -590,14 +600,15 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				supGroupCode, err := models.SaleMst{}.GetSupGroupCode(saleTransactionDtl.BrandCode, product.Code)
 				if err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-						OrderId:          saleTransaction.OrderId,
-						RefundId:         saleTransaction.RefundId,
-						StoreId:          saleTransaction.StoreId,
-						TransactionId:    saleTransactionDtl.TransactionId,
-						TransactionDtlId: saleTransactionDtl.TransactionDtlId,
-						CreatedBy:        "API",
-						Error:            err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode + " productCode:" + product.Code,
-						Details:          "商品品类不存在",
+						SaleTransactionId: saleTransaction.Id,
+						OrderId:           saleTransaction.OrderId,
+						RefundId:          saleTransaction.RefundId,
+						StoreId:           saleTransaction.StoreId,
+						TransactionId:     saleTransactionDtl.TransactionId,
+						TransactionDtlId:  saleTransactionDtl.TransactionDtlId,
+						CreatedBy:         "API",
+						Error:             err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode + " productCode:" + product.Code,
+						Details:           "商品品类不存在",
 					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return nil, err
@@ -611,14 +622,15 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				postSaleRecordFee, err := models.PostSaleRecordFee{}.GetPostSaleRecordFee(saleTransactionDtl.OrderItemId, saleTransactionDtl.RefundItemId)
 				if err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-						OrderId:          saleTransaction.OrderId,
-						RefundId:         saleTransaction.RefundId,
-						StoreId:          saleTransaction.StoreId,
-						TransactionId:    saleTransactionDtl.TransactionId,
-						TransactionDtlId: saleTransactionDtl.TransactionDtlId,
-						CreatedBy:        "API",
-						Error:            err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10) + " RefundItemId:" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10),
-						Details:          "",
+						SaleTransactionId: saleTransaction.Id,
+						OrderId:           saleTransaction.OrderId,
+						RefundId:          saleTransaction.RefundId,
+						StoreId:           saleTransaction.StoreId,
+						TransactionId:     saleTransactionDtl.TransactionId,
+						TransactionDtlId:  saleTransactionDtl.TransactionDtlId,
+						CreatedBy:         "API",
+						Error:             err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10) + " RefundItemId:" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10),
+						Details:           "",
 					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return nil, err
@@ -630,14 +642,15 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(saleTransaction.OrderId, saleTransactionDtl.OrderItemId)
 					if err != nil {
 						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-							OrderId:          saleTransaction.OrderId,
-							RefundId:         saleTransaction.RefundId,
-							StoreId:          saleTransaction.StoreId,
-							TransactionId:    saleTransactionDtl.TransactionId,
-							TransactionDtlId: saleTransactionDtl.TransactionDtlId,
-							CreatedBy:        "API",
-							Error:            err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10) + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10),
-							Details:          "退货处理必须有之前的销售数据！",
+							SaleTransactionId: saleTransaction.Id,
+							OrderId:           saleTransaction.OrderId,
+							RefundId:          saleTransaction.RefundId,
+							StoreId:           saleTransaction.StoreId,
+							TransactionId:     saleTransactionDtl.TransactionId,
+							TransactionDtlId:  saleTransactionDtl.TransactionDtlId,
+							CreatedBy:         "API",
+							Error:             err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10) + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10),
+							Details:           "退货处理必须有之前的销售数据！",
 						}
 						if err := SaleRecordIdFailMapping.Save(); err != nil {
 							return nil, err
@@ -671,14 +684,15 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				dtlSalesmanAmount, err := models.SaleRecordDtlSalesmanAmount{}.GetSaleRecordDtlSalesmanAmount(saleTransactionDtl.OrderItemId, saleTransactionDtl.RefundItemId)
 				if err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-						OrderId:          saleTransaction.OrderId,
-						RefundId:         saleTransaction.RefundId,
-						StoreId:          saleTransaction.StoreId,
-						TransactionId:    saleTransactionDtl.TransactionId,
-						TransactionDtlId: saleTransactionDtl.TransactionDtlId,
-						CreatedBy:        "API",
-						Error:            err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10) + " RefundItemId:" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10),
-						Details:          "营业员销售业绩不存在！",
+						SaleTransactionId: saleTransaction.Id,
+						OrderId:           saleTransaction.OrderId,
+						RefundId:          saleTransaction.RefundId,
+						StoreId:           saleTransaction.StoreId,
+						TransactionId:     saleTransactionDtl.TransactionId,
+						TransactionDtlId:  saleTransactionDtl.TransactionDtlId,
+						CreatedBy:         "API",
+						Error:             err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10) + " RefundItemId:" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10),
+						Details:           "营业员销售业绩不存在！",
 					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return nil, err
@@ -814,13 +828,14 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		postOrderPayments, err := models.PostPayment{}.GetPostPayment(saleTransaction.TransactionId)
 		if err != nil {
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-				OrderId:       saleTransaction.OrderId,
-				RefundId:      saleTransaction.RefundId,
-				StoreId:       saleTransaction.StoreId,
-				TransactionId: saleTransaction.TransactionId,
-				CreatedBy:     "API",
-				Error:         err.Error() + " TransactionId:" + strconv.FormatInt(saleTransaction.TransactionId, 10),
-				Details:       "支付信息不存在！",
+				SaleTransactionId: saleTransaction.Id,
+				OrderId:           saleTransaction.OrderId,
+				RefundId:          saleTransaction.RefundId,
+				StoreId:           saleTransaction.StoreId,
+				TransactionId:     saleTransaction.TransactionId,
+				CreatedBy:         "API",
+				Error:             err.Error() + " TransactionId:" + strconv.FormatInt(saleTransaction.TransactionId, 10),
+				Details:           "支付信息不存在！",
 			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return nil, err
@@ -866,13 +881,14 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			saleMsts = append(saleMsts, saleMst)
 		} else {
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-				OrderId:       saleTransaction.OrderId,
-				RefundId:      saleTransaction.RefundId,
-				StoreId:       saleTransaction.StoreId,
-				TransactionId: saleMst.TransactionId,
-				CreatedBy:     "API",
-				Error:         "SaleMst、SaleDtl、SalePayment数据不一致" + strconv.FormatInt(saleMst.TransactionId, 10),
-				Details:       "数据异常！",
+				SaleTransactionId: saleTransaction.Id,
+				OrderId:           saleTransaction.OrderId,
+				RefundId:          saleTransaction.RefundId,
+				StoreId:           saleTransaction.StoreId,
+				TransactionId:     saleMst.TransactionId,
+				CreatedBy:         "API",
+				Error:             "SaleMst、SaleDtl、SalePayment数据不一致" + strconv.FormatInt(saleMst.TransactionId, 10),
+				Details:           "数据异常！",
 			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return nil, err
@@ -906,13 +922,14 @@ func (etl ClearanceToCslETL) ReadyToLoad(ctx context.Context, source interface{}
 		err := models.SaleMst{}.CheckShop(saleMst.BrandCode, saleMst.ShopCode)
 		if err != nil {
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-				OrderId:       saleMst.OrderId,
-				RefundId:      saleMst.RefundId,
-				StoreId:       saleMst.StoreId,
-				TransactionId: saleMst.TransactionId,
-				CreatedBy:     "API",
-				Error:         err.Error() + " BrandCode:" + saleMst.BrandCode + " ShopCode:" + saleMst.ShopCode,
-				Details:       "卖场信息不存在!",
+				SaleTransactionId: saleMst.SaleTransactionId,
+				OrderId:           saleMst.OrderId,
+				RefundId:          saleMst.RefundId,
+				StoreId:           saleMst.StoreId,
+				TransactionId:     saleMst.TransactionId,
+				CreatedBy:         "API",
+				Error:             err.Error() + " BrandCode:" + saleMst.BrandCode + " ShopCode:" + saleMst.ShopCode,
+				Details:           "卖场信息不存在!",
 			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return err
@@ -928,13 +945,14 @@ func (etl ClearanceToCslETL) ReadyToLoad(ctx context.Context, source interface{}
 		}
 		if saleMst.SellingAmt != paymentAmt {
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-				OrderId:       saleMst.OrderId,
-				RefundId:      saleMst.RefundId,
-				StoreId:       saleMst.StoreId,
-				TransactionId: saleMst.TransactionId,
-				CreatedBy:     "API",
-				Error:         "支付金额:" + fmt.Sprintf("%g", paymentAmt) + "和SaleMst实际销售金额:" + fmt.Sprintf("%g", saleMst.SellingAmt) + "不一致！",
-				Details:       "支付金额:" + fmt.Sprintf("%g", paymentAmt) + "和SaleMst实际销售金额:" + fmt.Sprintf("%g", saleMst.SellingAmt) + "不一致！",
+				SaleTransactionId: saleMst.SaleTransactionId,
+				OrderId:           saleMst.OrderId,
+				RefundId:          saleMst.RefundId,
+				StoreId:           saleMst.StoreId,
+				TransactionId:     saleMst.TransactionId,
+				CreatedBy:         "API",
+				Error:             "支付金额:" + fmt.Sprintf("%g", paymentAmt) + "和SaleMst实际销售金额:" + fmt.Sprintf("%g", saleMst.SellingAmt) + "不一致！",
+				Details:           "支付金额:" + fmt.Sprintf("%g", paymentAmt) + "和SaleMst实际销售金额:" + fmt.Sprintf("%g", saleMst.SellingAmt) + "不一致！",
 			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return err
@@ -965,14 +983,15 @@ func (etl ClearanceToCslETL) ReadyToLoad(ctx context.Context, source interface{}
 				//Check FeeRate
 				if saleDtl.NormalFeeRate <= 0 {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-						OrderId:          saleMst.OrderId,
-						RefundId:         saleMst.RefundId,
-						StoreId:          saleMst.StoreId,
-						TransactionId:    saleMst.TransactionId,
-						TransactionDtlId: saleDtl.TransactionDtlId,
-						CreatedBy:        "API",
-						Error:            "卖场扣率不能小于等于0！" + " NormalFeeRate:" + strconv.FormatFloat(saleDtl.NormalFeeRate, 'E', -1, 64),
-						Details:          "卖场扣率不能小于等于0！",
+						SaleTransactionId: saleMst.SaleTransactionId,
+						OrderId:           saleMst.OrderId,
+						RefundId:          saleMst.RefundId,
+						StoreId:           saleMst.StoreId,
+						TransactionId:     saleMst.TransactionId,
+						TransactionDtlId:  saleDtl.TransactionDtlId,
+						CreatedBy:         "API",
+						Error:             "卖场扣率不能小于等于0！" + " NormalFeeRate:" + strconv.FormatFloat(saleDtl.NormalFeeRate, 'E', -1, 64),
+						Details:           "卖场扣率不能小于等于0！",
 					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return err
@@ -1025,14 +1044,15 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 		if _, err := session.Table("dbo.SaleMst").Insert(&saleMst); err != nil {
 			str, _ := json.Marshal(saleMst)
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-				OrderId:       saleMst.OrderId,
-				RefundId:      saleMst.RefundId,
-				StoreId:       saleMst.StoreId,
-				TransactionId: saleMst.TransactionId,
-				CreatedBy:     "API",
-				Error:         err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10),
-				Details:       "数据插入异常！",
-				Data:          string(str),
+				SaleTransactionId: saleMst.SaleTransactionId,
+				OrderId:           saleMst.OrderId,
+				RefundId:          saleMst.RefundId,
+				StoreId:           saleMst.StoreId,
+				TransactionId:     saleMst.TransactionId,
+				CreatedBy:         "API",
+				Error:             err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10),
+				Details:           "数据插入异常！",
+				Data:              string(str),
 			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return err
@@ -1048,14 +1068,15 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 				if _, err := session.Table("dbo.StaffSaleRecord").Insert(&staffSaleRecord); err != nil {
 					str, _ := json.Marshal(staffSaleRecord)
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-						OrderId:       saleMst.OrderId,
-						RefundId:      saleMst.RefundId,
-						StoreId:       saleMst.StoreId,
-						TransactionId: saleMst.TransactionId,
-						CreatedBy:     "API",
-						Error:         err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10),
-						Details:       "数据插入异常!",
-						Data:          string(str),
+						SaleTransactionId: saleMst.SaleTransactionId,
+						OrderId:           saleMst.OrderId,
+						RefundId:          saleMst.RefundId,
+						StoreId:           saleMst.StoreId,
+						TransactionId:     saleMst.TransactionId,
+						CreatedBy:         "API",
+						Error:             err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10),
+						Details:           "数据插入异常!",
+						Data:              string(str),
 					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return err
@@ -1074,15 +1095,16 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 				if _, err := session.Table("dbo.SaleDtl").Insert(&saleDtl); err != nil {
 					str, _ := json.Marshal(saleDtl)
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-						OrderId:          saleMst.OrderId,
-						RefundId:         saleMst.RefundId,
-						StoreId:          saleMst.StoreId,
-						TransactionId:    saleMst.TransactionId,
-						TransactionDtlId: saleDtl.TransactionDtlId,
-						CreatedBy:        "API",
-						Error:            err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10),
-						Details:          "数据插入异常!",
-						Data:             string(str),
+						SaleTransactionId: saleMst.SaleTransactionId,
+						OrderId:           saleMst.OrderId,
+						RefundId:          saleMst.RefundId,
+						StoreId:           saleMst.StoreId,
+						TransactionId:     saleMst.TransactionId,
+						TransactionDtlId:  saleDtl.TransactionDtlId,
+						CreatedBy:         "API",
+						Error:             err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10),
+						Details:           "数据插入异常!",
+						Data:              string(str),
 					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return err
@@ -1101,14 +1123,15 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 				if _, err := session.Table("dbo.SalePayment").Insert(&salePayment); err != nil {
 					str, _ := json.Marshal(salePayment)
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-						OrderId:       saleMst.OrderId,
-						RefundId:      saleMst.RefundId,
-						StoreId:       saleMst.StoreId,
-						TransactionId: saleMst.TransactionId,
-						CreatedBy:     "API",
-						Error:         err.Error() + " SalePaymentTransactionId:" + strconv.FormatInt(salePayment.TransactionId, 10),
-						Details:       "数据插入异常！",
-						Data:          string(str),
+						SaleTransactionId: saleMst.SaleTransactionId,
+						OrderId:           saleMst.OrderId,
+						RefundId:          saleMst.RefundId,
+						StoreId:           saleMst.StoreId,
+						TransactionId:     saleMst.TransactionId,
+						CreatedBy:         "API",
+						Error:             err.Error() + " SalePaymentTransactionId:" + strconv.FormatInt(salePayment.TransactionId, 10),
+						Details:           "数据插入异常！",
+						Data:              string(str),
 					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return err

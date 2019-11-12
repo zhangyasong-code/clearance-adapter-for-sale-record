@@ -81,31 +81,33 @@ type SaleTAndSaleTDtls struct {
 }
 
 type SaleRecordIdSuccessMapping struct {
-	Id            int64     `json:"id"`
-	SaleNo        string    `json:"saleNo" xorm:"index VARCHAR(30) notnull"`
-	TransactionId int64     `json:"transactionId" xorm:"index default 0"`
-	OrderId       int64     `json:"orderId" xorm:"index default 0"`
-	RefundId      int64     `json:"refundId" xorm:"index default 0"`
-	OrderItemId   int64     `json:"orderItemId" xorm:"index default 0"`
-	RefundItemId  int64     `json:"refundItemId" xorm:"index default 0"`
-	DtlSeq        int64     `json:"dtlSeq" xorm:"index default 0"`
-	CreatedAt     time.Time `json:"createdAt" xorm:"created"`
-	CreatedBy     string    `json:"createdBy" xorm:"index VARCHAR(30) notnull"`
+	Id                int64     `json:"id"`
+	SaleTransactionId int64     `json:"saleTransactionId" xorm:"index default 0" validate:"required"`
+	SaleNo            string    `json:"saleNo" xorm:"index VARCHAR(30) notnull"`
+	TransactionId     int64     `json:"transactionId" xorm:"index default 0"`
+	OrderId           int64     `json:"orderId" xorm:"index default 0"`
+	RefundId          int64     `json:"refundId" xorm:"index default 0"`
+	OrderItemId       int64     `json:"orderItemId" xorm:"index default 0"`
+	RefundItemId      int64     `json:"refundItemId" xorm:"index default 0"`
+	DtlSeq            int64     `json:"dtlSeq" xorm:"index default 0"`
+	CreatedAt         time.Time `json:"createdAt" xorm:"created"`
+	CreatedBy         string    `json:"createdBy" xorm:"index VARCHAR(30) notnull"`
 }
 
 type SaleRecordIdFailMapping struct {
-	Id               int64     `json:"id"`
-	OrderId          int64     `json:"orderId" xorm:"index default 0"`
-	RefundId         int64     `json:"refundId" xorm:"index default 0"`
-	StoreId          int64     `json:"storeId" xorm:"index default 0"`
-	TransactionId    int64     `json:"transactionId" xorm:"index default 0"`
-	TransactionDtlId int64     `json:"transactionDtlId" xorm:"index default 0"`
-	Error            string    `json:"error" xorm:"VARCHAR(1000)"`
-	Details          string    `json:"details" xorm:"VARCHAR(100)"`
-	Data             string    `json:"data" xorm:"TEXT"`
-	IsCreate         bool      `json:"isCreate" xorm:"index notnull default false"`
-	CreatedAt        time.Time `json:"createdAt" xorm:"created"`
-	CreatedBy        string    `json:"createdBy" xorm:"index VARCHAR(30)"`
+	Id                int64     `json:"id"`
+	SaleTransactionId int64     `json:"saleTransactionId" xorm:"index default 0" validate:"required"`
+	OrderId           int64     `json:"orderId" xorm:"index default 0"`
+	RefundId          int64     `json:"refundId" xorm:"index default 0"`
+	StoreId           int64     `json:"storeId" xorm:"index default 0"`
+	TransactionId     int64     `json:"transactionId" xorm:"index default 0"`
+	TransactionDtlId  int64     `json:"transactionDtlId" xorm:"index default 0"`
+	Error             string    `json:"error" xorm:"VARCHAR(1000)"`
+	Details           string    `json:"details" xorm:"VARCHAR(100)"`
+	Data              string    `json:"data" xorm:"TEXT"`
+	IsCreate          bool      `json:"isCreate" xorm:"index notnull default false"`
+	CreatedAt         time.Time `json:"createdAt" xorm:"created"`
+	CreatedBy         string    `json:"createdBy" xorm:"index VARCHAR(30)"`
 }
 
 type RequestInput struct {
@@ -323,10 +325,13 @@ func (srfm *SaleRecordIdFailMapping) Save() error {
 	return nil
 }
 
-func (SaleRecordIdSuccessMapping) GetSaleSuccessData(orderId int64, itemId int64) ([]SaleRecordIdSuccessMapping, error) {
+func (SaleRecordIdSuccessMapping) GetSaleSuccessData(saleTransactionId int64, orderId int64, itemId int64) ([]SaleRecordIdSuccessMapping, error) {
 	var success []SaleRecordIdSuccessMapping
 	queryBuilder := func() xorm.Interface {
 		q := factory.GetCfsrEngine().Where("1 = 1")
+		if saleTransactionId != 0 {
+			q.And("saleTransaction_id = ?", saleTransactionId)
+		}
 		if orderId != 0 {
 			q.And("order_id = ?", orderId)
 		}
