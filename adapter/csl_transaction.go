@@ -327,7 +327,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			SaleAmt:                     saleAmt,
 			FeeAmt:                      feeAmt,
 			ActualSaleAmt:               actualSaleAmt,
-			ObtainMileage:               mileage.Point,
+			ObtainMileage:               saleTransaction.ObtainMileage,
 			InUserID:                    inUserID,
 			ModiUserID:                  inUserID,
 			SendState:                   "",
@@ -604,10 +604,10 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					}
 					return nil, err
 				}
-				postMileageDtl, err := models.PostMileage{}.GetPostMileageDtl(saleTransactionDtl.OrderItemId, saleTransactionDtl.RefundItemId)
-				if err != nil {
-					return nil, err
-				}
+				// postMileageDtl, err := models.PostMileage{}.GetPostMileageDtl(saleTransactionDtl.OrderItemId, saleTransactionDtl.RefundItemId)
+				// if err != nil {
+				// 	return nil, err
+				// }
 				postSaleRecordFee, err := models.PostSaleRecordFee{}.GetPostSaleRecordFee(saleTransactionDtl.OrderItemId, saleTransactionDtl.RefundItemId)
 				if err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
@@ -646,8 +646,9 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					}
 					preSaleDtSeq = sql.NullInt64{successDtls[0].DtlSeq, true}
 				}
+
 				if normalSaleTypeCode != "1" {
-					useMileage = math.Abs(postMileageDtl.PointPrice)
+					useMileage = math.Abs(saleTransactionDtl.MileagePrice)
 				}
 				discountAmt = GetToFixedPrice(eventAutoDiscountAmt+useMileage+saleVentDecisionDiscountAmt, baseTrimCode)
 				estimateSaleAmt = GetToFixedPrice(saleTransactionDtl.TotalListPrice-discountAmt, baseTrimCode)
