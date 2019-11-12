@@ -185,7 +185,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			saleMode = Refund
 			use_type = models.UseTypeEarnCancel
 			// complexShopSeqNo = strconv.FormatInt(saleTransaction.RefundId, 10)
-			successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(saleTransaction.OrderId, 0)
+			successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(saleTransaction.Id, saleTransaction.OrderId, 0)
 			if err != nil {
 				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 					SaleTransactionId: saleTransaction.Id,
@@ -639,7 +639,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				}
 
 				if saleTransaction.RefundId != 0 {
-					successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(saleTransaction.OrderId, saleTransactionDtl.OrderItemId)
+					successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(saleTransaction.Id, saleTransaction.OrderId, saleTransactionDtl.OrderItemId)
 					if err != nil {
 						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 							SaleTransactionId: saleTransaction.Id,

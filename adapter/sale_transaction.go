@@ -128,7 +128,6 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 			TransactionChannelType: assortedSaleRecord.TransactionChannelType,
 			TotalDiscountPrice:     assortedSaleRecord.TotalDiscountPrice,
 			BaseTrimCode:           assortedSaleRecord.BaseTrimCode,
-			ObtainMileage:          assortedSaleRecord.ObtainMileage,
 		}
 		saleTransactionDtls := make([]models.SaleTransactionDtl, 0)
 		for _, assortedSaleRecordDtl := range assortedSaleRecord.AssortedSaleRecordDtls {
@@ -179,35 +178,6 @@ func (etl SrToClearanceETL) Before(ctx context.Context, source interface{}) (int
 	assortedSaleRecords, ok := source.([]models.AssortedSaleRecord)
 	if !ok {
 		return nil, errors.New("Convert Failed")
-			
-		})
-	}
-	for _, assortedSaleRecordDtl := range assortedSaleRecordAndDtls.AssortedSaleRecordDtls {
-		saleTransactionDtls = append(saleTransactionDtls, models.SaleTransactionDtl{
-			Quantity:                       assortedSaleRecordDtl.Quantity,
-			SalePrice:                      assortedSaleRecordDtl.SalePrice,
-			TotalDiscountPrice:             assortedSaleRecordDtl.TotalDiscountPrice,
-			SkuId:                          assortedSaleRecordDtl.SkuId,
-			OrderItemId:                    assortedSaleRecordDtl.OrderItemId,
-			RefundItemId:                   assortedSaleRecordDtl.RefundItemId,
-			BrandCode:                      assortedSaleRecordDtl.BrandCode,
-			BrandId:                        assortedSaleRecordDtl.BrandId,
-			ProductId:                      assortedSaleRecordDtl.ProductId,
-			ListPrice:                      assortedSaleRecordDtl.ListPrice,
-			ItemCode:                       assortedSaleRecordDtl.ItemCode,
-			ItemFee:                        assortedSaleRecordDtl.ItemFee,
-			TotalTransactionPrice:          assortedSaleRecordDtl.TotalTransactionPrice,
-			TotalDistributedCartOfferPrice: assortedSaleRecordDtl.TotalDistributedCartOfferPrice,
-			TotalDistributedItemOfferPrice: assortedSaleRecordDtl.TotalDistributedItemOfferPrice,
-			TotalDistributedPaymentPrice:   assortedSaleRecordDtl.TotalDistributedPaymentPrice,
-			TransactionId:                  assortedSaleRecordDtl.TransactionId,
-			TotalSalePrice:                 assortedSaleRecordDtl.TotalSalePrice,
-			TotalListPrice:                 assortedSaleRecordDtl.TotalListPrice,
-			DistributedCashPrice:           assortedSaleRecordDtl.DistributedCashPrice,
-			TransactionDtlId:               assortedSaleRecordDtl.Id,
-			Mileage:                        assortedSaleRecordDtl.Mileage,
-			MileagePrice:                   assortedSaleRecordDtl.MileagePrice,
-		})
 	}
 	newAssortedSaleRecords := make([]*models.AssortedSaleRecord, 0)
 	for _, assortedSaleRecord := range assortedSaleRecords {

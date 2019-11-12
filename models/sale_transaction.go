@@ -28,6 +28,7 @@ type SaleTransaction struct {
 	SaleDate               time.Time                `json:"saleDate"`
 	Mileage                float64                  `json:"mileage" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	MileagePrice           float64                  `json:"mileagePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	ObtainMileage          float64                  `json:"obtainMileage" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	OuterOrderNo           string                   `json:"outerOrderNo" xorm:"index VARCHAR(30) notnull" validate:"required"`
 	TransactionChannelType string                   `json:"transactionChannelType" xorm:"index VARCHAR(30) notnull"`
 	BaseTrimCode           string                   `json:"baseTrimCode" xorm:"index VARCHAR(30)"`
