@@ -23,6 +23,7 @@ func (c TransactionController) Init(g *echo.Group) {
 	g.GET("/sale", c.GetSaleTransactions)
 	g.GET("/fail-log", c.GetFailDataLog)
 	g.GET("/saleTransactions", c.GetSaleTransactions)
+	g.GET("/csl-saleTransactions", c.GetCslSaleTransactions)
 }
 
 func (TransactionController) RunSaleETL(c echo.Context) error {
@@ -54,6 +55,36 @@ func (TransactionController) RunSaleETL(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, api.Result{
 		Success: true,
+	})
+}
+
+func (TransactionController) GetCslSaleTransactions(c echo.Context) error {
+	var data models.RequestInput
+	if err := c.Bind(&data); err != nil {
+		return c.JSON(http.StatusBadRequest, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
+	}
+	if data.MaxResultCount == 0 {
+		data.MaxResultCount = 10
+	}
+	totalCount, items, err := models.CslSaleMst{}.GetCslSaleBySaleTransactions(c.Request().Context(), data)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
+	}
+
+	return c.JSON(http.StatusOK, api.Result{
+		Success: true,
+		Result: api.ArrayResult{
+			TotalCount: totalCount,
+			Items:      items,
+		},
 	})
 }
 func (TransactionController) GetSaleTransactions(c echo.Context) error {
