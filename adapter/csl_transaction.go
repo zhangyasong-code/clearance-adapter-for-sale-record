@@ -110,7 +110,9 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 	var saleEventNormalSaleRecognitionChk bool
 	var startStr, strSeqNo, saleMode, eANCode, normalSaleTypeCode, useMileageSettleType, offerNo, couponNo, inUserID, itemCodes, baseTrimCode string
 	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo, preSaleDtSeq sql.NullInt64
-	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode, secondaryEventSettleTypeCode, preSaleNo, creditCardFirmCode, custNo, complexShopSeqNo sql.NullString
+	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode,
+		secondaryEventSettleTypeCode, preSaleNo, creditCardFirmCode, custNo,
+		custGradeCode, complexShopSeqNo sql.NullString
 	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
 		discountAmt, actualSaleAmt, saleEventFee, normalFee, normalFeeRate, saleEventFeeRate, eventAutoDiscountAmt,
 		eventDecisionDiscountAmt, chinaFISaleAmt, estimateSaleAmt, useMileage, sellingAmt, discountAmtAsCost, saleAmt, normalPrice, shopEmpEstimateSaleAmt, paymentAmt float64
@@ -206,25 +208,29 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if err != nil {
 			return nil, err
 		}
-		var brand models.Brand
-		if mileage.BrandId != 0 {
-			brand, err = models.Product{}.GetBrandById(mileage.BrandId)
-			if err != nil {
-				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-					OrderId:       saleTransaction.OrderId,
-					RefundId:      saleTransaction.RefundId,
-					StoreId:       saleTransaction.StoreId,
-					TransactionId: saleTransaction.TransactionId,
-					CreatedBy:     "API",
-					Error:         err.Error() + " BrandId:" + strconv.FormatInt(mileage.BrandId, 10),
-					Details:       "品牌信息不存在！",
-				}
-				if err := SaleRecordIdFailMapping.Save(); err != nil {
-					return nil, err
-				}
-				continue
-			}
+		custGradeCode = sql.NullString{"", false}
+		if mileage.GradeId != 0 {
+			custGradeCode = sql.NullString{strconv.FormatInt(mileage.GradeId, 10), true}
 		}
+		// var brand models.Brand
+		// if mileage.BrandId != 0 {
+		// 	brand, err = models.Product{}.GetBrandById(mileage.BrandId)
+		// 	if err != nil {
+		// 		SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+		// 			OrderId:       saleTransaction.OrderId,
+		// 			RefundId:      saleTransaction.RefundId,
+		// 			StoreId:       saleTransaction.StoreId,
+		// 			TransactionId: saleTransaction.TransactionId,
+		// 			CreatedBy:     "API",
+		// Error:         err.Error() + " BrandId:" + strconv.FormatInt(mileage.BrandId, 10),
+		// 			Details:       "品牌信息不存在！",
+		// 		}
+		// 		if err := SaleRecordIdFailMapping.Save(); err != nil {
+		// 			return nil, err
+		// 		}
+		// 		continue
+		// 	}
+		// }
 
 		feeAmt, err := models.PostSaleRecordFee{}.GetSumFeeAmount(saleTransaction.TransactionId)
 		if err != nil {
@@ -300,7 +306,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			feeAmt = feeAmt * -1
 			actualSaleAmt = actualSaleAmt * -1
 		}
-
 		saleMst := models.SaleMst{
 			SaleNo:                      saleNo,
 			SeqNo:                       seqNo,
@@ -315,8 +320,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			DepartStoreReceiptNo:        saleTransaction.OuterOrderNo,
 			CustDivisionCode:            sql.NullString{"", false},
 			MileageCustChangeStatusCode: sql.NullString{"", false},
-			CustGradeCode:               sql.NullString{"", false},
-			CustBrandCode:               brand.Code,
+			CustGradeCode:               custGradeCode,
+			CustBrandCode:               mileage.BrandCode,
 			PreSaleNo:                   preSaleNo,
 			SaleQty:                     saleQty,
 			SaleAmt:                     saleAmt,

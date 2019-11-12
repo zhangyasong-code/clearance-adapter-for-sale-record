@@ -127,6 +127,7 @@ type PostMileage struct {
 	UseType             string  `json:"useType"`
 	Point               float64 `json:"point"`
 	PointAmount         float64 `json:"pointAmount"`
+	BrandCode           string  `json:"brandCode"`
 }
 
 type PostMileageDtl struct {
