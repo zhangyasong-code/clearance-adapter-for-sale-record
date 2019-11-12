@@ -1165,14 +1165,15 @@ func saveAndUpdateLog(ctx context.Context, saleNo string, transactionId int64, s
 						for _, salePayment := range saleMstsAndSaleDtls.SalePayments {
 							if salePayment.SaleNo == salDtl.SaleNo {
 								saleRecordIdSuccessMapping := &models.SaleRecordIdSuccessMapping{
-									SaleNo:        saleMst.SaleNo,
-									CreatedBy:     "API",
-									TransactionId: saleMst.TransactionId,
-									OrderId:       saleMst.OrderId,
-									RefundId:      saleMst.RefundId,
-									OrderItemId:   salDtl.OrderItemId,
-									RefundItemId:  salDtl.RefundItemId,
-									DtlSeq:        salDtl.DtSeq,
+									SaleTransactionId: saleMst.SaleTransactionId,
+									SaleNo:            saleMst.SaleNo,
+									CreatedBy:         "API",
+									TransactionId:     saleMst.TransactionId,
+									OrderId:           saleMst.OrderId,
+									RefundId:          saleMst.RefundId,
+									OrderItemId:       salDtl.OrderItemId,
+									RefundItemId:      salDtl.RefundItemId,
+									DtlSeq:            salDtl.DtSeq,
 								}
 								if err := saleRecordIdSuccessMapping.CheckAndSave(); err != nil {
 									return err
