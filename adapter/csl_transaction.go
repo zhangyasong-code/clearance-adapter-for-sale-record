@@ -15,9 +15,9 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/go-xorm/core"
 	"github.com/go-xorm/xorm"
 	"github.com/pangpanglabs/goetl"
+	"xorm.io/core"
 )
 
 const (
@@ -127,27 +127,9 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		baseTrimCode = saleTransaction.BaseTrimCode
 		saleDate := saleTransaction.SaleDate.Format("20060102")
 
-		//get store
-		store, err := models.Store{}.GetStore(saleTransaction.StoreId)
-		if err != nil {
-			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-				OrderId:       saleTransaction.OrderId,
-				RefundId:      saleTransaction.RefundId,
-				StoreId:       saleTransaction.StoreId,
-				TransactionId: saleTransaction.TransactionId,
-				CreatedBy:     "API",
-				Error:         err.Error() + " StoreId:" + strconv.FormatInt(saleTransaction.StoreId, 10),
-				Details:       "卖场信息不存在!",
-			}
-			if err := SaleRecordIdFailMapping.Save(); err != nil {
-				return nil, err
-			}
-			continue
-		}
-
 		//get last endSeq and startStr in csl SaleMst
 		if i == 0 {
-			lastSeq, err := models.SaleMst{}.GetlastSeq(store.Code, saleDate)
+			lastSeq, err := models.SaleMst{}.GetlastSeq(saleTransaction.ShopCode, saleDate)
 			if err != nil {
 				return nil, err
 			}
@@ -166,7 +148,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		}
 		endSeq = nextSeq
 		startStr = str
-		saleNo := store.Code + saleDate[len(saleDate)-6:len(saleDate)] + MSLV2_POS + sequenceNumber
+		saleNo := saleTransaction.ShopCode + saleDate[len(saleDate)-6:len(saleDate)] + MSLV2_POS + sequenceNumber
 
 		//get SeqNo
 		strSeqNo = ""
@@ -324,7 +306,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			SeqNo:                       seqNo,
 			PosNo:                       MSLV2_POS,
 			Dates:                       saleDate,
-			ShopCode:                    store.Code,
+			ShopCode:                    saleTransaction.ShopCode,
 			SaleMode:                    saleMode,
 			CustNo:                      custNo,
 			CustCardNo:                  sql.NullString{"", false},
@@ -721,7 +703,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				}
 				saleDtl := models.SaleDtl{
 					SaleNo:                            saleNo,
-					ShopCode:                          store.Code,
+					ShopCode:                          saleTransaction.ShopCode,
 					BrandCode:                         saleTransactionDtl.BrandCode,
 					DtSeq:                             dtSeq,
 					CustMileagePolicyNo:               custMileagePolicyNo,

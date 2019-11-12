@@ -11,27 +11,29 @@ import (
 )
 
 type SaleTransaction struct {
-	Id                     int64                `json:"id"`
-	TransactionId          int64                `json:"transactionId" xorm:"index" validate:"required"`
-	OrderId                int64                `json:"orderId" xorm:"index default 0" validate:"required"`
-	RefundId               int64                `json:"refundId" xorm:"index default 0" `
-	EmpId                  string               `json:"empId" xorm:"index VARCHAR(50)"`
-	StoreId                int64                `json:"storeId" xorm:"index default 0" validate:"required"`
-	SalesmanId             int64                `json:"salesmanId" xorm:"index default 0" validate:"required"`
-	CustomerId             int64                `json:"customerId" xorm:"index default 0" validate:"required"`
-	TransactionCreatedId   int64                `json:"transactionCreatedId" xorm:"index default 0" validate:"required"`
-	TotalListPrice         float64              `json:"totalListPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	TotalSalePrice         float64              `json:"totalSalePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	TotalTransactionPrice  float64              `json:"totalTransactionPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	TotalDiscountPrice     float64              `json:"totalDiscountPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	SaleDate               time.Time            `json:"saleDate"`
-	Mileage                float64              `json:"mileage" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	MileagePrice           float64              `json:"mileagePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	OuterOrderNo           string               `json:"outerOrderNo" xorm:"index VARCHAR(30) notnull" validate:"required"`
-	TransactionChannelType string               `json:"transactionChannelType" xorm:"index VARCHAR(30) notnull"`
-	BaseTrimCode           string               `json:"baseTrimCode" xorm:"index VARCHAR(30)"`
-	Dtls                   []SaleTransactionDtl `json:"dtls" xorm:"-"`
-	WhetherSend            bool                 `json:"whetherSend" xorm:"index default false"`
+	Id                     int64                    `json:"id"`
+	TransactionId          int64                    `json:"transactionId" xorm:"index" validate:"required"`
+	OrderId                int64                    `json:"orderId" xorm:"index default 0" validate:"required"`
+	RefundId               int64                    `json:"refundId" xorm:"index default 0" `
+	EmpId                  string                   `json:"empId" xorm:"index VARCHAR(50)"`
+	StoreId                int64                    `json:"storeId" xorm:"index default 0" validate:"required"`
+	ShopCode               string                   `json:"shopCode" xorm:"index VARCHAR(30) notnull" validate:"required"`
+	SalesmanId             int64                    `json:"salesmanId" xorm:"index default 0" validate:"required"`
+	CustomerId             int64                    `json:"customerId" xorm:"index default 0" validate:"required"`
+	TransactionCreatedId   int64                    `json:"transactionCreatedId" xorm:"index default 0" validate:"required"`
+	TotalListPrice         float64                  `json:"totalListPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	TotalSalePrice         float64                  `json:"totalSalePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	TotalTransactionPrice  float64                  `json:"totalTransactionPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	TotalDiscountPrice     float64                  `json:"totalDiscountPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	SaleDate               time.Time                `json:"saleDate"`
+	Mileage                float64                  `json:"mileage" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	MileagePrice           float64                  `json:"mileagePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	OuterOrderNo           string                   `json:"outerOrderNo" xorm:"index VARCHAR(30) notnull" validate:"required"`
+	TransactionChannelType string                   `json:"transactionChannelType" xorm:"index VARCHAR(30) notnull"`
+	BaseTrimCode           string                   `json:"baseTrimCode" xorm:"index VARCHAR(30)"`
+	Dtls                   []SaleTransactionDtl     `json:"dtls" xorm:"-"`
+	Payments               []SaleTransactionPayment `json:"payments" xorm:"-"`
+	WhetherSend            bool                     `json:"whetherSend" xorm:"index default false"`
 }
 
 type SaleTransactionDtl struct {
@@ -58,6 +60,16 @@ type SaleTransactionDtl struct {
 	DistributedCashPrice           float64 `json:"distributedCashPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	TransactionId                  int64   `json:"transactionId" xorm:"index default 0" validate:"required"`
 	TransactionDtlId               int64   `json:"transactionDtlId" xorm:"index default 0" validate:"required"`
+}
+
+type SaleTransactionPayment struct {
+	Id                int64     `json:"id" xorm:"pk notnull autoincr"`
+	SaleTransactionId int64     `json:"saleTransactionId" xorm:"index" validate:"required"`
+	SeqNo             int64     `json:"seqNo" xorm:"index default 0" validate:"required"`
+	PayMethod         string    `json:"payMethod"`
+	PayAmt            float64   `json:"payAmt" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	CreatedAt         time.Time `json:"CreatedBy"`
+	TransactionId     int64     `json:"transactionId" xorm:"index default 0" validate:"required"`
 }
 
 //SaleTransactionAndSaleTransactionDtl
@@ -326,9 +338,9 @@ func (SaleRecordIdSuccessMapping) GetSaleSuccessData(orderId int64, itemId int64
 }
 
 func (requestInput RequestInput) Validate() error {
-	if requestInput.BrandCode == "" {
-		return errors.New("BrandCode can not be null!")
-	}
+	// if requestInput.BrandCode == "" {
+	// 	return errors.New("BrandCode can not be null!")
+	// }
 	if requestInput.ChannelType == "" {
 		return errors.New("ChannelType can not be null!")
 	}
@@ -374,6 +386,12 @@ func (saleTransaction *SaleTransaction) Update() error {
 	for _, saleTransactionDtl := range saleTransaction.Dtls {
 		if _, err := factory.GetCfsrEngine().Where("order_item_id = ?", saleTransactionDtl.OrderItemId).
 			And("refund_item_id = ?", saleTransactionDtl.RefundItemId).AllCols().Update(saleTransactionDtl); err != nil {
+			return err
+		}
+	}
+	for _, payment := range saleTransaction.Payments {
+		if _, err := factory.GetCfsrEngine().Where("seq_no = ?", payment.SeqNo).
+			And("transaction_id = ?", payment.TransactionId).AllCols().Update(payment); err != nil {
 			return err
 		}
 	}

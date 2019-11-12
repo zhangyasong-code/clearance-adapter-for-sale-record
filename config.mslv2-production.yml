@@ -26,9 +26,10 @@ shopEmployeeDatabase:
   connection: mslv2_app:0pL6LA#7@tcp(rm-uf65796v5j1t257t19o.mysql.rds.aliyuncs.com)/mslv2_shop_employee?charset=utf8&parseTime=True&loc=UTC
 services:
   placeManagementApi: https://p2shop.com.cn/pangpang-brand/place-management-api
-  getTokenApi: https://qa.p2shop.com.cn/pangpang-common/portal-api/login?tenantCode=pangpang
+  # getTokenApi: https://qa.p2shop.com.cn/pangpang-common/portal-api/login?tenantCode=pangpang
+  getTokenApi: http://colleague-login-api.pangpang-common:8082/api
 getTokenUser:
-  userName: qa.pangpang
-  password: 1111
+  appId: d11cbd31d042462e893d627dfcea0c4e
+  appSecretKey: 4c4458869c344f3faa6dd8485dab9665
 appenv: mslv2-production
 serviceName: clearance-adapter-for-sale-record

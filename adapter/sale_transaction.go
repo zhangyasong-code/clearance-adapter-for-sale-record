@@ -40,11 +40,14 @@ func (etl SrToClearanceETL) Extract(ctx context.Context) (interface{}, error) {
 			q := factory.GetSrEngine().Table("assorted_sale_record").
 				Join("INNER", "assorted_sale_record_dtl", "assorted_sale_record_dtl.transaction_id = assorted_sale_record.transaction_id").
 				Where("1 = 1")
-			if dataInput.BrandCode != "" {
-				q.And("assorted_sale_record_dtl.brand_code = ?", dataInput.BrandCode)
-			}
-			if dataInput.ChannelType != "" {
-				q.And("assorted_sale_record.transaction_channel_type = ?", dataInput.ChannelType)
+			// if dataInput.BrandCode != "" {
+			// 	q.And("assorted_sale_record_dtl.brand_code = ?", dataInput.BrandCode)
+			// }
+			// if dataInput.ChannelType != "" {
+			// 	q.And("assorted_sale_record.transaction_channel_type = ?", dataInput.ChannelType)
+			// }
+			if dataInput.TransactionId != 0 {
+				q.And("assorted_sale_record.transaction_id = ?", dataInput.TransactionId)
 			}
 			if dataInput.OrderId != 0 {
 				q.And("assorted_sale_record.order_id = ?", dataInput.OrderId)
@@ -79,25 +82,37 @@ func (etl SrToClearanceETL) Extract(ctx context.Context) (interface{}, error) {
 			skipCount += maxResultCount
 		}
 	}
-	return models.AssortedSaleRecordAndDtls{
-		AssortedSaleRecords:    saleRecords,
-		AssortedSaleRecordDtls: saleRecordsDtl,
-	}, nil
+
+	for i, saleRecord := range saleRecords {
+		saleRecordPayments := make([]models.AssortedSaleRecordPayment, 0)
+		if err := factory.GetSrEngine().Table("assorted_sale_record_payment").Where("transaction_id=?", saleRecord.TransactionId).Find(&saleRecordPayments); err != nil {
+			return nil, err
+		}
+		saleRecords[i].AssortedSaleRecordPayments = saleRecordPayments
+		for _, saleRecordDtl := range saleRecordsDtl {
+			if saleRecordDtl.TransactionId != saleRecord.TransactionId {
+				continue
+			}
+			saleRecords[i].AssortedSaleRecordDtls = append(saleRecords[i].AssortedSaleRecordDtls, saleRecordDtl)
+		}
+	}
+
+	return saleRecords, nil
 }
 
 // Transform ...
 func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
-	assortedSaleRecordAndDtls, ok := source.(models.AssortedSaleRecordAndDtls)
+	assortedSaleRecords, ok := source.([]*models.AssortedSaleRecord)
 	if !ok {
 		return nil, errors.New("Convert Failed")
 	}
 	saleTransactions := make([]models.SaleTransaction, 0)
-	saleTransactionDtls := make([]models.SaleTransactionDtl, 0)
-	for _, assortedSaleRecord := range assortedSaleRecordAndDtls.AssortedSaleRecords {
-		saleTransactions = append(saleTransactions, models.SaleTransaction{
+	for _, assortedSaleRecord := range assortedSaleRecords {
+		saleTransaction := models.SaleTransaction{
 			OrderId:                assortedSaleRecord.OrderId,
 			RefundId:               assortedSaleRecord.RefundId,
 			StoreId:                assortedSaleRecord.StoreId,
+			ShopCode:               assortedSaleRecord.ShopCode,
 			SalesmanId:             assortedSaleRecord.SalesmanId,
 			EmpId:                  assortedSaleRecord.EmpId,
 			TransactionCreatedId:   assortedSaleRecord.TransactionCreatedId,
@@ -113,41 +128,71 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 			TransactionChannelType: assortedSaleRecord.TransactionChannelType,
 			TotalDiscountPrice:     assortedSaleRecord.TotalDiscountPrice,
 			BaseTrimCode:           assortedSaleRecord.BaseTrimCode,
-		})
+		}
+		saleTransactionDtls := make([]models.SaleTransactionDtl, 0)
+		for _, assortedSaleRecordDtl := range assortedSaleRecord.AssortedSaleRecordDtls {
+			saleTransactionDtls = append(saleTransactionDtls, models.SaleTransactionDtl{
+				Quantity:                       assortedSaleRecordDtl.Quantity,
+				SalePrice:                      assortedSaleRecordDtl.SalePrice,
+				TotalDiscountPrice:             assortedSaleRecordDtl.TotalDiscountPrice,
+				SkuId:                          assortedSaleRecordDtl.SkuId,
+				OrderItemId:                    assortedSaleRecordDtl.OrderItemId,
+				RefundItemId:                   assortedSaleRecordDtl.RefundItemId,
+				BrandCode:                      assortedSaleRecordDtl.BrandCode,
+				BrandId:                        assortedSaleRecordDtl.BrandId,
+				ProductId:                      assortedSaleRecordDtl.ProductId,
+				ListPrice:                      assortedSaleRecordDtl.ListPrice,
+				ItemCode:                       assortedSaleRecordDtl.ItemCode,
+				ItemFee:                        assortedSaleRecordDtl.ItemFee,
+				TotalTransactionPrice:          assortedSaleRecordDtl.TotalTransactionPrice,
+				TotalDistributedCartOfferPrice: assortedSaleRecordDtl.TotalDistributedCartOfferPrice,
+				TotalDistributedItemOfferPrice: assortedSaleRecordDtl.TotalDistributedItemOfferPrice,
+				TotalDistributedPaymentPrice:   assortedSaleRecordDtl.TotalDistributedPaymentPrice,
+				TransactionId:                  assortedSaleRecordDtl.TransactionId,
+				TotalSalePrice:                 assortedSaleRecordDtl.TotalSalePrice,
+				TotalListPrice:                 assortedSaleRecordDtl.TotalListPrice,
+				DistributedCashPrice:           assortedSaleRecordDtl.DistributedCashPrice,
+				TransactionDtlId:               assortedSaleRecordDtl.Id,
+			})
+		}
+
+		saleTransaction.Dtls = saleTransactionDtls
+		saleTransactionPayments := make([]models.SaleTransactionPayment, 0)
+		for _, assortedSaleRecordPayment := range assortedSaleRecord.AssortedSaleRecordPayments {
+			saleTransactionPayments = append(saleTransactionPayments, models.SaleTransactionPayment{
+				TransactionId: assortedSaleRecordPayment.TransactionId,
+				SeqNo:         assortedSaleRecordPayment.SeqNo,
+				PayMethod:     assortedSaleRecordPayment.PayMethod,
+				PayAmt:        assortedSaleRecordPayment.PayAmt,
+				CreatedAt:     assortedSaleRecordPayment.CreatedAt,
+			})
+		}
+		saleTransaction.Payments = saleTransactionPayments
+		saleTransactions = append(saleTransactions, saleTransaction)
 	}
-	for _, assortedSaleRecordDtl := range assortedSaleRecordAndDtls.AssortedSaleRecordDtls {
-		saleTransactionDtls = append(saleTransactionDtls, models.SaleTransactionDtl{
-			Quantity:                       assortedSaleRecordDtl.Quantity,
-			SalePrice:                      assortedSaleRecordDtl.SalePrice,
-			TotalDiscountPrice:             assortedSaleRecordDtl.TotalDiscountPrice,
-			SkuId:                          assortedSaleRecordDtl.SkuId,
-			OrderItemId:                    assortedSaleRecordDtl.OrderItemId,
-			RefundItemId:                   assortedSaleRecordDtl.RefundItemId,
-			BrandCode:                      assortedSaleRecordDtl.BrandCode,
-			BrandId:                        assortedSaleRecordDtl.BrandId,
-			ProductId:                      assortedSaleRecordDtl.ProductId,
-			ListPrice:                      assortedSaleRecordDtl.ListPrice,
-			ItemCode:                       assortedSaleRecordDtl.ItemCode,
-			ItemFee:                        assortedSaleRecordDtl.ItemFee,
-			TotalTransactionPrice:          assortedSaleRecordDtl.TotalTransactionPrice,
-			TotalDistributedCartOfferPrice: assortedSaleRecordDtl.TotalDistributedCartOfferPrice,
-			TotalDistributedItemOfferPrice: assortedSaleRecordDtl.TotalDistributedItemOfferPrice,
-			TotalDistributedPaymentPrice:   assortedSaleRecordDtl.TotalDistributedPaymentPrice,
-			TransactionId:                  assortedSaleRecordDtl.TransactionId,
-			TotalSalePrice:                 assortedSaleRecordDtl.TotalSalePrice,
-			TotalListPrice:                 assortedSaleRecordDtl.TotalListPrice,
-			DistributedCashPrice:           assortedSaleRecordDtl.DistributedCashPrice,
-			TransactionDtlId:               assortedSaleRecordDtl.Id,
-		})
+	return saleTransactions, nil
+}
+
+// Before ...
+func (etl SrToClearanceETL) Before(ctx context.Context, source interface{}) (interface{}, error) {
+	assortedSaleRecords, ok := source.([]models.AssortedSaleRecord)
+	if !ok {
+		return nil, errors.New("Convert Failed")
 	}
-	return models.SaleTAndSaleTDtls{
-		SaleTransactions:    saleTransactions,
-		SaleTransactionDtls: saleTransactionDtls,
-	}, nil
+	newAssortedSaleRecords := make([]*models.AssortedSaleRecord, 0)
+	for _, assortedSaleRecord := range assortedSaleRecords {
+		result, err := (&assortedSaleRecord).SplitSaleRecordByBrand(nil)
+		if err != nil {
+			return nil, err
+		}
+		newAssortedSaleRecords = append(newAssortedSaleRecords, result...)
+	}
+	return newAssortedSaleRecords, nil
 }
 
 // ReadyToLoad ...
 func (etl SrToClearanceETL) ReadyToLoad(ctx context.Context, source interface{}) error {
+
 	return nil
 }
 
@@ -156,7 +201,7 @@ func (etl SrToClearanceETL) Load(ctx context.Context, source interface{}) error 
 	if source == nil {
 		return errors.New("source is nil")
 	}
-	saleTAndSaleTDtls, ok := source.(models.SaleTAndSaleTDtls)
+	saleTransactions, ok := source.([]models.SaleTransaction)
 	if !ok {
 		return errors.New("Convert Failed")
 	}
@@ -168,18 +213,13 @@ func (etl SrToClearanceETL) Load(ctx context.Context, source interface{}) error 
 		return err
 	}
 
-	for _, saleTransaction := range saleTAndSaleTDtls.SaleTransactions {
+	for _, saleTransaction := range saleTransactions {
 		dbSaleTransaction, err := models.SaleTransaction{}.Get(saleTransaction.TransactionId)
 		if err != nil {
 			return err
 		}
 		if dbSaleTransaction.TransactionId != 0 {
 			if dbSaleTransaction.WhetherSend == false {
-				for _, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {
-					if saleTransaction.TransactionId == saleTransactionDtl.TransactionId {
-						saleTransaction.Dtls = append(saleTransaction.Dtls, saleTransactionDtl)
-					}
-				}
 				if err := saleTransaction.Update(); err != nil {
 					return err
 				}
@@ -191,13 +231,20 @@ func (etl SrToClearanceETL) Load(ctx context.Context, source interface{}) error 
 				session.Rollback()
 				return err
 			}
-			for _, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {
-				if saleTransactionDtl.TransactionId == saleTransaction.TransactionId {
-					if _, err := session.Insert(&saleTransactionDtl); err != nil {
-						session.Rollback()
-						return err
-					}
-				}
+			for i, _ := range saleTransaction.Dtls {
+				saleTransaction.Dtls[i].SaleTransactionId = saleTransaction.Id
+			}
+			if _, err := session.Insert(&saleTransaction.Dtls); err != nil {
+				session.Rollback()
+				return err
+			}
+
+			for i, _ := range saleTransaction.Payments {
+				saleTransaction.Payments[i].SaleTransactionId = saleTransaction.Id
+			}
+			if _, err := session.Insert(&saleTransaction.Payments); err != nil {
+				session.Rollback()
+				return err
 			}
 		}
 	}

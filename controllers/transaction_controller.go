@@ -43,6 +43,7 @@ func (TransactionController) RunSaleETL(c echo.Context) error {
 		})
 	}
 	etl := goetl.New(adapter.SrToClearanceETL{})
+	etl.Before(adapter.SrToClearanceETL{}.Before)
 	etl.After(adapter.SrToClearanceETL{}.ReadyToLoad)
 	if err := etl.Run(context.WithValue(c.Request().Context(), "data", data)); err != nil {
 		return c.JSON(http.StatusInternalServerError, api.Result{
@@ -133,6 +134,7 @@ func (TransactionController) RunSaleETLAndCslETL(c echo.Context) error {
 		})
 	}
 	clearanceETL := goetl.New(adapter.SrToClearanceETL{})
+	clearanceETL.Before(adapter.SrToClearanceETL{}.Before)
 	clearanceETL.After(adapter.SrToClearanceETL{}.ReadyToLoad)
 	if err := clearanceETL.Run(context.WithValue(c.Request().Context(), "data", data)); err != nil {
 		return c.JSON(http.StatusInternalServerError, api.Result{

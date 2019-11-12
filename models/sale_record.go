@@ -1,10 +1,18 @@
 package models
 
 import (
+	"clearance/clearance-adapter-for-sale-record/config"
 	"clearance/clearance-adapter-for-sale-record/factory"
+	"context"
 	"errors"
+	"fmt"
+	"net/http"
+	"strings"
 	"time"
 
+	"github.com/pangpanglabs/goutils/behaviorlog"
+	"github.com/pangpanglabs/goutils/httpreq"
+	"github.com/pangpanglabs/goutils/number"
 	"github.com/sirupsen/logrus"
 )
 
@@ -18,39 +26,44 @@ const (
 )
 
 type AssortedSaleRecord struct {
-	TransactionId          int64     `json:"transactionId" xorm:"pk"`
-	CashPrice              float64   `json:"cashPrice"`
-	ChannelId              int64     `json:"channelId"`
-	Created                time.Time `json:"created"`
-	CreatedBy              string    `json:"createdBy"`
-	Modified               time.Time `json:"modified"`
-	ModifiedBy             string    `json:"modifiedBy"`
-	CustomerId             int64     `json:"customerId"`
-	TransactionCreatedId   int64     `json:"transactionCreatedId"`
-	DiscountCouponPrice    float64   `json:"discountCouponPrice"`
-	DiscountOfferPrice     float64   `json:"discountOfferPrice"`
-	FreightPrice           float64   `json:"freightPrice"`
-	IsOutPaid              int64     `json:"isOutPaid"`
-	IsRefund               int64     `json:"isRefund"`
-	Mileage                float64   `json:"mileage"`
-	MileagePrice           float64   `json:"mileagePrice"`
-	OrderId                int64     `json:"orderId"`
-	OuterOrderNo           string    `json:"outerOrderNo"`
-	RefundId               int64     `json:"refundId"`
-	EmpId                  string    `json:"empId"`
-	SalesmanId             int64     `json:"salesmanId"`
-	StoreId                int64     `json:"storeId"`
-	TenantCode             string    `json:"tenantCode"`
-	TotalDiscountPrice     float64   `json:"totalDiscountPrice"`
-	TotalListPrice         float64   `json:"totalListPrice"`
-	TotalSalePrice         float64   `json:"totalSalePrice"`
-	TotalTransactionPrice  float64   `json:"totalTransactionPrice"`
-	TransactionChannelType string    `json:"transactionChannelType"`
-	TransactionCreateDate  time.Time `json:"transactionCreateDate"`
-	TransactionStatus      string    `json:"transactionStatus"`
-	TransactionType        string    `json:"transactionType"`
-	TransactionUpdateDate  time.Time `json:"transactionUpdateDate"`
-	BaseTrimCode           string    `json:"baseTrimCode"`
+	TransactionId               int64                        `json:"transactionId" xorm:"pk"`
+	CashPrice                   float64                      `json:"cashPrice"`
+	ChannelId                   int64                        `json:"channelId"`
+	Created                     time.Time                    `json:"created"`
+	CreatedBy                   string                       `json:"createdBy"`
+	Modified                    time.Time                    `json:"modified"`
+	ModifiedBy                  string                       `json:"modifiedBy"`
+	CustomerId                  int64                        `json:"customerId"`
+	TransactionCreatedId        int64                        `json:"transactionCreatedId"`
+	DiscountCouponPrice         float64                      `json:"discountCouponPrice"`
+	DiscountOfferPrice          float64                      `json:"discountOfferPrice"`
+	FreightPrice                float64                      `json:"freightPrice"`
+	IsOutPaid                   int64                        `json:"isOutPaid"`
+	IsRefund                    int64                        `json:"isRefund"`
+	Mileage                     float64                      `json:"mileage"`
+	MileagePrice                float64                      `json:"mileagePrice"`
+	ObtainMileage               float64                      `json:"obtainMileage"`
+	OrderId                     int64                        `json:"orderId"`
+	OuterOrderNo                string                       `json:"outerOrderNo"`
+	RefundId                    int64                        `json:"refundId"`
+	EmpId                       string                       `json:"empId"`
+	SalesmanId                  int64                        `json:"salesmanId"`
+	StoreId                     int64                        `json:"storeId"`
+	TenantCode                  string                       `json:"tenantCode"`
+	TotalDiscountPrice          float64                      `json:"totalDiscountPrice"`
+	TotalListPrice              float64                      `json:"totalListPrice"`
+	TotalSalePrice              float64                      `json:"totalSalePrice"`
+	TotalTransactionPrice       float64                      `json:"totalTransactionPrice"`
+	TransactionChannelType      string                       `json:"transactionChannelType"`
+	TransactionCreateDate       time.Time                    `json:"transactionCreateDate"`
+	TransactionStatus           string                       `json:"transactionStatus"`
+	TransactionType             string                       `json:"transactionType"`
+	TransactionUpdateDate       time.Time                    `json:"transactionUpdateDate"`
+	BaseTrimCode                string                       `json:"baseTrimCode"`
+	AssortedSaleRecordDtls      []AssortedSaleRecordDtl      `json:"assortedSaleRecordDtls"`
+	AssortedSaleRecordPayments  []AssortedSaleRecordPayment  `json:"assortedSaleRecordPayments" xorm:"-"`
+	AppliedSaleRecordCartOffers []AppliedSaleRecordCartOffer `json:"appliedSaleRecordCartOffers"`
+	ShopCode                    string                       `json:"shopCode"`
 }
 
 type AssortedSaleRecordDtl struct {
@@ -84,6 +97,18 @@ type AssortedSaleRecordDtl struct {
 	TotalSalePrice                 float64   `json:"totalSalePrice"`
 	TotalTransactionPrice          float64   `json:"totalTransactionPrice"`
 	TransactionId                  int64     `json:"transactionId"`
+	Mileage                        float64   `json:"mileage"`
+	MileagePrice                   float64   `json:"mileagePrice"`
+	ObtainMileage                  float64   `json:"obtainMileage"`
+}
+
+type AssortedSaleRecordPayment struct {
+	Id            int64     `json:"id"`
+	TransactionId int64     `json:"transactionId"`
+	SeqNo         int64     `json:"seqNo"`
+	PayMethod     string    `json:"payMethod"`
+	PayAmt        float64   `json:"payAmt"`
+	CreatedAt     time.Time `json:"CreatedBy"`
 }
 
 type AssortedSaleRecordAndDtls struct {
@@ -126,12 +151,15 @@ type AppliedSaleRecordItemOffer struct {
 
 type AppliedSaleRecordCartOffer struct {
 	Id              int64   `json:"id"`
-	CouponNo        string  `json:"couponNo"`
+	TenantCode      string  `json:"tenantCode"`
 	OfferNo         string  `json:"offerNo"`
+	CouponNo        string  `json:"couponNo"`
 	ItemCodes       string  `json:"itemCodes"`
 	TargetItemCodes string  `json:"targetItemCodes"`
 	Price           float64 `json:"price"`
+	Type            string  `json:"type"`
 	TransactionId   int64   `json:"transactionId"`
+	TargetType      string  `josn:"targetType"`
 }
 
 type PromotionEvent struct {
@@ -334,4 +362,195 @@ func (SaleRecordDtlSalesmanAmount) GetSaleRecordDtlSalesmanAmount(orderItemId, r
 		return SaleRecordDtlSalesmanAmount{}, errors.New("SaleRecordDtlSalesmanAmount is not exist!")
 	}
 	return dtlSalesmanAmount, nil
+}
+
+func (saleRecord *AssortedSaleRecord) SplitSaleRecordByBrand(setting *number.Setting) ([]*AssortedSaleRecord, error) {
+	mileageSetting := &number.Setting{
+		RoundDigit:    0,
+		RoundStrategy: "round",
+	}
+
+	getBrandMap := func(saleRecord *AssortedSaleRecord) map[string]int64 {
+		var brandMap = make(map[string]int64)
+		for _, saleRecordItem := range saleRecord.AssortedSaleRecordDtls {
+			brandMap[saleRecordItem.BrandCode] = saleRecordItem.BrandId
+		}
+		return brandMap
+	}
+
+	makeSaleRecordDtls := func(saleRecord *AssortedSaleRecord, brandMap map[string]int64) map[string][]AssortedSaleRecordDtl {
+		brandSaleRecordDtl := make(map[string][]AssortedSaleRecordDtl)
+		for brandCode, _ := range brandMap {
+			newSaleRecordDtl := make([]AssortedSaleRecordDtl, 0)
+			for _, saleRecordDtl := range saleRecord.AssortedSaleRecordDtls {
+				if brandCode != saleRecordDtl.BrandCode {
+					continue
+				}
+				newSaleRecordDtl = append(newSaleRecordDtl, saleRecordDtl)
+			}
+			brandSaleRecordDtl[brandCode] = newSaleRecordDtl
+		}
+		return brandSaleRecordDtl
+	}
+
+	makeNewSaleRecord := func(saleRecord *AssortedSaleRecord) *AssortedSaleRecord {
+		return &AssortedSaleRecord{
+			TransactionId:          saleRecord.TransactionId,
+			EmpId:                  saleRecord.EmpId,
+			ChannelId:              saleRecord.ChannelId,
+			Created:                saleRecord.Created,
+			CreatedBy:              saleRecord.CreatedBy,
+			Modified:               saleRecord.Modified,
+			ModifiedBy:             saleRecord.ModifiedBy,
+			CustomerId:             saleRecord.CustomerId,
+			FreightPrice:           saleRecord.FreightPrice,
+			IsOutPaid:              saleRecord.IsOutPaid,
+			IsRefund:               saleRecord.IsRefund,
+			OrderId:                saleRecord.OrderId,
+			OuterOrderNo:           saleRecord.OuterOrderNo,
+			RefundId:               saleRecord.RefundId,
+			SalesmanId:             saleRecord.SalesmanId,
+			StoreId:                saleRecord.StoreId,
+			TenantCode:             saleRecord.TenantCode,
+			TransactionChannelType: saleRecord.TransactionChannelType,
+			TransactionCreateDate:  saleRecord.TransactionCreateDate,
+			TransactionStatus:      saleRecord.TransactionStatus,
+			TransactionType:        saleRecord.TransactionType,
+			TransactionUpdateDate:  saleRecord.TransactionUpdateDate,
+			TransactionCreatedId:   saleRecord.TransactionCreatedId,
+			BaseTrimCode:           saleRecord.BaseTrimCode,
+		}
+	}
+
+	calculateSaleRecordPrice := func(newSaleRecord *AssortedSaleRecord, saleRecordDtls []AssortedSaleRecordDtl) {
+		for _, saleRecordDtl := range saleRecordDtls {
+			newSaleRecord.ObtainMileage = number.ToFixed(newSaleRecord.ObtainMileage+saleRecordDtl.ObtainMileage, mileageSetting)
+			newSaleRecord.Mileage = number.ToFixed(newSaleRecord.Mileage+saleRecordDtl.Mileage, mileageSetting)
+			newSaleRecord.MileagePrice = number.ToFixed(newSaleRecord.MileagePrice+saleRecordDtl.MileagePrice, mileageSetting)
+			newSaleRecord.TotalDiscountPrice = number.ToFixed(newSaleRecord.TotalDiscountPrice+saleRecordDtl.TotalDiscountPrice+saleRecordDtl.TotalDistributedCartOfferPrice+saleRecordDtl.MileagePrice, setting)
+			newSaleRecord.TotalListPrice = number.ToFixed(newSaleRecord.TotalListPrice+saleRecordDtl.TotalListPrice, setting)
+			newSaleRecord.TotalSalePrice = number.ToFixed(newSaleRecord.TotalSalePrice+saleRecordDtl.TotalDistributedPaymentPrice, setting)
+			newSaleRecord.TotalTransactionPrice = number.ToFixed(newSaleRecord.TotalTransactionPrice+saleRecordDtl.TotalTransactionPrice, setting)
+			newSaleRecord.CashPrice = number.ToFixed(newSaleRecord.CashPrice+saleRecordDtl.DistributedCashPrice, setting)
+		}
+	}
+
+	makeCartOffers := func(saleRecordDtls []AssortedSaleRecordDtl, setting *number.Setting) []AppliedSaleRecordCartOffer {
+		appliedSaleRecordCartOffers := make([]AppliedSaleRecordCartOffer, 0)
+		for _, cartOffer := range saleRecord.AppliedSaleRecordCartOffers {
+			var itemCodes, targetItemCodes []string
+			var discountPrice float64
+			for _, saleRecordDtl := range saleRecordDtls {
+				if strings.Index(cartOffer.TargetItemCodes+",", saleRecordDtl.ItemCode+",") > -1 {
+					targetItemCodes = append(itemCodes, saleRecordDtl.ItemCode)
+					discountPrice = number.ToFixed(discountPrice+saleRecordDtl.TotalDistributedCartOfferPrice, setting)
+				} else if strings.Index(cartOffer.ItemCodes+",", saleRecordDtl.ItemCode+",") > -1 {
+					itemCodes = append(itemCodes, saleRecordDtl.ItemCode)
+					discountPrice = number.ToFixed(discountPrice+saleRecordDtl.TotalDistributedCartOfferPrice, setting)
+				}
+			}
+			if len(itemCodes) == 0 && len(targetItemCodes) == 0 {
+				continue
+			}
+			newCartOffer := AppliedSaleRecordCartOffer{
+				TenantCode: cartOffer.TenantCode,
+				OfferNo:    cartOffer.OfferNo,
+				CouponNo:   cartOffer.CouponNo,
+				Type:       cartOffer.Type,
+				TargetType: cartOffer.TargetType,
+			}
+			newCartOffer.ItemCodes = strings.Join(itemCodes, ",")
+			newCartOffer.TargetItemCodes = strings.Join(targetItemCodes, ",")
+			newCartOffer.Price = discountPrice
+			appliedSaleRecordCartOffers = append(appliedSaleRecordCartOffers, cartOffer)
+		}
+		return appliedSaleRecordCartOffers
+	}
+
+	makePayments := func(newSaleRecord *AssortedSaleRecord) []AssortedSaleRecordPayment {
+		newPayments := make([]AssortedSaleRecordPayment, 0)
+
+		remainAmt := newSaleRecord.CashPrice
+
+		seqNo := int64(0)
+		for _, payment := range saleRecord.AssortedSaleRecordPayments {
+			if payment.PayMethod == "MILEAGE" {
+				continue
+			}
+			if remainAmt == 0 {
+				break
+			}
+			seqNo++
+			if remainAmt > payment.PayAmt {
+				newPayments = append(newPayments, AssortedSaleRecordPayment{
+					SeqNo:         seqNo,
+					PayMethod:     payment.PayMethod,
+					PayAmt:        payment.PayAmt,
+					CreatedAt:     payment.CreatedAt,
+					TransactionId: payment.TransactionId,
+				})
+				remainAmt = number.ToFixed(newSaleRecord.CashPrice-payment.PayAmt, setting)
+			} else {
+				newPayments = append(newPayments, AssortedSaleRecordPayment{
+					SeqNo:         seqNo,
+					PayMethod:     payment.PayMethod,
+					PayAmt:        remainAmt,
+					CreatedAt:     payment.CreatedAt,
+					TransactionId: payment.TransactionId,
+				})
+			}
+		}
+		return newPayments
+	}
+
+	store, err := Store{}.GetStore(saleRecord.StoreId)
+	if err != nil {
+		return nil, err
+	}
+	getShopCode := func(brandCode string) string {
+		for _, elandShop := range store.ElandShops {
+			if elandShop.BrandCode == brandCode {
+				return elandShop.ShopCode
+			}
+		}
+		return ""
+	}
+
+	brandMap := getBrandMap(saleRecord)
+	assortedSaleRecords := make([]*AssortedSaleRecord, 0)
+	if len(brandMap) == 1 {
+		saleRecord.ShopCode = getShopCode(saleRecord.AssortedSaleRecordDtls[0].BrandCode)
+		assortedSaleRecords = append(assortedSaleRecords, saleRecord)
+	} else {
+		brandSaleRecordDtlMap := makeSaleRecordDtls(saleRecord, brandMap)
+		for brandCode, saleRecordDtls := range brandSaleRecordDtlMap {
+			newSaleRecord := makeNewSaleRecord(saleRecord)
+			newSaleRecord.ShopCode = getShopCode(brandCode)
+			newSaleRecord.AppliedSaleRecordCartOffers = makeCartOffers(saleRecordDtls, setting)
+			newSaleRecord.AssortedSaleRecordDtls = saleRecordDtls
+			calculateSaleRecordPrice(newSaleRecord, saleRecordDtls)
+			newSaleRecord.AssortedSaleRecordPayments = makePayments(newSaleRecord)
+			assortedSaleRecords = append(assortedSaleRecords, newSaleRecord)
+		}
+	}
+
+	return assortedSaleRecords, nil
+}
+
+func GetToken(ctx context.Context, tenantId int64) (string, error) {
+	resultToken := ResultToken{}
+	body := RequestTokenBody{
+		AppId:        config.Config().GetTokenUser.AppId,
+		AppSecretKey: config.Config().GetTokenUser.AppSecretKey,
+	}
+	url := fmt.Sprintf("%s/v1/sso/app-secret-key-token?tenantId=%d", config.Config().Services.GetTokenApi, tenantId)
+	if _, err := httpreq.New(http.MethodPost, url, body).
+		WithBehaviorLogContext(behaviorlog.FromCtx(ctx)).
+		Call(&resultToken); err != nil {
+		return "", err
+	}
+	if resultToken.Success && resultToken.Result.Token != "" {
+		return resultToken.Result.Token, nil
+	}
+	return "", errors.New("Get token error!")
 }
