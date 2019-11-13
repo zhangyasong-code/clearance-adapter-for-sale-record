@@ -176,7 +176,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		}
 		//Sale S 销售  Refund R 退货
 		saleMode = ""
-		use_type := models.UseTypeEarn
 		complexShopSeqNo = sql.NullString{"", false}
 
 		preSaleNo = sql.NullString{"", false}
