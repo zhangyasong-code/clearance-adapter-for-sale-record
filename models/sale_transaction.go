@@ -311,7 +311,7 @@ func (srsm *SaleRecordIdSuccessMapping) CheckAndSave() error {
 
 func (srfm *SaleRecordIdFailMapping) Save() error {
 	var saleRecordIdFailMapping SaleRecordIdFailMapping
-	has, err := factory.GetCfsrEngine().Where("transaction_id = ?", srfm.TransactionId).And("is_create = ?", false).Get(&saleRecordIdFailMapping)
+	has, err := factory.GetCfsrEngine().Where("sale_transaction_id = ?", srfm.SaleTransactionId).And("is_create = ?", false).Get(&saleRecordIdFailMapping)
 	if err != nil {
 		return err
 	}
@@ -417,20 +417,20 @@ func (saleTransaction *SaleTransaction) Update() error {
 	if _, err := factory.GetCfsrEngine().ID(saleTransaction.Id).AllCols().Update(saleTransaction); err != nil {
 		return err
 	}
-	for _, saleTransactionDtl := range saleTransaction.Dtls {
-		saleTransactionDtl.SaleTransactionId = saleTransaction.Id
-		if _, err := factory.GetCfsrEngine().Where("order_item_id = ?", saleTransactionDtl.OrderItemId).
-			And("refund_item_id = ?", saleTransactionDtl.RefundItemId).AllCols().Update(saleTransactionDtl); err != nil {
-			return err
-		}
-	}
-	for _, payment := range saleTransaction.Payments {
-		payment.SaleTransactionId = saleTransaction.Id
-		if _, err := factory.GetCfsrEngine().Where("seq_no = ?", payment.SeqNo).
-			And("transaction_id = ?", payment.TransactionId).AllCols().Update(payment); err != nil {
-			return err
-		}
-	}
+	// for _, saleTransactionDtl := range saleTransaction.Dtls {
+	// 	saleTransactionDtl.SaleTransactionId = saleTransaction.Id
+	// 	if _, err := factory.GetCfsrEngine().Where("order_item_id = ?", saleTransactionDtl.OrderItemId).
+	// 		And("refund_item_id = ?", saleTransactionDtl.RefundItemId).AllCols().Update(saleTransactionDtl); err != nil {
+	// 		return err
+	// 	}
+	// }
+	// for _, payment := range saleTransaction.Payments {
+	// 	payment.SaleTransactionId = saleTransaction.Id
+	// 	if _, err := factory.GetCfsrEngine().Where("seq_no = ?", payment.SeqNo).
+	// 		And("transaction_id = ?", payment.TransactionId).AllCols().Update(payment); err != nil {
+	// 		return err
+	// 	}
+	// }
 	return nil
 }
 
@@ -455,7 +455,7 @@ func (SaleTransaction) Get(transactionId int64) (SaleTransaction, error) {
 }
 
 func (saleRecordIdFailMapping *SaleRecordIdFailMapping) Update() error {
-	if _, err := factory.GetCfsrEngine().Where("transaction_id = ?", saleRecordIdFailMapping.TransactionId).AllCols().Update(saleRecordIdFailMapping); err != nil {
+	if _, err := factory.GetCfsrEngine().Where("sale_transaction_id = ?", saleRecordIdFailMapping.SaleTransactionId).AllCols().Update(saleRecordIdFailMapping); err != nil {
 		return err
 	}
 	return nil
