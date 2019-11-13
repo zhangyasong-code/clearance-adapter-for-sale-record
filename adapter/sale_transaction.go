@@ -225,7 +225,9 @@ func (etl SrToClearanceETL) Load(ctx context.Context, source interface{}) error 
 		if len(dbSaleTransactions) > 0 {
 			dbSaleTransaction := dbSaleTransactions[0]
 			if dbSaleTransaction.WhetherSend == false {
-				dbSaleTransaction.Delete()
+				if err := dbSaleTransaction.Delete(); err != nil {
+					return err
+				}
 			}
 		}
 
