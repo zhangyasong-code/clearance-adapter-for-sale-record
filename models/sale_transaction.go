@@ -401,7 +401,7 @@ func (saleTransaction *SaleTransaction) Delete() error {
 		}
 		return q
 	}
-	if _, err := queryBuilder().Delete(&SaleTransaction{}); err != nil {
+	if _, err := factory.GetCfsrEngine().Where("id = ?", saleTransaction.Id).Delete(&SaleTransaction{}); err != nil {
 		return err
 	}
 	if _, err := queryBuilder().Delete(&SaleTransactionDtl{}); err != nil {
