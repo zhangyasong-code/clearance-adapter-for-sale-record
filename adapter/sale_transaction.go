@@ -124,6 +124,7 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 			CustomerId:             assortedSaleRecord.CustomerId,
 			Mileage:                assortedSaleRecord.Mileage,
 			MileagePrice:           assortedSaleRecord.MileagePrice,
+			ObtainMileage:          assortedSaleRecord.ObtainMileage,
 			OuterOrderNo:           assortedSaleRecord.OuterOrderNo,
 			TransactionChannelType: assortedSaleRecord.TransactionChannelType,
 			TotalDiscountPrice:     assortedSaleRecord.TotalDiscountPrice,
@@ -153,6 +154,9 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 				TotalListPrice:                 assortedSaleRecordDtl.TotalListPrice,
 				DistributedCashPrice:           assortedSaleRecordDtl.DistributedCashPrice,
 				TransactionDtlId:               assortedSaleRecordDtl.Id,
+				Mileage:                        assortedSaleRecordDtl.Mileage,
+				MileagePrice:                   assortedSaleRecordDtl.MileagePrice,
+				ObtainMileage:                  assortedSaleRecordDtl.ObtainMileage,
 			})
 		}
 

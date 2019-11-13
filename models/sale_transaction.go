@@ -63,6 +63,7 @@ type SaleTransactionDtl struct {
 	MileagePrice                   float64 `json:"mileagePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	TransactionId                  int64   `json:"transactionId" xorm:"index default 0" validate:"required"`
 	TransactionDtlId               int64   `json:"transactionDtlId" xorm:"index default 0" validate:"required"`
+	ObtainMileage                  float64 `json:"obtainMileage" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 }
 
 type SaleTransactionPayment struct {
