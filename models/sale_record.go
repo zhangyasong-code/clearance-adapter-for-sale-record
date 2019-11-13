@@ -18,13 +18,6 @@ import (
 
 type UseType string
 
-const (
-	UseTypeEarn       UseType = "Earn"
-	UseTypeEarnCancel UseType = "EarnCancel"
-	UseTypeUsed       UseType = "Used"
-	UseTypeUsedCancel UseType = "UsedCancel"
-)
-
 type AssortedSaleRecord struct {
 	TransactionId               int64                        `json:"transactionId" xorm:"pk"`
 	CashPrice                   float64                      `json:"cashPrice"`
@@ -117,17 +110,14 @@ type AssortedSaleRecordAndDtls struct {
 }
 
 type PostMileage struct {
-	Id                  int64   `json:"id"`
-	TransactionId       int64   `json:"transactionId"`
-	TenantCode          string  `json:"tenantCode"`
-	CustomerId          int64   `json:"customerId"`
-	GradeId             int64   `json:"gradeId"`
-	BrandId             int64   `json:"brandId"`
-	CustMileagePolicyNo int64   `json:"custMileagePolicyNo"`
-	UseType             string  `json:"useType"`
-	Point               float64 `json:"point"`
-	PointAmount         float64 `json:"pointAmount"`
-	BrandCode           string  `json:"brandCode"`
+	Id            int64  `json:"id"`
+	TransactionId int64  `json:"transactionId"`
+	CustomerId    int64  `json:"customerId"`
+	GradeId       int64  `json:"gradeId"`
+	BrandId       int64  `json:"brandId"`
+	OrderId       int64  `json:"orderId"`
+	RefundId      int64  `json:"refundId"`
+	BrandCode     string `json:"brandCode"`
 }
 
 type PostMileageDtl struct {
@@ -232,40 +222,25 @@ type SaleRecordDtlSalesmanAmount struct {
 	SalesmanSaleAmount float64 `json:"salesmanSaleAmount"`
 }
 
-func (PostPayment) GetPostPayment(transactionId int64) ([]PostPayment, error) {
-	var postPayments []PostPayment
-	if err := factory.GetSrEngine().Where("transaction_id = ?", transactionId).Find(&postPayments); err != nil {
+func (SaleTransactionPayment) GetSaleTransactionPayment(saleTransactionId int64) ([]SaleTransactionPayment, error) {
+	var saleTransactionPayments []SaleTransactionPayment
+	if err := factory.GetSrEngine().Where("sale_transaction_id = ?", saleTransactionId).Find(&saleTransactionPayments); err != nil {
 		return nil, err
 	}
-	if len(postPayments) == 0 {
-		return nil, errors.New("PostPayment is not exist!")
+	if len(saleTransactionPayments) == 0 {
+		return nil, errors.New("SaleTransactionPayment is not exist!")
 	}
-	return postPayments, nil
+	return saleTransactionPayments, nil
 }
 
-func (PostMileage) GetMileage(customerId, transactionId int64, use_type UseType) (PostMileage, error) {
+func (PostMileage) GetMileage(customerId, transactionId int64) (PostMileage, error) {
 	var mileage PostMileage
 	if _, err := factory.GetSrEngine().Where("customer_id = ?", customerId).
-		And("use_type = ?", string(use_type)).And("transaction_id = ?", transactionId).
+		And("transaction_id = ?", transactionId).
 		Get(&mileage); err != nil {
 		return PostMileage{}, err
 	}
 	return mileage, nil
-}
-
-func (PostMileage) GetPostMileageDtl(orderItemId, refundItemId int64) (PostMileageDtl, error) {
-	var postMileageDtl PostMileageDtl
-	use_type := UseTypeUsed
-	if refundItemId != 0 {
-		use_type = UseTypeUsedCancel
-	}
-	if _, err := factory.GetSrEngine().Where("use_type = ?", string(use_type)).
-		And("order_item_id = ?", orderItemId).
-		And("refund_item_id = ?", refundItemId).
-		Get(&postMileageDtl); err != nil {
-		return PostMileageDtl{}, err
-	}
-	return postMileageDtl, nil
 }
 
 func (AppliedSaleRecordItemOffer) GetAppliedSaleRecordItemOffer(transactionDtlId int64) (*AppliedSaleRecordItemOffer, error) {

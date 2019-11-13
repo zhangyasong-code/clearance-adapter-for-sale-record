@@ -355,9 +355,9 @@ func (requestInput RequestInput) Validate() error {
 	// if requestInput.BrandCode == "" {
 	// 	return errors.New("BrandCode can not be null!")
 	// }
-	if requestInput.ChannelType == "" {
-		return errors.New("ChannelType can not be null!")
-	}
+	// if requestInput.ChannelType == "" {
+	// 	return errors.New("ChannelType can not be null!")
+	// }
 	if requestInput.StartAt != "" && requestInput.EndAt != "" {
 		_, err := time.Parse("2006-01-02 15:04:05", requestInput.StartAt)
 		if err != nil {
