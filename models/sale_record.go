@@ -224,7 +224,7 @@ type SaleRecordDtlSalesmanAmount struct {
 
 func (SaleTransactionPayment) GetSaleTransactionPayment(saleTransactionId int64) ([]SaleTransactionPayment, error) {
 	var saleTransactionPayments []SaleTransactionPayment
-	if err := factory.GetSrEngine().Where("sale_transaction_id = ?", saleTransactionId).Find(&saleTransactionPayments); err != nil {
+	if err := factory.GetCfsrEngine().Where("sale_transaction_id = ?", saleTransactionId).Find(&saleTransactionPayments); err != nil {
 		return nil, err
 	}
 	if len(saleTransactionPayments) == 0 {
