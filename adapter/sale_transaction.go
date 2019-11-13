@@ -220,6 +220,7 @@ func (etl SrToClearanceETL) Load(ctx context.Context, source interface{}) error 
 		}
 		if dbSaleTransaction.TransactionId != 0 {
 			if dbSaleTransaction.WhetherSend == false {
+				saleTransaction.Id = dbSaleTransaction.Id
 				if err := saleTransaction.Update(); err != nil {
 					return err
 				}

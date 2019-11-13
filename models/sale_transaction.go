@@ -397,12 +397,14 @@ func (saleTransaction *SaleTransaction) Update() error {
 		return err
 	}
 	for _, saleTransactionDtl := range saleTransaction.Dtls {
+		saleTransactionDtl.SaleTransactionId = saleTransaction.Id
 		if _, err := factory.GetCfsrEngine().Where("order_item_id = ?", saleTransactionDtl.OrderItemId).
 			And("refund_item_id = ?", saleTransactionDtl.RefundItemId).AllCols().Update(saleTransactionDtl); err != nil {
 			return err
 		}
 	}
 	for _, payment := range saleTransaction.Payments {
+		payment.SaleTransactionId = saleTransaction.Id
 		if _, err := factory.GetCfsrEngine().Where("seq_no = ?", payment.SeqNo).
 			And("transaction_id = ?", payment.TransactionId).AllCols().Update(payment); err != nil {
 			return err
