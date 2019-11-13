@@ -403,10 +403,10 @@ func (saleRecord *AssortedSaleRecord) SplitSaleRecordByBrand(setting *number.Set
 			newSaleRecord.ObtainMileage = number.ToFixed(newSaleRecord.ObtainMileage+saleRecordDtl.ObtainMileage, mileageSetting)
 			newSaleRecord.Mileage = number.ToFixed(newSaleRecord.Mileage+saleRecordDtl.Mileage, mileageSetting)
 			newSaleRecord.MileagePrice = number.ToFixed(newSaleRecord.MileagePrice+saleRecordDtl.MileagePrice, mileageSetting)
-			newSaleRecord.TotalDiscountPrice = number.ToFixed(newSaleRecord.TotalDiscountPrice+saleRecordDtl.TotalDiscountPrice+saleRecordDtl.TotalDistributedCartOfferPrice+saleRecordDtl.MileagePrice, setting)
+			newSaleRecord.TotalDiscountPrice = number.ToFixed(newSaleRecord.TotalDiscountPrice+saleRecordDtl.TotalDiscountPrice+saleRecordDtl.TotalDistributedCartOfferPrice, setting)
 			newSaleRecord.TotalListPrice = number.ToFixed(newSaleRecord.TotalListPrice+saleRecordDtl.TotalListPrice, setting)
 			newSaleRecord.TotalSalePrice = number.ToFixed(newSaleRecord.TotalSalePrice+saleRecordDtl.TotalDistributedPaymentPrice, setting)
-			newSaleRecord.TotalTransactionPrice = number.ToFixed(newSaleRecord.TotalTransactionPrice+saleRecordDtl.TotalTransactionPrice, setting)
+			newSaleRecord.TotalTransactionPrice = number.ToFixed(newSaleRecord.TotalTransactionPrice+saleRecordDtl.TotalDistributedPaymentPrice, setting)
 			newSaleRecord.CashPrice = number.ToFixed(newSaleRecord.CashPrice+saleRecordDtl.DistributedCashPrice, setting)
 		}
 	}

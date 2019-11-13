@@ -393,6 +393,26 @@ func (SaleRecordIdFailMapping) GetAll(ctx context.Context, requestInput RequestI
 	return totalCount, failDatas, nil
 }
 
+func (saleTransaction *SaleTransaction) Delete() error {
+	queryBuilder := func() xorm.Interface {
+		q := factory.GetCfsrEngine().Where("1 = 1")
+		if saleTransaction.TransactionId != 0 {
+			q.And("sale_transaction_id = ?", saleTransaction.Id)
+		}
+		return q
+	}
+	if _, err := queryBuilder().Delete(&SaleTransaction{}); err != nil {
+		return err
+	}
+	if _, err := queryBuilder().Delete(&SaleTransactionDtl{}); err != nil {
+		return err
+	}
+	if _, err := queryBuilder().Delete(&SaleTransactionPayment{}); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (saleTransaction *SaleTransaction) Update() error {
 	if _, err := factory.GetCfsrEngine().ID(saleTransaction.Id).AllCols().Update(saleTransaction); err != nil {
 		return err
