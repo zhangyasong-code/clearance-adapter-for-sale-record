@@ -380,19 +380,17 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			}
 		}
 		dtSeq = 0
-		for i, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {
+		for _, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {
 			if saleTransactionDtl.TransactionId == saleTransaction.TransactionId && saleTransactionDtl.SaleTransactionId == saleTransaction.Id {
 				dtSeq += 1
-				if i == 0 {
-					saleMst.BrandCode = saleTransactionDtl.BrandCode
-					staffSaleRecord.BrandCode = saleTransactionDtl.BrandCode
-					custMileagePolicy, err := models.CustMileagePolicy{}.GetCustMileagePolicy(saleTransactionDtl.BrandCode)
-					if err != nil {
-						return nil, err
-					}
-					if custMileagePolicy.CustMileagePolicyNo != 0 {
-						custMileagePolicyNo = sql.NullInt64{custMileagePolicy.CustMileagePolicyNo, true}
-					}
+				saleMst.BrandCode = saleTransactionDtl.BrandCode
+				staffSaleRecord.BrandCode = saleTransactionDtl.BrandCode
+				custMileagePolicy, err := models.CustMileagePolicy{}.GetCustMileagePolicy(saleTransactionDtl.BrandCode)
+				if err != nil {
+					return nil, err
+				}
+				if custMileagePolicy.CustMileagePolicyNo != 0 {
+					custMileagePolicyNo = sql.NullInt64{custMileagePolicy.CustMileagePolicyNo, true}
 				}
 				eventNo = sql.NullInt64{0, false}
 				primaryCustEventNo = sql.NullInt64{0, false}
