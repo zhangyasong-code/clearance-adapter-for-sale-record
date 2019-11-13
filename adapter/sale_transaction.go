@@ -218,20 +218,12 @@ func (etl SrToClearanceETL) Load(ctx context.Context, source interface{}) error 
 	}
 
 	for _, saleTransaction := range saleTransactions {
-		dbSaleTransaction, err := models.SaleTransaction{}.Get(saleTransaction.TransactionId)
+		_, dbSaleTransactions, err := models.SaleTransaction{}.GetSaleTransactions(ctx, saleTransaction.TransactionId, 0, 0, saleTransaction.ShopCode, 1, 0)
 		if err != nil {
 			return err
 		}
-		if dbSaleTransaction.TransactionId != 0 {
-			if dbSaleTransaction.WhetherSend == false {
-				saleTransaction.Id = dbSaleTransaction.Id
-				if err := saleTransaction.Update(); err != nil {
-					return err
-				}
-			} else {
-				return nil
-			}
-		} else {
+
+		if len(dbSaleTransactions) == 0 {
 			if _, err := session.Insert(&saleTransaction); err != nil {
 				session.Rollback()
 				return err
@@ -250,6 +242,14 @@ func (etl SrToClearanceETL) Load(ctx context.Context, source interface{}) error 
 			if _, err := session.Insert(&saleTransaction.Payments); err != nil {
 				session.Rollback()
 				return err
+			}
+		} else {
+			dbSaleTransaction := dbSaleTransactions[0]
+			if dbSaleTransaction.WhetherSend == false {
+				saleTransaction.Id = dbSaleTransaction.Id
+				if err := saleTransaction.Update(); err != nil {
+					return err
+				}
 			}
 		}
 	}
