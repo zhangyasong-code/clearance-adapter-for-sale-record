@@ -332,7 +332,7 @@ func (SaleRecordIdSuccessMapping) GetSaleSuccessData(saleTransactionId int64, or
 	queryBuilder := func() xorm.Interface {
 		q := factory.GetCfsrEngine().Where("1 = 1")
 		if saleTransactionId != 0 {
-			q.And("saleTransaction_id = ?", saleTransactionId)
+			q.And("sale_transaction_id = ?", saleTransactionId)
 		}
 		if orderId != 0 {
 			q.And("order_id = ?", orderId)
