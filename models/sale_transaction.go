@@ -384,6 +384,9 @@ func (SaleRecordIdFailMapping) GetAll(ctx context.Context, requestInput RequestI
 		if requestInput.TransactionId != 0 {
 			query.And("transaction_id = ?", requestInput.TransactionId)
 		}
+		if requestInput.SaleTransactionId != 0 {
+			query.And("sale_transaction_id = ?", requestInput.SaleTransactionId)
+		}
 		return query
 	}
 	totalCount, err := query().Desc("id").Limit(requestInput.MaxResultCount, requestInput.SkipCount).FindAndCount(&failDatas)
@@ -397,7 +400,7 @@ func (saleTransaction *SaleTransaction) Delete() error {
 	queryBuilder := func() xorm.Interface {
 		q := factory.GetCfsrEngine().Where("1 = 1")
 		if saleTransaction.TransactionId != 0 {
-			q.And("sale_transaction_id = ?", saleTransaction.Id)
+			q.And("id = ?", saleTransaction.Id)
 		}
 		return q
 	}
@@ -434,14 +437,16 @@ func (saleTransaction *SaleTransaction) Update() error {
 	return nil
 }
 
-func (SaleTransaction) Get(transactionId int64) (SaleTransaction, error) {
+func (SaleTransaction) Get(SaleTransactionId int64, transactionId int64) (SaleTransaction, error) {
 	var saleTransactions []struct {
 		SaleTransaction    SaleTransaction    `xorm:"extends"`
 		SaleTransactionDtl SaleTransactionDtl `xorm:"extends"`
 	}
 	if err := factory.GetCfsrEngine().Table("sale_transaction").
 		Join("INNER", "sale_transaction_dtl", "sale_transaction_dtl.transaction_id = sale_transaction.transaction_id").
-		Where("sale_transaction.transaction_id = ? ", transactionId).Find(&saleTransactions); err != nil {
+		Where("sale_transaction.transaction_id = ? ", transactionId).
+		And("sale_transaction.id = ?", SaleTransactionId).
+		Find(&saleTransactions); err != nil {
 		return SaleTransaction{}, err
 	}
 	var saleTransaction SaleTransaction
@@ -684,6 +689,9 @@ func (CslSaleMst) GetAll(requestInput RequestInput) ([]CslSaleMst, error) {
 		if requestInput.TransactionId != 0 {
 			q.And("transaction_id = ?", requestInput.TransactionId)
 		}
+		if requestInput.SaleTransactionId != 0 {
+			q.And("sale_transaction_id = ?", requestInput.SaleTransactionId)
+		}
 		return q
 	}
 	if requestInput.MaxResultCount > 0 {
@@ -703,6 +711,9 @@ func (CslSaleMst) Delete(requestInput RequestInput) error {
 		q := factory.GetCfsrEngine().Where("1 = 1")
 		if requestInput.TransactionId != 0 {
 			q.And("transaction_id = ?", requestInput.TransactionId)
+		}
+		if requestInput.SaleTransactionId != 0 {
+			q.And("sale_transaction_id = ?", requestInput.SaleTransactionId)
 		}
 		return q
 	}
