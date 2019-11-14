@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"clearance/clearance-adapter-for-sale-record/factory"
@@ -396,44 +397,27 @@ func (SaleRecordIdFailMapping) GetAll(ctx context.Context, requestInput RequestI
 	return totalCount, failDatas, nil
 }
 
-func (saleTransaction *SaleTransaction) Delete() error {
-	queryBuilder := func() xorm.Interface {
-		q := factory.GetCfsrEngine().Where("1 = 1")
-		if saleTransaction.TransactionId != 0 {
-			q.And("id = ?", saleTransaction.Id)
-		}
-		return q
-	}
-	if _, err := factory.GetCfsrEngine().Where("id = ?", saleTransaction.Id).Delete(&SaleTransaction{}); err != nil {
-		return err
-	}
-	if _, err := queryBuilder().Delete(&SaleTransactionDtl{}); err != nil {
-		return err
-	}
-	if _, err := queryBuilder().Delete(&SaleTransactionPayment{}); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (saleTransaction *SaleTransaction) Update() error {
-	if _, err := factory.GetCfsrEngine().ID(saleTransaction.Id).AllCols().Update(saleTransaction); err != nil {
+	if _, err := factory.GetCfsrEngine().Id(saleTransaction.Id).AllCols().Update(saleTransaction); err != nil {
+		fmt.Println("Update SaleTransaction::", saleTransaction.Id)
 		return err
 	}
-	// for _, saleTransactionDtl := range saleTransaction.Dtls {
-	// 	saleTransactionDtl.SaleTransactionId = saleTransaction.Id
-	// 	if _, err := factory.GetCfsrEngine().Where("order_item_id = ?", saleTransactionDtl.OrderItemId).
-	// 		And("refund_item_id = ?", saleTransactionDtl.RefundItemId).AllCols().Update(saleTransactionDtl); err != nil {
-	// 		return err
-	// 	}
-	// }
-	// for _, payment := range saleTransaction.Payments {
-	// 	payment.SaleTransactionId = saleTransaction.Id
-	// 	if _, err := factory.GetCfsrEngine().Where("seq_no = ?", payment.SeqNo).
-	// 		And("transaction_id = ?", payment.TransactionId).AllCols().Update(payment); err != nil {
-	// 		return err
-	// 	}
-	// }
+	for _, saleTransactionDtl := range saleTransaction.Dtls {
+		saleTransactionDtl.SaleTransactionId = saleTransaction.Id
+		if _, err := factory.GetCfsrEngine().Where("sale_transaction_id = ?", saleTransaction.Id).
+			AllCols().Update(saleTransactionDtl); err != nil {
+			fmt.Println("Update SaleTransactionDtl")
+			return err
+		}
+	}
+	for _, payment := range saleTransaction.Payments {
+		payment.SaleTransactionId = saleTransaction.Id
+		if _, err := factory.GetCfsrEngine().Where("sale_transaction_id = ?", saleTransaction.Id).
+			AllCols().Update(payment); err != nil {
+			fmt.Println("Update SaleTransactionPay")
+			return err
+		}
+	}
 	return nil
 }
 
