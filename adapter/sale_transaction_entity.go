@@ -11,12 +11,12 @@ type Clearance struct{}
 func (Clearance) TransformToClearance(saleMstsAndSaleDtls models.SaleMstsAndSaleDtls) error {
 	for _, saleMst := range saleMstsAndSaleDtls.SaleMsts {
 		cslSaleMst := makeCslSaleMstEntity(saleMst)
-		cslSaleMsts, err := models.CslSaleMst{}.GetAll(models.RequestInput{TransactionId: cslSaleMst.TransactionId})
+		cslSaleMsts, err := models.CslSaleMst{}.GetAll(models.RequestInput{SaleTransactionId: cslSaleMst.SaleTransactionId})
 		if err != nil {
 			return err
 		}
 		if cslSaleMsts != nil {
-			err := models.CslSaleMst{}.Delete(models.RequestInput{TransactionId: cslSaleMsts[0].TransactionId})
+			err := models.CslSaleMst{}.Delete(models.RequestInput{SaleTransactionId: cslSaleMsts[0].SaleTransactionId})
 			if err != nil {
 				return err
 			}

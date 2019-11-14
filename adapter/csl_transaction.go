@@ -1171,7 +1171,7 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 			}
 		}
 
-		if err := saveAndUpdateLog(ctx, saleMst.SaleNo, saleMst.TransactionId, saleMstsAndSaleDtls); err != nil {
+		if err := saveAndUpdateLog(ctx, saleMst.SaleNo, saleMst.SaleTransactionId, saleMst.TransactionId, saleMstsAndSaleDtls); err != nil {
 			return err
 		}
 	}
@@ -1182,7 +1182,7 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 	return nil
 }
 
-func saveAndUpdateLog(ctx context.Context, saleNo string, transactionId int64, saleMstsAndSaleDtls models.SaleMstsAndSaleDtls) error {
+func saveAndUpdateLog(ctx context.Context, saleNo string, SaleTransactionId, transactionId int64, saleMstsAndSaleDtls models.SaleMstsAndSaleDtls) error {
 	g := errgroup.Group{}
 
 	g.Go(func() error {
@@ -1218,7 +1218,7 @@ func saveAndUpdateLog(ctx context.Context, saleNo string, transactionId int64, s
 
 	g.Go(func() error {
 		//To update "WhetherSend" field in clearance db
-		saleTransaction, err := models.SaleTransaction{}.Get(transactionId)
+		saleTransaction, err := models.SaleTransaction{}.Get(SaleTransactionId, transactionId)
 		if err != nil {
 			return err
 		}
@@ -1231,7 +1231,7 @@ func saveAndUpdateLog(ctx context.Context, saleNo string, transactionId int64, s
 
 	g.Go(func() error {
 		// update saleRecordIdFailMappings when send to csl success
-		_, saleRecordIdFailMappings, err := models.SaleRecordIdFailMapping{}.GetAll(ctx, models.RequestInput{TransactionId: transactionId})
+		_, saleRecordIdFailMappings, err := models.SaleRecordIdFailMapping{}.GetAll(ctx, models.RequestInput{SaleTransactionId: SaleTransactionId})
 		if err != nil {
 			return err
 		}
