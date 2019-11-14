@@ -36,6 +36,7 @@ type SaleTransaction struct {
 	Dtls                   []SaleTransactionDtl     `json:"dtls" xorm:"-"`
 	Payments               []SaleTransactionPayment `json:"payments" xorm:"-"`
 	WhetherSend            bool                     `json:"whetherSend" xorm:"index default false"`
+	InDateTime             time.Time                `json:"inDateTime"`
 }
 
 type SaleTransactionDtl struct {

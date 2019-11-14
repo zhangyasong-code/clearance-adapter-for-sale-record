@@ -1143,7 +1143,7 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 			}
 		}
 
-		if err := saveAndUpdateLog(ctx, saleMst.SaleNo, saleMst.SaleTransactionId, saleMst.TransactionId, saleMstsAndSaleDtls); err != nil {
+		if err := saveAndUpdateLog(ctx, saleMst, saleMstsAndSaleDtls); err != nil {
 			return err
 		}
 	}
@@ -1154,13 +1154,13 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 	return nil
 }
 
-func saveAndUpdateLog(ctx context.Context, saleNo string, SaleTransactionId, transactionId int64, saleMstsAndSaleDtls models.SaleMstsAndSaleDtls) error {
+func saveAndUpdateLog(ctx context.Context, saleMstInput models.SaleMst, saleMstsAndSaleDtls models.SaleMstsAndSaleDtls) error {
 	g := errgroup.Group{}
 
 	g.Go(func() error {
 		//insert success table
 		for _, saleMst := range saleMstsAndSaleDtls.SaleMsts {
-			if saleMst.SaleNo == saleNo {
+			if saleMst.SaleNo == saleMstInput.SaleNo {
 				for _, salDtl := range saleMstsAndSaleDtls.SaleDtls {
 					if salDtl.SaleNo == saleMst.SaleNo {
 						for _, salePayment := range saleMstsAndSaleDtls.SalePayments {
@@ -1190,11 +1190,12 @@ func saveAndUpdateLog(ctx context.Context, saleNo string, SaleTransactionId, tra
 
 	g.Go(func() error {
 		//To update "WhetherSend" field in clearance db
-		saleTransaction, err := models.SaleTransaction{}.Get(SaleTransactionId, transactionId)
+		saleTransaction, err := models.SaleTransaction{}.Get(saleMstInput.SaleTransactionId, saleMstInput.TransactionId)
 		if err != nil {
 			return err
 		}
 		saleTransaction.WhetherSend = true
+		saleTransaction.InDateTime = saleMstInput.InDateTime
 		if err := saleTransaction.Update(); err != nil {
 			return err
 		}
@@ -1203,7 +1204,7 @@ func saveAndUpdateLog(ctx context.Context, saleNo string, SaleTransactionId, tra
 
 	g.Go(func() error {
 		// update saleRecordIdFailMappings when send to csl success
-		_, saleRecordIdFailMappings, err := models.SaleRecordIdFailMapping{}.GetAll(ctx, models.RequestInput{SaleTransactionId: SaleTransactionId})
+		_, saleRecordIdFailMappings, err := models.SaleRecordIdFailMapping{}.GetAll(ctx, models.RequestInput{SaleTransactionId: saleMstInput.SaleTransactionId})
 		if err != nil {
 			return err
 		}
