@@ -450,12 +450,15 @@ func (saleRecordIdFailMapping *SaleRecordIdFailMapping) Update() error {
 	return nil
 }
 
-func (SaleRecordIdSuccessMapping) GetBySaleNo(salNo string) ([]SaleRecordIdSuccessMapping, error) {
+func (SaleRecordIdSuccessMapping) GetBySaleNo(salNo string, saleTransactionId int64) ([]SaleRecordIdSuccessMapping, error) {
 	var successes []SaleRecordIdSuccessMapping
 	queryBuilder := func() xorm.Interface {
 		q := factory.GetCfsrEngine().Where("1 = 1")
 		if salNo != "" {
 			q.And("sale_no = ?", salNo)
+		}
+		if saleTransactionId != 0 {
+			q.And("sale_transaction_id = ?", saleTransactionId)
 		}
 		return q
 	}
