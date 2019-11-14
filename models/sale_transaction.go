@@ -404,7 +404,7 @@ func (saleTransaction *SaleTransaction) Update() error {
 	}
 	for _, saleTransactionDtl := range saleTransaction.Dtls {
 		saleTransactionDtl.SaleTransactionId = saleTransaction.Id
-		if _, err := factory.GetCfsrEngine().Where("sale_transaction_id = ?", saleTransaction.Id).
+		if _, err := factory.GetCfsrEngine().Where("sale_transaction_id = ?", saleTransaction.Id).And("item_code = ?", saleTransactionDtl.ItemCode).
 			AllCols().Update(saleTransactionDtl); err != nil {
 			fmt.Println("Update SaleTransactionDtl")
 			return err
