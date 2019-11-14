@@ -312,16 +312,6 @@ func (PostSaleRecordFee) GetPostSaleRecordFee(orderItemId, refundId int64) (Post
 	return postSaleRecordFee, nil
 }
 
-func (PostSaleRecordFee) GetSumFeeAmount(transactionId int64) (float64, error) {
-	var postSaleRecordFee PostSaleRecordFee
-	res, err := factory.GetSrEngine().Where("transaction_id = ?", transactionId).
-		Sum(postSaleRecordFee, "fee_amount")
-	if err != nil {
-		return 0, err
-	}
-	return res, nil
-}
-
 func (SaleRecordDtlSalesmanAmount) GetSaleRecordDtlSalesmanAmount(orderItemId, refundItemId int64) (SaleRecordDtlSalesmanAmount, error) {
 	var dtlSalesmanAmount SaleRecordDtlSalesmanAmount
 	exist, err := factory.GetSrEngine().Where("order_item_id = ?", orderItemId).
