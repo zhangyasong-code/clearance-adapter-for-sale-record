@@ -216,7 +216,6 @@ func (etl SrToClearanceETL) Load(ctx context.Context, source interface{}) error 
 	if err := session.Begin(); err != nil {
 		return err
 	}
-
 	for _, saleTransaction := range saleTransactions {
 		_, dbSaleTransactions, err := models.SaleTransaction{}.GetSaleTransactions(ctx, saleTransaction.TransactionId, 0, 0, saleTransaction.ShopCode, 1, 0)
 		if err != nil {
@@ -225,30 +224,30 @@ func (etl SrToClearanceETL) Load(ctx context.Context, source interface{}) error 
 		if len(dbSaleTransactions) > 0 {
 			dbSaleTransaction := dbSaleTransactions[0]
 			if dbSaleTransaction.WhetherSend == false {
-				if err := dbSaleTransaction.Delete(); err != nil {
+				if err := dbSaleTransaction.Update(); err != nil {
 					return err
 				}
 			}
-		}
+		} else {
+			if _, err := session.Insert(&saleTransaction); err != nil {
+				session.Rollback()
+				return err
+			}
+			for i, _ := range saleTransaction.Dtls {
+				saleTransaction.Dtls[i].SaleTransactionId = saleTransaction.Id
+			}
+			if _, err := session.Insert(&saleTransaction.Dtls); err != nil {
+				session.Rollback()
+				return err
+			}
 
-		if _, err := session.Insert(&saleTransaction); err != nil {
-			session.Rollback()
-			return err
-		}
-		for i, _ := range saleTransaction.Dtls {
-			saleTransaction.Dtls[i].SaleTransactionId = saleTransaction.Id
-		}
-		if _, err := session.Insert(&saleTransaction.Dtls); err != nil {
-			session.Rollback()
-			return err
-		}
-
-		for i, _ := range saleTransaction.Payments {
-			saleTransaction.Payments[i].SaleTransactionId = saleTransaction.Id
-		}
-		if _, err := session.Insert(&saleTransaction.Payments); err != nil {
-			session.Rollback()
-			return err
+			for i, _ := range saleTransaction.Payments {
+				saleTransaction.Payments[i].SaleTransactionId = saleTransaction.Id
+			}
+			if _, err := session.Insert(&saleTransaction.Payments); err != nil {
+				session.Rollback()
+				return err
+			}
 		}
 	}
 
