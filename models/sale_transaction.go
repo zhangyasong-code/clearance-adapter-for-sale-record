@@ -407,15 +407,13 @@ func (saleTransaction *SaleTransaction) Update() error {
 		saleTransactionDtl.SaleTransactionId = saleTransaction.Id
 		if _, err := factory.GetCfsrEngine().Where("sale_transaction_id = ?", saleTransaction.Id).And("item_code = ?", saleTransactionDtl.ItemCode).
 			AllCols().Update(saleTransactionDtl); err != nil {
-			fmt.Println("Update SaleTransactionDtl")
 			return err
 		}
 	}
 	for _, payment := range saleTransaction.Payments {
 		payment.SaleTransactionId = saleTransaction.Id
 		if _, err := factory.GetCfsrEngine().Where("sale_transaction_id = ?", saleTransaction.Id).
-			AllCols().Update(payment); err != nil {
-			fmt.Println("Update SaleTransactionPay")
+			And("seq_no=?", payment.SeqNo).AllCols().Update(payment); err != nil {
 			return err
 		}
 	}
