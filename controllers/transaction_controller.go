@@ -24,6 +24,8 @@ func (c TransactionController) Init(g *echo.Group) {
 	g.GET("/fail-log", c.GetFailDataLog)
 	g.GET("/saleTransactions", c.GetSaleTransactions)
 	g.GET("/csl-saleTransactions", c.GetCslSaleTransactions)
+	g.GET("/csl-sale-for-return", c.GetCslSaleForReturn)
+	g.GET("/csl-sale-detail-for-return", c.GetCslSaleDetailForReturn)
 }
 
 func (TransactionController) RunSaleETL(c echo.Context) error {
@@ -211,6 +213,56 @@ func (TransactionController) GetFailDataLog(c echo.Context) error {
 		Result: api.ArrayResult{
 			TotalCount: totalCount,
 			Items:      items,
+		},
+	})
+}
+
+func (TransactionController) GetCslSaleDetailForReturn(c echo.Context) error {
+	brandCode := c.QueryParam("brandCode")
+	shopCode := c.QueryParam("shopCode")
+	startSaleDate := c.QueryParam("startSaleDate")
+	endSaleDate := c.QueryParam("endSaleDate")
+	saleNo := c.QueryParam("saleNo")
+	deptStoreReceiptNo := c.QueryParam("deptStoreReceiptNo")
+	customerNo := c.QueryParam("customerNo")
+	productCode := c.QueryParam("productCode")
+	items, err := models.SaleMst{}.GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate, endSaleDate, saleNo, deptStoreReceiptNo, customerNo, productCode)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
+	}
+	return c.JSON(http.StatusOK, api.Result{
+		Success: true,
+		Result: api.ArrayResult{
+			Items: items,
+		},
+	})
+}
+
+func (TransactionController) GetCslSaleForReturn(c echo.Context) error {
+	brandCode := c.QueryParam("brandCode")
+	shopCode := c.QueryParam("shopCode")
+	startSaleDate := c.QueryParam("startSaleDate")
+	endSaleDate := c.QueryParam("endSaleDate")
+	saleNo := c.QueryParam("saleNo")
+	deptStoreReceiptNo := c.QueryParam("deptStoreReceiptNo")
+	customerNo := c.QueryParam("customerNo")
+	productCode := c.QueryParam("productCode")
+	items, err := models.SaleMst{}.GetCslSaleForReturn(brandCode, shopCode, startSaleDate, endSaleDate, saleNo, deptStoreReceiptNo, customerNo, productCode)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
+	}
+	return c.JSON(http.StatusOK, api.Result{
+		Success: true,
+		Result: api.ArrayResult{
+			Items: items,
 		},
 	})
 }
