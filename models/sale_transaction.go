@@ -412,7 +412,9 @@ func (saleTransaction *SaleTransaction) Update() error {
 	}
 	for _, saleTransactionDtl := range saleTransaction.Dtls {
 		saleTransactionDtl.SaleTransactionId = saleTransaction.Id
-		if _, err := factory.GetCfsrEngine().Where("sale_transaction_id = ?", saleTransaction.Id).And("item_code = ?", saleTransactionDtl.ItemCode).
+		if _, err := factory.GetCfsrEngine().Where("sale_transaction_id = ?", saleTransaction.Id).
+			And("order_item_id = ?", saleTransactionDtl.OrderItemId).
+			And("refund_item_id = ?", saleTransactionDtl.RefundItemId).
 			AllCols().Update(saleTransactionDtl); err != nil {
 			return err
 		}
