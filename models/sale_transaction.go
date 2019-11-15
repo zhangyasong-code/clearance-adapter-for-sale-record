@@ -37,45 +37,50 @@ type SaleTransaction struct {
 	Payments               []SaleTransactionPayment `json:"payments" xorm:"-"`
 	WhetherSend            bool                     `json:"whetherSend" xorm:"index default false"`
 	InDateTime             time.Time                `json:"inDateTime"`
+	CreatedAt              time.Time                `json:"createdAt" xorm:"created"`
+	UpdatedAt              time.Time                `json:"updatedAt" xorm:"updated"`
 }
 
 type SaleTransactionDtl struct {
-	Id                             int64   `json:"id"`
-	SaleTransactionId              int64   `json:"saleTransactionId" xorm:"index" validate:"required"`
-	Quantity                       int64   `json:"quantity" xorm:"notnull" validate:"required"`
-	SalePrice                      float64 `json:"salePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	ListPrice                      float64 `json:"listPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	TotalDiscountPrice             float64 `json:"totalDiscountPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	OrderItemId                    int64   `json:"orderItemId" xorm:"index notnull" validate:"required"`
-	RefundItemId                   int64   `json:"refundItemId" xorm:"index default 0" `
-	ProductId                      int64   `json:"productId" xorm:"index notnull" validate:"required"`
-	SkuId                          int64   `json:"skuId" xorm:"index notnull" validate:"gte=0"`
-	BrandCode                      string  `json:"brandCode" xorm:"index VARCHAR(30) notnull" validate:"required"`
-	BrandId                        int64   `json:"brandId" xorm:"index default 0"`
-	ItemCode                       string  `json:"itemCode" xorm:"index VARCHAR(60)"`
-	ItemFee                        float64 `json:"itemFee" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	TotalListPrice                 float64 `json:"totalListPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	TotalTransactionPrice          float64 `json:"totalTransactionPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	TotalDistributedCartOfferPrice float64 `json:"totalDistributedCartOfferPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	TotalDistributedItemOfferPrice float64 `json:"totalDistributedItemOfferPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	TotalDistributedPaymentPrice   float64 `json:"totalDistributedPaymentPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	TotalSalePrice                 float64 `json:"totalSalePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	DistributedCashPrice           float64 `json:"distributedCashPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	Mileage                        float64 `json:"mileage" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	MileagePrice                   float64 `json:"mileagePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	TransactionId                  int64   `json:"transactionId" xorm:"index default 0" validate:"required"`
-	TransactionDtlId               int64   `json:"transactionDtlId" xorm:"index default 0" validate:"required"`
-	ObtainMileage                  float64 `json:"obtainMileage" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	Id                             int64     `json:"id"`
+	TransactionId                  int64     `json:"transactionId" xorm:"index default 0" validate:"required"`
+	TransactionDtlId               int64     `json:"transactionDtlId" xorm:"index default 0" validate:"required"`
+	SaleTransactionId              int64     `json:"saleTransactionId" xorm:"index" validate:"required"`
+	Quantity                       int64     `json:"quantity" xorm:"notnull" validate:"required"`
+	SalePrice                      float64   `json:"salePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	ListPrice                      float64   `json:"listPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	TotalDiscountPrice             float64   `json:"totalDiscountPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	OrderItemId                    int64     `json:"orderItemId" xorm:"index notnull" validate:"required"`
+	RefundItemId                   int64     `json:"refundItemId" xorm:"index default 0" `
+	ProductId                      int64     `json:"productId" xorm:"index notnull" validate:"required"`
+	SkuId                          int64     `json:"skuId" xorm:"index notnull" validate:"gte=0"`
+	BrandCode                      string    `json:"brandCode" xorm:"index VARCHAR(30) notnull" validate:"required"`
+	BrandId                        int64     `json:"brandId" xorm:"index default 0"`
+	ItemCode                       string    `json:"itemCode" xorm:"index VARCHAR(60)"`
+	ItemFee                        float64   `json:"itemFee" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	TotalListPrice                 float64   `json:"totalListPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	TotalTransactionPrice          float64   `json:"totalTransactionPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	TotalDistributedCartOfferPrice float64   `json:"totalDistributedCartOfferPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	TotalDistributedItemOfferPrice float64   `json:"totalDistributedItemOfferPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	TotalDistributedPaymentPrice   float64   `json:"totalDistributedPaymentPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	TotalSalePrice                 float64   `json:"totalSalePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	DistributedCashPrice           float64   `json:"distributedCashPrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	Mileage                        float64   `json:"mileage" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	MileagePrice                   float64   `json:"mileagePrice" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	ObtainMileage                  float64   `json:"obtainMileage" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
+	CreatedAt                      time.Time `json:"createdAt" xorm:"created"`
+	UpdatedAt                      time.Time `json:"updatedAt" xorm:"updated"`
 }
 
 type SaleTransactionPayment struct {
 	Id                int64     `json:"id" xorm:"pk notnull autoincr"`
+	TransactionId     int64     `json:"transactionId" xorm:"index default 0" validate:"required"`
 	SaleTransactionId int64     `json:"saleTransactionId" xorm:"index" validate:"required"`
 	SeqNo             int64     `json:"seqNo" xorm:"index default 0" validate:"required"`
 	PayMethod         string    `json:"payMethod"`
 	PayAmt            float64   `json:"payAmt" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
-	CreatedAt         time.Time `json:"CreatedBy"`
-	TransactionId     int64     `json:"transactionId" xorm:"index default 0" validate:"required"`
+	CreatedAt         time.Time `json:"createdAt" xorm:"created"`
+	UpdatedAt         time.Time `json:"updatedAt" xorm:"updated"`
 }
 
 //SaleTransactionAndSaleTransactionDtl
@@ -96,6 +101,7 @@ type SaleRecordIdSuccessMapping struct {
 	DtlSeq            int64     `json:"dtlSeq" xorm:"index default 0"`
 	CreatedAt         time.Time `json:"createdAt" xorm:"created"`
 	CreatedBy         string    `json:"createdBy" xorm:"index VARCHAR(30) notnull"`
+	UpdatedAt         time.Time `json:"updatedAt" xorm:"updated"`
 }
 
 type SaleRecordIdFailMapping struct {
@@ -112,6 +118,7 @@ type SaleRecordIdFailMapping struct {
 	IsCreate          bool      `json:"isCreate" xorm:"index notnull default false"`
 	CreatedAt         time.Time `json:"createdAt" xorm:"created"`
 	CreatedBy         string    `json:"createdBy" xorm:"index VARCHAR(30)"`
+	UpdatedAt         time.Time `json:"updatedAt" xorm:"updated"`
 }
 
 type RequestInput struct {
