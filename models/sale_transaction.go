@@ -337,12 +337,12 @@ func (srfm *SaleRecordIdFailMapping) Save() error {
 	return nil
 }
 
-func (SaleRecordIdSuccessMapping) GetSaleSuccessData(saleTransactionId int64, orderId int64, itemId int64) ([]SaleRecordIdSuccessMapping, error) {
+func (SaleRecordIdSuccessMapping) GetSaleSuccessData(transactionId int64, orderId int64, itemId int64) ([]SaleRecordIdSuccessMapping, error) {
 	var success []SaleRecordIdSuccessMapping
 	queryBuilder := func() xorm.Interface {
 		q := factory.GetCfsrEngine().Where("1 = 1")
-		if saleTransactionId != 0 {
-			q.And("sale_transaction_id = ?", saleTransactionId)
+		if transactionId != 0 {
+			q.And("transaction_id = ?", transactionId)
 		}
 		if orderId != 0 {
 			q.And("order_id = ?", orderId)
