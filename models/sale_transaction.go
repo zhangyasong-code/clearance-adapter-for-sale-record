@@ -122,18 +122,19 @@ type SaleRecordIdFailMapping struct {
 }
 
 type RequestInput struct {
-	BrandCode         string `json:"brandCode" query:"brandCode"`
-	ChannelType       string `json:"channelType" query:"channelType"`
-	OrderId           int64  `json:"orderId" query:"orderId"`
-	RefundId          int64  `json:"refundId" query:"refundId"`
-	StartAt           string `json:"startAt" query:"startAt"`
-	EndAt             string `json:"endAt" query:"endAt"`
-	MaxResultCount    int    `json:"maxResultCount" query:"maxResultCount"`
-	SkipCount         int    `json:"skipCount" query:"skipCount"`
-	StoreId           int    `json:"storeId" query:"storeId"`
-	TransactionId     int64  `json:"transactionId" query:"transactionId"`
-	SaleTransactionId int64  `json:"saleTransactionId" query:"saleTransactionId"`
-	SaleNo            string `json:"saleNo" query:"saleNo"`
+	BrandCode         string   `json:"brandCode" query:"brandCode"`
+	ChannelType       string   `json:"channelType" query:"channelType"`
+	OrderId           int64    `json:"orderId" query:"orderId"`
+	RefundId          int64    `json:"refundId" query:"refundId"`
+	StartAt           string   `json:"startAt" query:"startAt"`
+	EndAt             string   `json:"endAt" query:"endAt"`
+	MaxResultCount    int      `json:"maxResultCount" query:"maxResultCount"`
+	SkipCount         int      `json:"skipCount" query:"skipCount"`
+	StoreId           int      `json:"storeId" query:"storeId"`
+	TransactionId     int64    `json:"transactionId" query:"transactionId"`
+	SaleTransactionId int64    `json:"saleTransactionId" query:"saleTransactionId"`
+	SaleNo            string   `json:"saleNo" query:"saleNo"`
+	SaleNos           []string `json:"saleNos"`
 }
 
 type CslSaleMst struct {
