@@ -2,6 +2,7 @@ package models
 
 import (
 	"clearance/clearance-adapter-for-sale-record/factory"
+	"context"
 	"database/sql"
 	"errors"
 	"strconv"
@@ -10,6 +11,7 @@ import (
 
 	"xorm.io/core"
 
+	"github.com/go-xorm/xorm"
 	"github.com/pangpanglabs/goutils/number"
 	"github.com/sirupsen/logrus"
 )
@@ -81,13 +83,13 @@ type SaleDtl struct {
 	TMallEventID                    sql.NullInt64   `query:"tMallEventID" json:"tMallEventID"`
 	TMall_ObtainMileage             sql.NullFloat64 `query:"tMall_ObtainMileage" json:"tMall_ObtainMileage"`
 	SaleOfficeCode                  string          `query:"saleOfficeCode" json:"saleOfficeCode"`
-	OrderItemId                     int64           `json:"orderItemId" xorm:"-"`
-	RefundItemId                    int64           `json:"refundItemId" xorm:"-"`
-	TransactionDtlId                int64           `json:"transactionDtlId" xorm:"-"`
-	StyleCode                       string          `json:"styleCode" xorm:"-"`
-	SaleTransactionId               int64           `json:"saleTransactionId" xorm:"-"`
-	SaleTransactionDtlId            int64           `json:"saleTransactionDtlId" xorm:"-"`
-	TransactionId                   int64           `json:"transactionId" xorm:"-"`
+	OrderItemId                     int64           `json:"-" xorm:"-"`
+	RefundItemId                    int64           `json:"-" xorm:"-"`
+	TransactionDtlId                int64           `json:"-" xorm:"-"`
+	StyleCode                       string          `json:"-" xorm:"-"`
+	SaleTransactionId               int64           `json:"-" xorm:"-"`
+	SaleTransactionDtlId            int64           `json:"-" xorm:"-"`
+	TransactionId                   int64           `json:"-" xorm:"-"`
 }
 
 type SaleMst struct {
@@ -121,26 +123,29 @@ type SaleMst struct {
 	SendState            string         `query:"sendState" json:"sendState"`
 	SendFlag             string         `query:"sendFlag" json:"sendFlag"`
 	// SendSeqNo                   int64     `query:"sendSeqNo" json:"sendSeqNo"`
-	SendDateTime                time.Time       `query:"sendDateTime" json:"sendDateTime"`
-	DiscountAmtAsCost           float64         `query:"discountAmtAsCost" json:"discountAmtAsCost"`
-	CustDivisionCode            sql.NullString  `query:"custDivisionCode" json:"custDivisionCode"`
-	MileageCustChangeStatusCode sql.NullString  `query:"mileageCustChangeStatusCode" json:"mileageCustChangeStatusCode"`
-	CustGradeCode               sql.NullString  `query:"custGradeCode" json:"custGradeCode"`
-	PreSaleNo                   sql.NullString  `query:"preSaleNo" json:"preSaleNo"`
-	ActualSellingAmt            float64         `query:"actualSellingAmt" json:"actualSellingAmt"`
-	EstimateSaleAmtForConsumer  float64         `query:"estimateSaleAmtForConsumer" json:"estimateSaleAmtForConsumer"`
-	ShopEmpEstimateSaleAmt      float64         `query:"shopEmpEstimateSaleAmt" json:"shopEmpEstimateSaleAmt"`
-	ComplexShopSeqNo            sql.NullString  `query:"complexShopSeqNo" json:"complexShopSeqNo"`
-	CustBrandCode               string          `query:"custBrandCode" json:"custBrandCode"`
-	Freight                     sql.NullFloat64 `query:"freight" json:"freight"`
-	TMall_UseMileage            sql.NullFloat64 `query:"tMall_UseMileage" json:"tMall_UseMileage"`
-	TMall_ObtainMileage         sql.NullFloat64 `query:"tMall_ObtainMileage" json:"tMall_ObtainMileage"`
-	SaleOfficeCode              string          `query:"saleOfficeCode" json:"saleOfficeCode"`
-	TransactionId               int64           `json:"transactionId" xorm:"-"`
-	StoreId                     int64           `json:"storeId" xorm:"-"`
-	OrderId                     int64           `json:"orderId" xorm:"-"`
-	RefundId                    int64           `json:"refundId" xorm:"-"`
-	SaleTransactionId           int64           `json:"saleTransactionId" xorm:"-"`
+	SendDateTime                time.Time         `query:"sendDateTime" json:"sendDateTime"`
+	DiscountAmtAsCost           float64           `query:"discountAmtAsCost" json:"discountAmtAsCost"`
+	CustDivisionCode            sql.NullString    `query:"custDivisionCode" json:"custDivisionCode"`
+	MileageCustChangeStatusCode sql.NullString    `query:"mileageCustChangeStatusCode" json:"mileageCustChangeStatusCode"`
+	CustGradeCode               sql.NullString    `query:"custGradeCode" json:"custGradeCode"`
+	PreSaleNo                   sql.NullString    `query:"preSaleNo" json:"preSaleNo"`
+	ActualSellingAmt            float64           `query:"actualSellingAmt" json:"actualSellingAmt"`
+	EstimateSaleAmtForConsumer  float64           `query:"estimateSaleAmtForConsumer" json:"estimateSaleAmtForConsumer"`
+	ShopEmpEstimateSaleAmt      float64           `query:"shopEmpEstimateSaleAmt" json:"shopEmpEstimateSaleAmt"`
+	ComplexShopSeqNo            sql.NullString    `query:"complexShopSeqNo" json:"complexShopSeqNo"`
+	CustBrandCode               string            `query:"custBrandCode" json:"custBrandCode"`
+	Freight                     sql.NullFloat64   `query:"freight" json:"freight"`
+	TMall_UseMileage            sql.NullFloat64   `query:"tMall_UseMileage" json:"tMall_UseMileage"`
+	TMall_ObtainMileage         sql.NullFloat64   `query:"tMall_ObtainMileage" json:"tMall_ObtainMileage"`
+	SaleOfficeCode              string            `query:"saleOfficeCode" json:"saleOfficeCode"`
+	TransactionId               int64             `json:"-" xorm:"-"`
+	StoreId                     int64             `json:"-" xorm:"-"`
+	OrderId                     int64             `json:"-" xorm:"-"`
+	RefundId                    int64             `json:"-" xorm:"-"`
+	SaleTransactionId           int64             `json:"-" xorm:"-"`
+	SaleDtls                    []SaleDtl         `json:"saleDtls" xorm:"-"`
+	SalePayments                []SalePayment     `json:"salePayments" xorm:"-"`
+	StaffSaleRecords            []StaffSaleRecord `json:"staffSaleRecords" xorm:"-"`
 }
 
 type SalePayment struct {
@@ -157,8 +162,8 @@ type SalePayment struct {
 	// SendSeqNo          int64          `query:"sendSeqNo" json:"sendSeqNo"`
 	SendDateTime       time.Time      `query:"sendDateTime" json:"sendDateTime"`
 	CreditCardFirmCode sql.NullString `query:"creditCardFirmCode" json:"creditCardFirmCode"`
-	TransactionId      int64          `json:"transactionId" xorm:"-"`
-	SaleTransactionId  int64          `json:"saleTransactionId" xorm:"-"`
+	TransactionId      int64          `json:"-" xorm:"-"`
+	SaleTransactionId  int64          `json:"-" xorm:"-"`
 }
 
 type CustMileagePolicy struct {
@@ -174,8 +179,8 @@ type StaffSaleRecord struct {
 	ShopCode          string    `json:"shopCode"`
 	InUserID          string    `json:"inUserID"`
 	InDateTime        time.Time `json:"inDateTime"`
-	SaleTransactionId int64     `json:"saleTransactionId" xorm:"-"`
-	TransactionId     int64     `json:"transactionId" xorm:"-"`
+	SaleTransactionId int64     `json:"-" xorm:"-"`
+	TransactionId     int64     `json:"-" xorm:"-"`
 }
 
 type SaleMstsAndSaleDtls struct {
@@ -214,7 +219,6 @@ type TargetReturnSale struct {
 	InUserID             string         `query:"inUserID" json:"inUserID"`
 }
 
-
 type ResultShop struct {
 	Success bool `json:"success"`
 	Result  []struct {
@@ -236,38 +240,6 @@ type RequestTokenBody struct {
 	AppId        string `json:"appId"`
 	AppSecretKey string `json:"appSecretKey"`
 }
-
-// func (SaleMst) GetShopCode(ctx context.Context, storeId int64, token string) (string, error) {
-// 	resultShop := ResultShop{}
-// 	if _, err := httpreq.New(http.MethodGet, config.Config().Services.PlaceManagementApi+"/outside/v1/store/getbystoreids?ids="+strconv.FormatInt(storeId, 10), nil).
-// 		WithBehaviorLogContext(behaviorlog.FromCtx(ctx)).WithToken(token).
-// 		Call(&resultShop); err != nil {
-// 		return "", err
-// 	}
-// 	if len(resultShop.Result) != 0 {
-// 		if shopCode := resultShop.Result[0].Code; shopCode != "" {
-// 			return shopCode, nil
-// 		}
-// 	}
-// 	return "", errors.New("Request PlaceManagementApi failed : Get shopCode error")
-// }
-
-// func (SaleMst) GetToken(ctx context.Context) (string, error) {
-// 	resultToken := ResultToken{}
-// 	body := RequestTokenBody{
-// 		UserName: config.Config().GetTokenUser.UserName,
-// 		PassWord: config.Config().GetTokenUser.Password,
-// 	}
-// 	if _, err := httpreq.New(http.MethodPost, config.Config().Services.GetTokenApi, body).
-// 		WithBehaviorLogContext(behaviorlog.FromCtx(ctx)).
-// 		Call(&resultToken); err != nil {
-// 		return "", err
-// 	}
-// 	if resultToken.Success && resultToken.Result.Token != "" {
-// 		return resultToken.Result.Token, nil
-// 	}
-// 	return "", errors.New("Get token error!")
-// }
 
 func (SaleMst) GetlastSeq(shopCode, saleDate string) (string, error) {
 	var saleNos []string
@@ -606,4 +578,94 @@ func (SaleMst) GetCslSaleForReturn(brandCode, shopCode, startSaleDate, endSaleDa
 		}
 	}
 	return targetReturnSales, nil
+}
+
+func (SaleMst) GetCslSales(ctx context.Context, requestInput RequestInput) (int64, []SaleMst, error) {
+	queryBuilder := func() xorm.Interface {
+		engine := factory.GetCSLEngine()
+		engine.SetMapper(core.SameMapper{})
+		q := engine.Where("1=1")
+		if len(requestInput.SaleNos) != 0 {
+			q.In("SaleNo", requestInput.SaleNos)
+		}
+		return q
+	}
+	query := queryBuilder()
+
+	if requestInput.MaxResultCount > 0 {
+		query.Limit(requestInput.MaxResultCount, requestInput.SkipCount)
+	}
+
+	query.Desc("SaleNo")
+
+	var saleMsts []SaleMst
+	totalCount, err := query.FindAndCount(&saleMsts)
+	if err != nil {
+		return 0, nil, err
+	}
+	if len(saleMsts) == 0 {
+		return 0, nil, nil
+	}
+
+	saleDtls, err := SaleDtl{}.GetCslDtlBySaleNos(ctx, requestInput.SaleNos)
+	if err != nil {
+		return 0, nil, err
+	}
+	salePayments, err := SalePayment{}.GetCslSalePaymentBySaleNos(ctx, requestInput.SaleNos)
+	if err != nil {
+		return 0, nil, err
+	}
+	staffSaleRecords, err := StaffSaleRecord{}.GetCslStaffSaleRecordBySaleNos(ctx, requestInput.SaleNos)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	for i, saleMst := range saleMsts {
+		for _, saleDtl := range saleDtls {
+			if saleDtl.SaleNo == saleMst.SaleNo {
+				saleMsts[i].SaleDtls = append(saleMsts[i].SaleDtls, saleDtl)
+			}
+		}
+		for _, salePayment := range salePayments {
+			if salePayment.SaleNo == saleMst.SaleNo {
+				saleMsts[i].SalePayments = append(saleMsts[i].SalePayments, salePayment)
+			}
+		}
+		for _, staffSaleRecord := range staffSaleRecords {
+			if staffSaleRecord.SaleNo == saleMst.SaleNo {
+				saleMsts[i].StaffSaleRecords = append(saleMsts[i].StaffSaleRecords, staffSaleRecord)
+			}
+		}
+	}
+	return totalCount, saleMsts, nil
+}
+
+func (SaleDtl) GetCslDtlBySaleNos(ctx context.Context, saleNos []string) ([]SaleDtl, error) {
+	var saleDtls []SaleDtl
+	engine := factory.GetCSLEngine()
+	engine.SetMapper(core.SameMapper{})
+	if err := engine.Where("1=1").In("SaleNo", saleNos).Find(&saleDtls); err != nil {
+		return nil, err
+	}
+	return saleDtls, nil
+}
+
+func (SalePayment) GetCslSalePaymentBySaleNos(ctx context.Context, saleNos []string) ([]SalePayment, error) {
+	var salePayments []SalePayment
+	engine := factory.GetCSLEngine()
+	engine.SetMapper(core.SameMapper{})
+	if err := engine.Where("1=1").In("SaleNo", saleNos).Find(&salePayments); err != nil {
+		return nil, err
+	}
+	return salePayments, nil
+}
+
+func (StaffSaleRecord) GetCslStaffSaleRecordBySaleNos(ctx context.Context, saleNos []string) ([]StaffSaleRecord, error) {
+	var staffSaleRecords []StaffSaleRecord
+	engine := factory.GetCSLEngine()
+	engine.SetMapper(core.SameMapper{})
+	if err := engine.Where("1=1").In("SaleNo", saleNos).Find(&staffSaleRecords); err != nil {
+		return nil, err
+	}
+	return staffSaleRecords, nil
 }

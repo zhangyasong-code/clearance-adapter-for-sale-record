@@ -219,9 +219,8 @@ func main() {
 					return c.String(http.StatusOK, config.ServiceName)
 				})
 				e.Static("/docs", "./swagger-ui")
-
 				controllers.TransactionController{}.Init(e.Group("/v1/transaction"))
-
+				controllers.CslTransactionController{}.Init(e.Group("/v1/csl/transaction"))
 				e.Pre(middleware.RemoveTrailingSlash())
 				e.Use(middleware.Recover())
 				e.Use(middleware.CORS())
