@@ -20,12 +20,12 @@ func (c TransactionController) Init(g *echo.Group) {
 	g.POST("/sale", c.RunSaleETL)
 	g.POST("/csl", c.RunCslETL)
 	g.POST("/sale-csl", c.RunSaleETLAndCslETL)
-	g.GET("/sale", c.GetSaleTransactions)
 	g.GET("/fail-log", c.GetFailDataLog)
 	g.GET("/saleTransactions", c.GetSaleTransactions)
 	g.GET("/csl-saleTransactions", c.GetCslSaleTransactions)
 	g.GET("/csl-sale-for-return", c.GetCslSaleForReturn)
 	g.GET("/csl-sale-detail-for-return", c.GetCslSaleDetailForReturn)
+	g.GET("/csl-success", c.GetAllSaleSuccess)
 }
 
 func (TransactionController) RunSaleETL(c echo.Context) error {
@@ -263,6 +263,42 @@ func (TransactionController) GetCslSaleForReturn(c echo.Context) error {
 		Success: true,
 		Result: api.ArrayResult{
 			Items: items,
+		},
+	})
+}
+
+func (TransactionController) GetAllSaleSuccess(c echo.Context) error {
+	var data models.RequestInput
+	maxResultCount, _ := strconv.Atoi(c.QueryParam("maxResultCount"))
+	if maxResultCount == 0 {
+		maxResultCount = 10
+	}
+	skipCount, _ := strconv.Atoi(c.QueryParam("skipCount"))
+	saleNo := c.QueryParam("saleNo")
+	orderId, _ := strconv.ParseInt(c.QueryParam("orderId"), 10, 64)
+	refundId, _ := strconv.ParseInt(c.QueryParam("refundId"), 10, 64)
+	saleTransactionId, _ := strconv.ParseInt(c.QueryParam("saleTransactionId"), 10, 64)
+	transactionId, _ := strconv.ParseInt(c.QueryParam("transactionId"), 10, 64)
+	data.SaleNo = saleNo
+	data.OrderId = orderId
+	data.RefundId = refundId
+	data.SaleTransactionId = saleTransactionId
+	data.TransactionId = transactionId
+	data.SkipCount = skipCount
+	data.MaxResultCount = maxResultCount
+	totalCount, items, err := models.SaleRecordIdSuccessMapping{}.GetAllSaleSuccess(c.Request().Context(), data)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
+	}
+	return c.JSON(http.StatusOK, api.Result{
+		Success: true,
+		Result: api.ArrayResult{
+			TotalCount: totalCount,
+			Items:      items,
 		},
 	})
 }
