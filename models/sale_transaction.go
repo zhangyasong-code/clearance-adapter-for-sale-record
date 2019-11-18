@@ -405,6 +405,34 @@ func (SaleRecordIdFailMapping) GetAll(ctx context.Context, requestInput RequestI
 	return totalCount, failDatas, nil
 }
 
+func (SaleRecordIdSuccessMapping) GetAllSaleSuccess(ctx context.Context, requestInput RequestInput) (int64, []SaleRecordIdSuccessMapping, error) {
+	var success []SaleRecordIdSuccessMapping
+	query := func() xorm.Interface {
+		query := factory.GetCfsrEngine().Where("1 = 1")
+		if requestInput.SaleNo != "" {
+			query.And("sale_no = ?", requestInput.SaleNo)
+		}
+		if requestInput.TransactionId != 0 {
+			query.And("transaction_id = ?", requestInput.TransactionId)
+		}
+		if requestInput.SaleTransactionId != 0 {
+			query.And("sale_transaction_id = ?", requestInput.SaleTransactionId)
+		}
+		if requestInput.OrderId != 0 {
+			query.And("order_id = ?", requestInput.SaleTransactionId)
+		}
+		if requestInput.RefundId != 0 {
+			query.And("refund_id = ?", requestInput.SaleTransactionId)
+		}
+		return query
+	}
+	totalCount, err := query().Desc("sale_no").Limit(requestInput.MaxResultCount, requestInput.SkipCount).FindAndCount(&success)
+	if err != nil {
+		return 0, nil, err
+	}
+	return totalCount, success, nil
+}
+
 func (saleTransaction *SaleTransaction) Update() error {
 	if _, err := factory.GetCfsrEngine().Id(saleTransaction.Id).AllCols().Update(saleTransaction); err != nil {
 		fmt.Println("Update SaleTransaction::", saleTransaction.Id)
