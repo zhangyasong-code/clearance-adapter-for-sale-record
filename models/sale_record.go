@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/pangpanglabs/goutils/behaviorlog"
@@ -141,16 +140,18 @@ type AppliedSaleRecordItemOffer struct {
 }
 
 type AppliedSaleRecordCartOffer struct {
-	Id              int64   `json:"id"`
-	TenantCode      string  `json:"tenantCode"`
-	OfferNo         string  `json:"offerNo"`
-	CouponNo        string  `json:"couponNo"`
-	ItemCodes       string  `json:"itemCodes"`
-	TargetItemCodes string  `json:"targetItemCodes"`
-	Price           float64 `json:"price"`
-	Type            string  `json:"type"`
-	TransactionId   int64   `json:"transactionId"`
-	TargetType      string  `josn:"targetType"`
+	Id            int64  `json:"id"`
+	TenantCode    string `json:"tenantCode"`
+	OfferNo       string `json:"offerNo"`
+	CouponNo      string `json:"couponNo"`
+	ItemIds       string `json:"itemIds"`
+	TargetItemIds string `json:"targetItemIds"`
+	// ItemCodes       string  `json:"itemCodes"`
+	// TargetItemCodes string  `json:"targetItemCodes"`
+	Price         float64 `json:"price"`
+	Type          string  `json:"type"`
+	TransactionId int64   `json:"transactionId"`
+	TargetType    string  `josn:"targetType"`
 }
 
 type PromotionEvent struct {
@@ -401,38 +402,6 @@ func (saleRecord *AssortedSaleRecord) SplitSaleRecordByBrand(setting *number.Set
 		}
 	}
 
-	makeCartOffers := func(saleRecordDtls []AssortedSaleRecordDtl, setting *number.Setting) []AppliedSaleRecordCartOffer {
-		appliedSaleRecordCartOffers := make([]AppliedSaleRecordCartOffer, 0)
-		for _, cartOffer := range saleRecord.AppliedSaleRecordCartOffers {
-			var itemCodes, targetItemCodes []string
-			var discountPrice float64
-			for _, saleRecordDtl := range saleRecordDtls {
-				if strings.Index(cartOffer.TargetItemCodes+",", saleRecordDtl.ItemCode+",") > -1 {
-					targetItemCodes = append(itemCodes, saleRecordDtl.ItemCode)
-					discountPrice = number.ToFixed(discountPrice+saleRecordDtl.TotalDistributedCartOfferPrice, setting)
-				} else if strings.Index(cartOffer.ItemCodes+",", saleRecordDtl.ItemCode+",") > -1 {
-					itemCodes = append(itemCodes, saleRecordDtl.ItemCode)
-					discountPrice = number.ToFixed(discountPrice+saleRecordDtl.TotalDistributedCartOfferPrice, setting)
-				}
-			}
-			if len(itemCodes) == 0 && len(targetItemCodes) == 0 {
-				continue
-			}
-			newCartOffer := AppliedSaleRecordCartOffer{
-				TenantCode: cartOffer.TenantCode,
-				OfferNo:    cartOffer.OfferNo,
-				CouponNo:   cartOffer.CouponNo,
-				Type:       cartOffer.Type,
-				TargetType: cartOffer.TargetType,
-			}
-			newCartOffer.ItemCodes = strings.Join(itemCodes, ",")
-			newCartOffer.TargetItemCodes = strings.Join(targetItemCodes, ",")
-			newCartOffer.Price = discountPrice
-			appliedSaleRecordCartOffers = append(appliedSaleRecordCartOffers, cartOffer)
-		}
-		return appliedSaleRecordCartOffers
-	}
-
 	makePayments := func(newSaleRecord *AssortedSaleRecord) []AssortedSaleRecordPayment {
 		newPayments := make([]AssortedSaleRecordPayment, 0)
 
@@ -492,7 +461,6 @@ func (saleRecord *AssortedSaleRecord) SplitSaleRecordByBrand(setting *number.Set
 		for brandCode, saleRecordDtls := range brandSaleRecordDtlMap {
 			newSaleRecord := makeNewSaleRecord(saleRecord)
 			newSaleRecord.ShopCode = getShopCode(brandCode)
-			newSaleRecord.AppliedSaleRecordCartOffers = makeCartOffers(saleRecordDtls, setting)
 			newSaleRecord.AssortedSaleRecordDtls = saleRecordDtls
 			calculateSaleRecordPrice(newSaleRecord, saleRecordDtls)
 			newSaleRecord.AssortedSaleRecordPayments = makePayments(newSaleRecord)

@@ -110,7 +110,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 	var dtSeq, colleaguesId, saleQty int64
 	var saleEventNormalSaleRecognitionChk bool
 	var startStr, strSeqNo, saleMode, eANCode, normalSaleTypeCode, useMileageSettleType, offerNo, couponNo,
-		inUserID, itemCodes, baseTrimCode, paymentCode, payCreditCardFirmCode string
+		inUserID, itemIds, baseTrimCode, paymentCode, payCreditCardFirmCode string
 	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo, preSaleDtSeq sql.NullInt64
 	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode,
 		secondaryEventSettleTypeCode, preSaleNo, creditCardFirmCode, custNo,
@@ -396,13 +396,13 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				saleEventNormalSaleRecognitionChk = false
 
 				for _, appliedSaleRecordCartOffer := range appliedSaleRecordCartOffers {
-					itemCodes = ""
-					if appliedSaleRecordCartOffer.TargetItemCodes != "" {
-						itemCodes = appliedSaleRecordCartOffer.TargetItemCodes
+					itemIds = ""
+					if appliedSaleRecordCartOffer.TargetItemIds != "" {
+						itemIds = appliedSaleRecordCartOffer.TargetItemIds
 					} else {
-						itemCodes = appliedSaleRecordCartOffer.ItemCodes
+						itemIds = appliedSaleRecordCartOffer.ItemIds
 					}
-					result := strings.Index(itemCodes+",", saleTransactionDtl.ItemCode+",")
+					result := strings.Index(itemIds+",", strconv.FormatInt(saleTransactionDtl.Id, 10)+",")
 					if result != -1 {
 						couponNo = appliedSaleRecordCartOffer.CouponNo
 						offerNo = appliedSaleRecordCartOffer.OfferNo
