@@ -23,6 +23,14 @@ type Employee struct {
 	EmpName string `json:"empName"`
 }
 
+type UserInfo struct {
+	Id      int64  `json:"id"`
+	UserId  string `json:"userId"`
+	EmpId   string `json:"empId"`
+	UseChk  bool   `json:"useChk"`
+	EndDate string `json:"endDate"`
+}
+
 func (Colleagues) GetColleaguesAuth(colleaguesId int64, empId string) (Colleagues, error) {
 	var colleagues Colleagues
 	if colleaguesId == 0 && empId == "" {
@@ -62,4 +70,18 @@ func (Employee) GetEmployee(salesmanId int64) (*Employee, error) {
 		return nil, errors.New("Employee is not exist")
 	}
 	return &employee, nil
+}
+
+func (UserInfo) GetUserInfo(empId string) (UserInfo, error) {
+	var userInfo UserInfo
+	exist, err := factory.GetShopEmployeeEngine().Where("emp_id = ?", empId).Get(&userInfo)
+	if err != nil {
+		return UserInfo{}, err
+	} else if !exist {
+		logrus.WithFields(logrus.Fields{
+			"empId": empId,
+		}).Error("Fail to GetUserInfo")
+		return UserInfo{}, errors.New("UserInfo is not exist")
+	}
+	return userInfo, nil
 }
