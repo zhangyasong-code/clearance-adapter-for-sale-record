@@ -403,7 +403,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					} else {
 						itemIds = appliedSaleRecordCartOffer.ItemIds
 					}
-					result := strings.Index(itemIds+",", strconv.FormatInt(saleTransactionDtl.Id, 10)+",")
+					result := strings.Index(itemIds+",", strconv.FormatInt(saleTransactionDtl.OrderItemId, 10)+",")
 					if result != -1 {
 						couponNo = appliedSaleRecordCartOffer.CouponNo
 						offerNo = appliedSaleRecordCartOffer.OfferNo
