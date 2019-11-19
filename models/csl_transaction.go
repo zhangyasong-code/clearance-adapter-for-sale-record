@@ -607,15 +607,19 @@ func (SaleMst) GetCslSales(ctx context.Context, requestInput RequestInput) (int6
 		return 0, nil, nil
 	}
 
-	saleDtls, err := SaleDtl{}.GetCslDtlBySaleNos(ctx, requestInput.SaleNos)
+	var saleNos []string
+	for _, saleMst := range saleMsts {
+		saleNos = append(saleNos, saleMst.SaleNo)
+	}
+	saleDtls, err := SaleDtl{}.GetCslDtlBySaleNos(ctx, saleNos)
 	if err != nil {
 		return 0, nil, err
 	}
-	salePayments, err := SalePayment{}.GetCslSalePaymentBySaleNos(ctx, requestInput.SaleNos)
+	salePayments, err := SalePayment{}.GetCslSalePaymentBySaleNos(ctx, saleNos)
 	if err != nil {
 		return 0, nil, err
 	}
-	staffSaleRecords, err := StaffSaleRecord{}.GetCslStaffSaleRecordBySaleNos(ctx, requestInput.SaleNos)
+	staffSaleRecords, err := StaffSaleRecord{}.GetCslStaffSaleRecordBySaleNos(ctx, saleNos)
 	if err != nil {
 		return 0, nil, err
 	}
