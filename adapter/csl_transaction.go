@@ -805,6 +805,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		saleMst.ChinaFISaleAmt = GetToFixedPrice(saleMst.ChinaFISaleAmt, baseTrimCode)
 		saleMst.ActualSaleAmt = GetToFixedPrice(saleMst.ActualSaleAmt, baseTrimCode)
 		saleMst.EstimateSaleAmt = GetToFixedPrice(saleMst.EstimateSaleAmt, baseTrimCode)
+		saleMst.ShopEmpEstimateSaleAmt = GetToFixedPrice(saleMst.ShopEmpEstimateSaleAmt, baseTrimCode)
+		saleMst.FeeAmt = GetToFixedPrice(saleMst.FeeAmt, baseTrimCode)
 
 		//set value for saleMst "EstimateSaleAmtForConsumer","ShopEmpEstimateSaleAmt"
 		saleMst.EstimateSaleAmtForConsumer = saleMst.EstimateSaleAmt
