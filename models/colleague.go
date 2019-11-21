@@ -24,11 +24,11 @@ type Employee struct {
 }
 
 type UserInfo struct {
-	Id      int64  `json:"id"`
-	UserId  string `json:"userId"`
-	EmpId   string `json:"empId"`
-	UseChk  bool   `json:"useChk"`
-	EndDate string `json:"endDate"`
+	Id       int64  `json:"id"`
+	UserName string `json:"userName"`
+	EmpId    string `json:"empId"`
+	UseChk   bool   `json:"useChk"`
+	EndDate  string `json:"endDate"`
 }
 
 func (Colleagues) GetColleaguesAuth(colleaguesId int64, empId string) (Colleagues, error) {
