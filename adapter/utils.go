@@ -1,6 +1,8 @@
 package adapter
 
 import (
+	"errors"
+
 	"github.com/pangpanglabs/goutils/number"
 )
 
@@ -47,4 +49,24 @@ func GetToFixedPrice(price float64, BaseTrimCode string) float64 {
 		}
 	}
 	return number.ToFixed(price, setting)
+}
+
+func getPaymentCodeAndPayCreditCardFirmCode(payMethod string) (paymentCode string, payCreditCardFirmCode string, err error) {
+	switch payMethod {
+	case "CASH":
+		paymentCode = "11"
+	case "WXPAY":
+		paymentCode = "O1"
+	case "wechat.prepay":
+		paymentCode = "O1"
+	case "ALIPAY":
+		paymentCode = "O2"
+	case "CREDITCARD":
+		paymentCode = "12"
+		payCreditCardFirmCode = "01"
+	default:
+		err = errors.New("PayMethod is not exist")
+		return "", "", err
+	}
+	return paymentCode, payCreditCardFirmCode, nil
 }
