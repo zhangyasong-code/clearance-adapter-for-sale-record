@@ -238,11 +238,3 @@ func setUpRestAPIStubFixture() {
 
 	})
 }
-
-func TestGetSumsFields(t *testing.T) {
-	Convey("测试GetSumsFields的方法", t, func() {
-		res, err := models.AssortedSaleRecordDtl{}.GetSumsFields(1)
-		So(err, ShouldBeNil)
-		fmt.Println("YYYYYYYYY", res)
-	})
-}

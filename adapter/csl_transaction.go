@@ -109,8 +109,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 	var endSeq int
 	var dtSeq, colleaguesId, saleQty int64
 	var saleEventNormalSaleRecognitionChk bool
-	var startStr, strSeqNo, saleMode, eANCode, normalSaleTypeCode, useMileageSettleType, offerNo, couponNo,
-		inUserID, itemIds, baseTrimCode, paymentCode, payCreditCardFirmCode string
+	var startStr, saleMode, eANCode, normalSaleTypeCode, useMileageSettleType, offerNo, couponNo,
+		inUserID, itemIds, baseTrimCode string
 	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo, preSaleDtSeq sql.NullInt64
 	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode,
 		secondaryEventSettleTypeCode, preSaleNo, creditCardFirmCode, custNo,
@@ -155,25 +155,11 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		saleNo := saleTransaction.ShopCode + saleDate[len(saleDate)-6:len(saleDate)] + MSLV2_POS + sequenceNumber
 
 		//get SeqNo
-		strSeqNo = ""
-		startStrs := []string{"A", "B", "C", "D", "E", "F", "G"}
-		for _, startStr := range startStrs {
-			if strings.HasPrefix(sequenceNumber, startStr) {
-				strSeqNo = sequenceNumber[len(sequenceNumber)-3 : len(sequenceNumber)]
-				break
-			} else {
-				strSeqNo = sequenceNumber
-			}
-		}
-		seqNo, err := strconv.ParseInt(strSeqNo, 10, 64)
+		seqNo, err := models.SaleMst{}.GetSeqNo(sequenceNumber)
 		if err != nil {
 			return nil, err
 		}
-		//sum quantity , total_sale_price , total_discount_price
-		res, err := models.AssortedSaleRecordDtl{}.GetSumsFields(saleTransaction.TransactionId)
-		if err != nil {
-			return nil, err
-		}
+
 		//Sale S 销售  Refund R 退货
 		saleMode = ""
 		complexShopSeqNo = sql.NullString{"", false}
@@ -291,10 +277,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			custNo = sql.NullString{strconv.FormatInt(saleTransaction.CustomerId, 10), true}
 		}
 		saleAmt = saleTransaction.TotalListPrice
-		saleQty = int64(res[0])
 		if saleTransaction.RefundId != 0 {
 			saleAmt = saleAmt * -1
-			saleQty = saleQty * -1
 		}
 		saleMst := models.SaleMst{
 			SaleNo:                      saleNo,
@@ -313,7 +297,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			CustGradeCode:               custGradeCode,
 			CustBrandCode:               mileage.BrandCode,
 			PreSaleNo:                   preSaleNo,
-			SaleQty:                     saleQty,
 			SaleAmt:                     saleAmt,
 			ObtainMileage:               saleTransaction.ObtainMileage,
 			InUserID:                    inUserID,
@@ -597,10 +580,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					}
 					return nil, err
 				}
-				// postMileageDtl, err := models.PostMileage{}.GetPostMileageDtl(saleTransactionDtl.OrderItemId, saleTransactionDtl.RefundItemId)
-				// if err != nil {
-				// 	return nil, err
-				// }
 				postSaleRecordFee, err := models.PostSaleRecordFee{}.GetPostSaleRecordFee(saleTransactionDtl.OrderItemId, saleTransactionDtl.RefundItemId)
 				if err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
@@ -787,6 +766,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		saleMst.EstimateSaleAmt = 0
 		saleMst.ShopEmpEstimateSaleAmt = 0
 		saleMst.FeeAmt = 0
+		saleMst.SaleQty = 0
 		for _, saleDtl := range saleDtls {
 			if saleMst.SaleNo == saleDtl.SaleNo {
 				saleMst.UseMileage += saleDtl.UseMileage
@@ -797,6 +777,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				saleMst.EstimateSaleAmt += saleDtl.EstimateSaleAmt
 				saleMst.ShopEmpEstimateSaleAmt += saleDtl.ShopEmpEstimateSaleAmt
 				saleMst.FeeAmt += (saleDtl.SaleEventFee + saleDtl.NormalFee)
+				saleMst.SaleQty += saleDtl.SaleQty
 			}
 		}
 		saleMst.UseMileage = GetToFixedPrice(saleMst.UseMileage, baseTrimCode)
@@ -832,20 +813,9 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			if stp.PayMethod == "MILEAGE" {
 				continue
 			}
-			paymentCode = ""
-			payCreditCardFirmCode = ""
-			switch stp.PayMethod {
-			case "CASH":
-				paymentCode = "11"
-			case "WXPAY":
-				paymentCode = "O1"
-			case "wechat.prepay":
-				paymentCode = "O1"
-			case "ALIPAY":
-				paymentCode = "O2"
-			case "CREDITCARD":
-				paymentCode = "12"
-				payCreditCardFirmCode = "01"
+			paymentCode, payCreditCardFirmCode, err := getPaymentCodeAndPayCreditCardFirmCode(stp.PayMethod)
+			if err != nil {
+				return nil, err
 			}
 			creditCardFirmCode = sql.NullString{"", false}
 			if payCreditCardFirmCode != "" {

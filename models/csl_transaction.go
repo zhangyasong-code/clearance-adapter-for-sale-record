@@ -596,7 +596,7 @@ func (SaleMst) GetCslSales(ctx context.Context, requestInput RequestInput) (int6
 		query.Limit(requestInput.MaxResultCount, requestInput.SkipCount)
 	}
 
-	query.Desc("SaleNo")
+	query.Desc("Dates")
 
 	var saleMsts []SaleMst
 	totalCount, err := query.FindAndCount(&saleMsts)
@@ -672,4 +672,22 @@ func (StaffSaleRecord) GetCslStaffSaleRecordBySaleNos(ctx context.Context, saleN
 		return nil, err
 	}
 	return staffSaleRecords, nil
+}
+
+func (SaleMst) GetSeqNo(sequenceNumber string) (int64, error) {
+	strSeqNo := ""
+	startStrs := []string{"A", "B", "C", "D", "E", "F", "G"}
+	for _, startStr := range startStrs {
+		if strings.HasPrefix(sequenceNumber, startStr) {
+			strSeqNo = sequenceNumber[len(sequenceNumber)-3 : len(sequenceNumber)]
+			break
+		} else {
+			strSeqNo = sequenceNumber
+		}
+	}
+	seqNo, err := strconv.ParseInt(strSeqNo, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return seqNo, nil
 }
