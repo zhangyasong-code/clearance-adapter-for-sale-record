@@ -440,7 +440,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						promotionEvent.EventTypeCode == "G" || promotionEvent.EventTypeCode == "M" || promotionEvent.EventTypeCode == "P" ||
 						promotionEvent.EventTypeCode == "R" || promotionEvent.EventTypeCode == "V" {
 						normalSaleTypeCode = "2"
-						if eventN != 0 && (promotionEvent.EventTypeCode == "B" || promotionEvent.EventTypeCode == "C" || promotionEvent.EventTypeCode == "P" || promotionEvent.EventTypeCode == "V") {
+						if eventN != 0 && (promotionEvent.EventTypeCode == "B" || promotionEvent.EventTypeCode == "C" || promotionEvent.EventTypeCode == "P" ) {
 							primaryCustEventNo = sql.NullInt64{eventN, true}
 							primaryEventTypeCode = sql.NullString{promotionEvent.EventTypeCode, true}
 							primaryEventSettleTypeCode = sql.NullString{"1", true}
