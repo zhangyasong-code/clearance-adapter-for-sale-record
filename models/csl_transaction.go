@@ -11,7 +11,6 @@ import (
 
 	"xorm.io/core"
 
-	"github.com/go-xorm/xorm"
 	"github.com/pangpanglabs/goutils/number"
 	"github.com/sirupsen/logrus"
 )
@@ -581,35 +580,32 @@ func (SaleMst) GetCslSaleForReturn(brandCode, shopCode, startSaleDate, endSaleDa
 }
 
 func (SaleMst) GetCslSales(ctx context.Context, requestInput RequestInput) (int64, []SaleMst, error) {
-	queryBuilder := func() xorm.Interface {
-		engine := factory.GetCSLEngine()
-		engine.SetMapper(core.SameMapper{})
-		q := engine.Where("1=1").In("SaleNo", requestInput.SaleNos)
-		return q
+	engine := factory.GetCSLEngine()
+	engine.SetMapper(core.SameMapper{})
+
+	sns := ""
+	for _, sn := range requestInput.SaleNos {
+		sns += "'" + sn + "'" + ","
 	}
-	query := queryBuilder()
+	sql := "SELECT * from SaleMst where SaleNo in (" + strings.TrimSuffix(sns, ",") + ")"
 
 	var saleMsts []SaleMst
-	if err := query.Find(&saleMsts); err != nil {
+	err := engine.SQL(sql).Find(&saleMsts)
+	if err != nil {
 		return 0, nil, err
 	}
 	if len(saleMsts) == 0 {
 		return 0, nil, nil
 	}
-
-	var saleNos []string
-	for _, saleMst := range saleMsts {
-		saleNos = append(saleNos, saleMst.SaleNo)
-	}
-	saleDtls, err := SaleDtl{}.GetCslDtlBySaleNos(ctx, saleNos)
+	saleDtls, err := SaleDtl{}.GetCslDtlBySaleNos(ctx, strings.TrimSuffix(sns, ","))
 	if err != nil {
 		return 0, nil, err
 	}
-	salePayments, err := SalePayment{}.GetCslSalePaymentBySaleNos(ctx, saleNos)
+	salePayments, err := SalePayment{}.GetCslSalePaymentBySaleNos(ctx, strings.TrimSuffix(sns, ","))
 	if err != nil {
 		return 0, nil, err
 	}
-	staffSaleRecords, err := StaffSaleRecord{}.GetCslStaffSaleRecordBySaleNos(ctx, saleNos)
+	staffSaleRecords, err := StaffSaleRecord{}.GetCslStaffSaleRecordBySaleNos(ctx, strings.TrimSuffix(sns, ","))
 	if err != nil {
 		return 0, nil, err
 	}
@@ -634,31 +630,40 @@ func (SaleMst) GetCslSales(ctx context.Context, requestInput RequestInput) (int6
 	return 0, saleMsts, nil
 }
 
-func (SaleDtl) GetCslDtlBySaleNos(ctx context.Context, saleNos []string) ([]SaleDtl, error) {
-	var saleDtls []SaleDtl
+func (SaleDtl) GetCslDtlBySaleNos(ctx context.Context, saleNos string) ([]SaleDtl, error) {
 	engine := factory.GetCSLEngine()
 	engine.SetMapper(core.SameMapper{})
-	if err := engine.Where("1=1").In("SaleNo", saleNos).Find(&saleDtls); err != nil {
+
+	sql := "SELECT * from SaleDtl where SaleNo in (" + saleNos + ")"
+
+	var saleDtls []SaleDtl
+	if err := engine.SQL(sql).Find(&saleDtls); err != nil {
 		return nil, err
 	}
 	return saleDtls, nil
 }
 
-func (SalePayment) GetCslSalePaymentBySaleNos(ctx context.Context, saleNos []string) ([]SalePayment, error) {
-	var salePayments []SalePayment
+func (SalePayment) GetCslSalePaymentBySaleNos(ctx context.Context, saleNos string) ([]SalePayment, error) {
 	engine := factory.GetCSLEngine()
 	engine.SetMapper(core.SameMapper{})
-	if err := engine.Where("1=1").In("SaleNo", saleNos).Find(&salePayments); err != nil {
+
+	sql := "SELECT * from SalePayment where SaleNo in (" + saleNos + ")"
+
+	var salePayments []SalePayment
+	if err := engine.SQL(sql).Find(&salePayments); err != nil {
 		return nil, err
 	}
 	return salePayments, nil
 }
 
-func (StaffSaleRecord) GetCslStaffSaleRecordBySaleNos(ctx context.Context, saleNos []string) ([]StaffSaleRecord, error) {
-	var staffSaleRecords []StaffSaleRecord
+func (StaffSaleRecord) GetCslStaffSaleRecordBySaleNos(ctx context.Context, saleNos string) ([]StaffSaleRecord, error) {
 	engine := factory.GetCSLEngine()
 	engine.SetMapper(core.SameMapper{})
-	if err := engine.Where("1=1").In("SaleNo", saleNos).Find(&staffSaleRecords); err != nil {
+
+	sql := "SELECT * from StaffSaleRecord where SaleNo in (" + saleNos + ")"
+
+	var staffSaleRecords []StaffSaleRecord
+	if err := engine.SQL(sql).Find(&staffSaleRecords); err != nil {
 		return nil, err
 	}
 	return staffSaleRecords, nil
