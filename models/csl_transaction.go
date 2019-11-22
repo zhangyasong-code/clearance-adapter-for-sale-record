@@ -584,23 +584,13 @@ func (SaleMst) GetCslSales(ctx context.Context, requestInput RequestInput) (int6
 	queryBuilder := func() xorm.Interface {
 		engine := factory.GetCSLEngine()
 		engine.SetMapper(core.SameMapper{})
-		q := engine.Where("1=1")
-		if len(requestInput.SaleNos) != 0 {
-			q.In("SaleNo", requestInput.SaleNos)
-		}
+		q := engine.Where("1=1").In("SaleNo", requestInput.SaleNos)
 		return q
 	}
 	query := queryBuilder()
 
-	if requestInput.MaxResultCount > 0 {
-		query.Limit(requestInput.MaxResultCount, requestInput.SkipCount)
-	}
-
-	query.Desc("Dates")
-
 	var saleMsts []SaleMst
-	totalCount, err := query.FindAndCount(&saleMsts)
-	if err != nil {
+	if err := query.Find(&saleMsts); err != nil {
 		return 0, nil, err
 	}
 	if len(saleMsts) == 0 {
@@ -641,7 +631,7 @@ func (SaleMst) GetCslSales(ctx context.Context, requestInput RequestInput) (int6
 			}
 		}
 	}
-	return totalCount, saleMsts, nil
+	return 0, saleMsts, nil
 }
 
 func (SaleDtl) GetCslDtlBySaleNos(ctx context.Context, saleNos []string) ([]SaleDtl, error) {
