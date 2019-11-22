@@ -221,6 +221,7 @@ func main() {
 				e.Static("/docs", "./swagger-ui")
 				controllers.TransactionController{}.Init(e.Group("/v1/transaction"))
 				controllers.CslTransactionController{}.Init(e.Group("/v1/csl/transaction"))
+				controllers.CslRefundController{}.Init(e.Group("/v1/csl/refund"))
 				e.Pre(middleware.RemoveTrailingSlash())
 				e.Use(middleware.Recover())
 				e.Use(middleware.CORS())
