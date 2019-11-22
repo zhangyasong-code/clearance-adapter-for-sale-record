@@ -24,13 +24,18 @@ func (CslTransactionController) GetCslSaleTransactions(c echo.Context) error {
 			},
 		})
 	}
-	if data.MaxResultCount == 0 {
-		data.MaxResultCount = 10
-	}
 	data.SaleNos = splitTolist(c.QueryParam("saleNos"))
 	if data.SaleNo != "" {
 		data.SaleNos = append(data.SaleNos, data.SaleNo)
 	}
+	if len(data.SaleNos) == 0 {
+		return c.JSON(http.StatusBadRequest, api.Result{
+			Error: api.Error{
+				Message: "Must be input saleNo!",
+			},
+		})
+	}
+
 	totalCount, items, err := models.SaleMst{}.GetCslSales(c.Request().Context(), data)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, api.Result{
