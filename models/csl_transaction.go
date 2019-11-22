@@ -242,12 +242,9 @@ type RequestTokenBody struct {
 
 func (SaleMst) GetlastSeq(shopCode, saleDate string) (string, error) {
 	var saleNos []string
-	if err := factory.GetCSLEngine().
-		Table("dbo.SaleMst").
-		Select("SaleNo").
-		Where("shopCode = ?", shopCode).
-		And("dates = ?", saleDate).
-		Desc("SaleNo").Find(&saleNos); err != nil {
+	sql := "SELECT SaleNo from SaleMst where shopCode = " + "'" + shopCode + "'" + "and dates = " + "'" + saleDate + "'" + "order by SaleNo desc"
+
+	if err := factory.GetCSLEngine().SQL(sql).Find(&saleNos); err != nil {
 		return "", err
 	}
 	if len(saleNos) != 0 {
@@ -257,11 +254,13 @@ func (SaleMst) GetlastSeq(shopCode, saleDate string) (string, error) {
 }
 
 func (SaleMst) GetPriceTypeCode(brandCode, productCode string) (string, error) {
+	if brandCode == "" || productCode == "" {
+		return "", errors.New("SaleTransactionDtl BrandCode or productCode is null")
+	}
 	var priceTypeCodes []string
-	if err := factory.GetCSLEngine().Table("dbo.BrandPrice").
-		Select("PriceTypeCode").Distinct("PriceTypeCode").
-		Where("BrandCode = ?", brandCode).
-		And("StyleCode = ?", productCode).Find(&priceTypeCodes); err != nil {
+	sql := "SELECT PriceTypeCode from BrandPrice where BrandCode = " + "'" + brandCode + "'" + "and StyleCode = " + "'" + productCode + "'"
+
+	if err := factory.GetCSLEngine().SQL(sql).Find(&priceTypeCodes); err != nil {
 		return "", err
 	}
 	if len(priceTypeCodes) != 0 {
@@ -276,11 +275,13 @@ func (SaleMst) GetPriceTypeCode(brandCode, productCode string) (string, error) {
 }
 
 func (SaleMst) GetSupGroupCode(brandCode, productCode string) (string, error) {
+	if brandCode == "" || productCode == "" {
+		return "", errors.New("SaleTransactionDtl BrandCode or productCode is null")
+	}
 	var SupGroupCodes []string
-	if err := factory.GetCSLEngine().Table("dbo.Style").
-		Select("SupGroupCode").Distinct("SupGroupCode").
-		Where("BrandCode = ?", brandCode).
-		And("StyleCode = ?", productCode).Find(&SupGroupCodes); err != nil {
+	sql := "SELECT SupGroupCode from Style where BrandCode = " + "'" + brandCode + "'" + "and StyleCode = " + "'" + productCode + "'"
+
+	if err := factory.GetCSLEngine().SQL(sql).Find(&SupGroupCodes); err != nil {
 		return "", err
 	}
 	if len(SupGroupCodes) != 0 {
@@ -414,15 +415,13 @@ func (SaleMst) CheckStock(brandCode, shopCode, prodCode, styleCode string) error
 }
 
 func (CustMileagePolicy) GetCustMileagePolicy(brandCode string) (CustMileagePolicy, error) {
+	if brandCode == "" {
+		return CustMileagePolicy{}, errors.New("GetCustMileagePolicy BrandCode is nil")
+	}
 	custMileagePolicy := CustMileagePolicy{}
-	engine := factory.GetCSLEngine()
-	engine.SetMapper(core.SameMapper{})
+	sql := "SELECT * from CustMileagePolicy where BrandCode =" + "'" + brandCode + "'" + "and GETDATE() BETWEEN purchasestartdate AND purchaseenddate and UseChk = 1"
 
-	if _, err := engine.Table("dbo.CustMileagePolicy").
-		Where("BrandCode = ?", brandCode).
-		And("GETDATE() BETWEEN purchasestartdate AND purchaseenddate").
-		And("UseChk = 1").
-		Get(&custMileagePolicy); err != nil {
+	if _, err := factory.GetCSLEngine().SQL(sql).Get(&custMileagePolicy); err != nil {
 		return CustMileagePolicy{}, err
 	}
 	return custMileagePolicy, nil
