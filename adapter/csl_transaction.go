@@ -133,6 +133,9 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 
 		//get last endSeq and startStr in csl SaleMst
 		if i == 0 {
+			if saleTransaction.ShopCode == "" || saleDate == "" {
+				return nil, errors.New("ShopCode or saleDate is null")
+			}
 			lastSeq, err := models.SaleMst{}.GetlastSeq(saleTransaction.ShopCode, saleDate)
 			if err != nil {
 				return nil, err
