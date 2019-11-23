@@ -54,6 +54,7 @@ type CslRefundDtl struct {
 	UseMileage            float64 `query:"useMileage" json:"useMileage"`
 	ObtainMileage         float64 `query:"obtainMileage" json:"obtainMileage"`
 	SaleMstSaleAmt        float64 `query:"saleMstSaleAmt" json:"saleMstSaleAmt"`
+	SaleMstSaleQty        float64 `query:"saleMstSaleQty" json:"saleMstSaleQty"`
 	NormalSaleTypeCode    string  `query:"normalSaleTypeCode" json:"normalSaleTypeCode"`
 	SaleEventNo           int64   `query:"saleEventNo" json:"saleEventNo"`
 	RefundedQty           int64   `query:"refundedQty" json:"refundedQty"`
@@ -284,7 +285,7 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 		inUserID, paymentCode string //itemIds, baseTrimCode,payCreditCardFirmCode, offerNo, couponNo
 	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo, preSaleDtSeq sql.NullInt64
 	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode,
-		secondaryEventSettleTypeCode, preSaleNo, custNo, //creditCardFirmCode
+		secondaryEventSettleTypeCode, preSaleNo, custNo, custCardNo,
 		custGradeCode, complexShopSeqNo sql.NullString
 	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
 		discountAmt, actualSaleAmt, saleEventFee, normalFee, normalFeeRate, saleEventFeeRate, eventAutoDiscountAmt,
@@ -293,7 +294,11 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 	saleMsts := make([]SaleMst, 0)
 	saleDtls := make([]SaleDtl, 0)
 	salePayments := make([]SalePayment, 0)
-	saleDate := cslRefundInput.CslRefundDtls[0].SaleDate
+	saleDate := time.Now().Format("20060102")
+	saleMstForQty, err := SaleMst{}.GetCslMstBySaleNo(ctx, cslRefundInput.CslRefundMst.PreSaleNo)
+	if err != nil {
+		return err
+	}
 	lastSeq, err := SaleMst{}.GetlastSeq(cslRefundInput.CslRefundDtls[0].ShopCode, saleDate)
 	if err != nil {
 		return err
@@ -304,7 +309,10 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 	}
 	endSeq = seq
 	startStr = str
-
+	roundSetting := &number.Setting{
+		RoundDigit:    0,
+		RoundStrategy: "round",
+	}
 	//Get SequenceNumber
 	sequenceNumber, nextSeq, str, err := SaleMst{}.GetSequenceNumber(endSeq, startStr)
 	if err != nil {
@@ -337,12 +345,14 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 	saleMode = Refund
 	preSaleNo = sql.NullString{cslRefundInput.CslRefundMst.PreSaleNo, true}
 	// get mileage
-	for _, cslRefundDtl := range cslRefundInput.CslRefundDtls {
-		refundDtlProportion := number.ToFixed(cslRefundDtl.SaleAmt/cslRefundInput.CslRefundMst.SaleAmt, nil)
-		refundDtlObtainMileage := number.ToFixed(refundDtlProportion*cslRefundDtl.ObtainMileage, nil)
-		refundedObtainMileage += refundDtlObtainMileage
+	if cslRefundInput.CslRefundDtls[0].ObtainMileage != 0 {
+		for _, cslRefundDtl := range cslRefundInput.CslRefundDtls {
+			refundDtlProportion := number.ToFixed(float64(cslRefundDtl.RefundQty)/float64(saleMstForQty[0].SaleQty), nil)
+			refundDtlObtainMileage := number.ToFixed(refundDtlProportion*cslRefundDtl.ObtainMileage, roundSetting)
+			refundedObtainMileage += refundDtlObtainMileage
+		}
+		refundedObtainMileage = number.ToFixed(refundedObtainMileage, nil)
 	}
-	refundedObtainMileage = number.ToFixed(refundedObtainMileage, nil)
 	custGradeCode = sql.NullString{"", false}
 	salesPerson, err := Employee{}.GetEmployee(cslRefundInput.CslRefundMst.SaleManId)
 	if err != nil {
@@ -352,7 +362,14 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 	if err != nil {
 		return err
 	}
-	custNo = sql.NullString{cslRefundInput.CslRefundDtls[0].CustomerNo, true}
+	custNo = sql.NullString{"", false}
+	custCardNo = sql.NullString{"", false}
+	if cslRefundInput.CslRefundDtls[0].CustomerNo != "" {
+		custNo = sql.NullString{cslRefundInput.CslRefundDtls[0].CustomerNo, true}
+	}
+	if cslRefundInput.CslRefundDtls[0].CustomerCardNo != "" {
+		custCardNo = sql.NullString{cslRefundInput.CslRefundDtls[0].CustomerCardNo, true}
+	}
 	saleAmt = cslRefundInput.CslRefundMst.RefundAmt
 	saleQty = cslRefundInput.CslRefundMst.RefundQty
 	saleAmt = saleAmt * -1
@@ -365,7 +382,7 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 		ShopCode:                    cslRefundInput.CslRefundDtls[0].ShopCode,
 		SaleMode:                    saleMode,
 		CustNo:                      custNo,
-		CustCardNo:                  sql.NullString{cslRefundInput.CslRefundDtls[0].CustomerCardNo, true},
+		CustCardNo:                  custCardNo,
 		PrimaryCustEventNo:          sql.NullInt64{0, false},
 		SecondaryCustEventNo:        sql.NullInt64{0, false},
 		DepartStoreReceiptNo:        cslRefundInput.CslRefundDtls[0].DepartStoreReceiptNo,
@@ -436,7 +453,10 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 		saleQty = 0
 		saleAmt = 0
 		saleEventNormalSaleRecognitionChk = false
-		useMileage = number.ToFixed(cslRefundDtl.UseMileage/float64(cslRefundDtl.SaleQty)*float64(cslRefundDtl.RefundQty), nil)
+		if cslRefundDtl.UseMileage != 0 {
+			refundDtlProportion := number.ToFixed(float64(cslRefundDtl.RefundQty)/float64(cslRefundDtl.SaleQty), nil)
+			useMileage = number.ToFixed(refundDtlProportion*cslRefundDtl.UseMileage, roundSetting)
+		}
 		eANCode = cslRefundDtl.EanCode
 		priceTypeCode, err := SaleMst{}.GetPriceTypeCode(cslRefundDtl.BrandCode, cslRefundDtl.StyleCode)
 		if err != nil {
@@ -448,12 +468,13 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 		}
 		preSaleDtSeq = sql.NullInt64{cslRefundDtl.PreSaleDtSeq, true}
 		discountAmt = cslRefundDtl.DiscountAmt
-		estimateSaleAmt = cslRefundDtl.SellingAmt
-		sellingAmt = cslRefundDtl.SellingAmt
-		chinaFISaleAmt = cslRefundDtl.SellingAmt
+		estimateSaleAmt = cslRefundDtl.RefundAmt
+		sellingAmt = cslRefundDtl.RefundAmt
+		chinaFISaleAmt = cslRefundDtl.RefundAmt
 		normalPrice = cslRefundDtl.SalePrice
-		saleQty = cslRefundDtl.RefundQty * -1
-		saleAmt = cslRefundDtl.RefundAmt * -1
+		saleQty = cslRefundDtl.RefundQty
+		saleAmt = cslRefundDtl.RefundAmt
+
 		normalPrice = normalPrice * -1
 		saleQty = saleQty * -1
 		saleAmt = saleAmt * -1
@@ -500,7 +521,7 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 			Price:                             normalPrice,
 			PriceDecisionDate:                 saleDate,
 			SaleQty:                           saleQty,
-			SaleAmt:                           saleAmt,
+			SaleAmt:                           saleAmt + useMileage,
 			EventAutoDiscountAmt:              eventAutoDiscountAmt,
 			EventDecisionDiscountAmt:          eventDecisionDiscountAmt,
 			SaleEventSaleBaseAmt:              saleEventSaleBaseAmt,
@@ -525,7 +546,7 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 			ModiUserID:                        userInfo.UserName,
 			SendState:                         "",
 			SendFlag:                          NotSynChronized,
-			DiscountAmt:                       discountAmt,
+			DiscountAmt:                       useMileage,
 			DiscountAmtAsCost:                 discountAmtAsCost,
 			UseMileageSettleType:              useMileageSettleType,
 			EstimateSaleAmtForConsumer:        estimateSaleAmt,
@@ -555,17 +576,18 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 	saleMst.ActualSaleAmt = 0
 	saleMst.EstimateSaleAmt = 0
 	saleMst.ShopEmpEstimateSaleAmt = 0
-	saleMst.FeeAmt = 0
+	saleMst.ShopEmpEstimateSaleAmt = 0
+	saleMst.SaleAmt = 0
 	for _, saleDtl := range saleDtls {
 		if saleMst.SaleNo == saleDtl.SaleNo {
 			saleMst.UseMileage += saleDtl.UseMileage
 			saleMst.SellingAmt += saleDtl.SellingAmt
+			saleMst.ChinaFISaleAmt += saleDtl.SellingAmt
+			saleMst.ActualSaleAmt += saleDtl.SellingAmt
+			saleMst.EstimateSaleAmt += saleDtl.SellingAmt
 			saleMst.DiscountAmt += saleDtl.DiscountAmt
-			saleMst.ChinaFISaleAmt += saleDtl.ChinaFISaleAmt
-			saleMst.ActualSaleAmt += saleDtl.ActualSaleAmt
-			saleMst.EstimateSaleAmt += saleDtl.EstimateSaleAmt
-			saleMst.ShopEmpEstimateSaleAmt += saleDtl.ShopEmpEstimateSaleAmt
-			saleMst.FeeAmt += (saleDtl.SaleEventFee + saleDtl.NormalFee)
+			saleMst.ShopEmpEstimateSaleAmt += saleDtl.SellingAmt
+			saleMst.SaleAmt += saleDtl.SaleAmt
 		}
 	}
 	saleMst.UseMileage = number.ToFixed(saleMst.UseMileage, nil)
@@ -633,6 +655,11 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 		if _, err := session.Query(`EXEC up_CSLK_SMM_UpdateCustomerStateBySale_CustMileageInfo_U1 @SaleNo = ?`, saleMst.SaleNo); err != nil {
 			return err
 		}
+	}
+	if err := session.Commit(); err != nil {
+		return err
+	}
+	if cslRefundInput.CslRefundDtls[0].CustomerCardNo != "" {
 		s := strings.Split(cslRefundInput.CslRefundDtls[0].CustomerName, ",")
 		mallId, err := strconv.ParseInt(s[0], 10, 64)
 		if err != nil {
@@ -653,9 +680,6 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 		}); err != nil {
 			fmt.Println(err)
 		}
-	}
-	if err := session.Commit(); err != nil {
-		return err
 	}
 	return nil
 }
