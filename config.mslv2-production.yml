@@ -28,6 +28,7 @@ services:
   placeManagementApi: https://p2shop.com.cn/pangpang-brand/place-management-api
   # getTokenApi: https://qa.p2shop.com.cn/pangpang-common/portal-api/login?tenantCode=pangpang
   getTokenApi: http://colleague-login-api.pangpang-common:8082/api
+  membership: https://p2shop.com.cn/pangpang-brand/benefit-api
 getTokenUser:
   appId: d11cbd31d042462e893d627dfcea0c4e
   appSecretKey: 4c4458869c344f3faa6dd8485dab9665

@@ -1,14 +1,20 @@
 package models
 
 import (
+	"clearance/clearance-adapter-for-sale-record/config"
 	"clearance/clearance-adapter-for-sale-record/factory"
+	"context"
 	"database/sql"
+	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"xorm.io/core"
 
+	"github.com/pangpanglabs/goutils/behaviorlog"
+	"github.com/pangpanglabs/goutils/httpreq"
 	"github.com/pangpanglabs/goutils/number"
 )
 
@@ -47,6 +53,7 @@ type CslRefundDtl struct {
 	RefundAmt             float64 `query:"refundAmt" json:"refundAmt"`
 	UseMileage            float64 `query:"useMileage" json:"useMileage"`
 	ObtainMileage         float64 `query:"obtainMileage" json:"obtainMileage"`
+	SaleMstSaleAmt        float64 `query:"saleMstSaleAmt" json:"saleMstSaleAmt"`
 	NormalSaleTypeCode    string  `query:"normalSaleTypeCode" json:"normalSaleTypeCode"`
 	SaleEventNo           int64   `query:"saleEventNo" json:"saleEventNo"`
 	RefundedQty           int64   `query:"refundedQty" json:"refundedQty"`
@@ -107,6 +114,7 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 	, B.UseMileage					AS UseMileage
 	, B.SaleEventNo 				AS SaleEventNo
 	, A.ObtainMileage 				AS ObtainMileage
+	, A.SaleAmt 					AS SaleMstSaleAmt
     , CASE WHEN A.CustNo IS NULL THEN NULL ELSE  A.CustBrandCode END AS CustBrandCode  
 		from salemst A
 		inner join saledtl b 
@@ -125,6 +133,7 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 		sellingAmt, _ := strconv.ParseFloat(string(value["SellingAmt"]), 64)
 		useMileage, _ := strconv.ParseFloat(string(value["UseMileage"]), 64)
 		obtainMileage, _ := strconv.ParseFloat(string(value["ObtainMileage"]), 64)
+		saleMstSaleAmt, _ := strconv.ParseFloat(string(value["SaleMstSaleAmt"]), 64)
 		var cslRefundDtl CslRefundDtl
 		cslRefundDtl.SaleNo = string(value["SaleNo"])
 		cslRefundDtl.SaleDate = string(value["Dates"])
@@ -148,6 +157,7 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 		cslRefundDtl.SellingAmt = number.ToFixed(sellingAmt, nil)
 		cslRefundDtl.UseMileage = number.ToFixed(useMileage, nil)
 		cslRefundDtl.ObtainMileage = number.ToFixed(obtainMileage, nil)
+		cslRefundDtl.SaleMstSaleAmt = number.ToFixed(saleMstSaleAmt, nil)
 		cslRefundDtl.OperatorName = string(value["OperatorName"])
 		cslRefundDtl.OperationDate = string(value["OperationDate"])
 		cslRefundDtl.CustBrandCode = string(value["CustBrandCode"])
@@ -265,7 +275,7 @@ const (
 	InUserID         = "MSLV2"
 )
 
-func (CslRefundInput) CslRefundInput(cslRefundInput CslRefundInput) error {
+func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefundInput) error {
 	var endSeq int
 	var dtSeq, saleQty int64 //colleaguesId
 	var saleEventNormalSaleRecognitionChk bool
@@ -328,13 +338,11 @@ func (CslRefundInput) CslRefundInput(cslRefundInput CslRefundInput) error {
 	preSaleNo = sql.NullString{cslRefundInput.CslRefundMst.PreSaleNo, true}
 	// get mileage
 	for _, cslRefundDtl := range cslRefundInput.CslRefundDtls {
-		aRefundedPrdObtainMileage := cslRefundDtl.SaleAmt /
-			cslRefundInput.CslRefundMst.SaleAmt /
-			float64(cslRefundDtl.SaleQty) *
-			float64(cslRefundDtl.RefundQty)
-		refundedObtainMileage += aRefundedPrdObtainMileage
+		refundDtlProportion := number.ToFixed(cslRefundDtl.SaleAmt/cslRefundInput.CslRefundMst.SaleAmt, nil)
+		refundDtlObtainMileage := number.ToFixed(refundDtlProportion*cslRefundDtl.ObtainMileage, nil)
+		refundedObtainMileage += refundDtlObtainMileage
 	}
-	refundedObtainMileage = number.ToFixed(refundedObtainMileage*-1, nil)
+	refundedObtainMileage = number.ToFixed(refundedObtainMileage, nil)
 	custGradeCode = sql.NullString{"", false}
 	salesPerson, err := Employee{}.GetEmployee(cslRefundInput.CslRefundMst.SaleManId)
 	if err != nil {
@@ -344,7 +352,7 @@ func (CslRefundInput) CslRefundInput(cslRefundInput CslRefundInput) error {
 	if err != nil {
 		return err
 	}
-	custNo = sql.NullString{"", false}
+	custNo = sql.NullString{cslRefundInput.CslRefundDtls[0].CustomerNo, true}
 	saleAmt = cslRefundInput.CslRefundMst.RefundAmt
 	saleQty = cslRefundInput.CslRefundMst.RefundQty
 	saleAmt = saleAmt * -1
@@ -357,7 +365,7 @@ func (CslRefundInput) CslRefundInput(cslRefundInput CslRefundInput) error {
 		ShopCode:                    cslRefundInput.CslRefundDtls[0].ShopCode,
 		SaleMode:                    saleMode,
 		CustNo:                      custNo,
-		CustCardNo:                  sql.NullString{"", false},
+		CustCardNo:                  sql.NullString{cslRefundInput.CslRefundDtls[0].CustomerCardNo, true},
 		PrimaryCustEventNo:          sql.NullInt64{0, false},
 		SecondaryCustEventNo:        sql.NullInt64{0, false},
 		DepartStoreReceiptNo:        cslRefundInput.CslRefundDtls[0].DepartStoreReceiptNo,
@@ -368,7 +376,7 @@ func (CslRefundInput) CslRefundInput(cslRefundInput CslRefundInput) error {
 		PreSaleNo:                   preSaleNo,
 		SaleQty:                     saleQty,
 		SaleAmt:                     saleAmt,
-		ObtainMileage:               refundedObtainMileage,
+		ObtainMileage:               refundedObtainMileage * -1,
 		InUserID:                    inUserID,
 		ModiUserID:                  inUserID,
 		SendState:                   "",
@@ -621,12 +629,64 @@ func (CslRefundInput) CslRefundInput(cslRefundInput CslRefundInput) error {
 			return err
 		}
 	}
-	if saleMst.UseMileage != 0 {
+	if cslRefundInput.CslRefundDtls[0].CustomerCardNo != "" {
 		if _, err := session.Query(`EXEC up_CSLK_SMM_UpdateCustomerStateBySale_CustMileageInfo_U1 @SaleNo = ?`, saleMst.SaleNo); err != nil {
 			return err
 		}
+		s := strings.Split(cslRefundInput.CslRefundDtls[0].CustomerName, ",")
+		mallId, err := strconv.ParseInt(s[0], 10, 64)
+		if err != nil {
+			return err
+		}
+		if err := (Mileage{}).SetMslv2Mileage(ctx, Mileage{
+			// MemberId:        2,
+			// Mobile:          "",
+			MallId:          mallId,
+			TenantCode:      s[1],
+			CardNo:          cslRefundInput.CslRefundDtls[0].CustomerCardNo,
+			Type:            "A",
+			TradeDate:       time.Now(),
+			Point:           saleMst.UseMileage,
+			CalculateAmount: saleMst.ObtainMileage,
+			Remark:          "CSL1.0退货",
+			CreateBy:        "CSL1.0退货",
+		}); err != nil {
+			fmt.Println(err)
+		}
 	}
 	if err := session.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
+type Mileage struct {
+	TenantCode      string    `json:"tenantCode,omitempty" xorm:"" validate:"required"` /*租户代码*/
+	MallId          int64     `json:"mallId,omitempty" xorm:"" validate:"required"`     /*购物中心代码*/
+	MemberId        int64     `json:"memberId" xorm:"" validate:"gt=0"`                 /*会员id*/
+	CardNo          string    `json:"cardNo,omitempty"`                                 /*会员卡号*/
+	Mobile          string    `json:"mobile,omitempty"`                                 /*手机号*/
+	Type            string    `json:"type,omitempty" xorm:"" validate:"required"`       /*类型*/   /*渠道*/
+	TradeDate       time.Time `json:"tradeDate,omitempty" xorm:""`                      /*交易日期*/ /*累计积分的金额*/
+	Point           float64   `json:"point" xorm:"decimal(19,2)"`                       /*积分数量*/
+	CalculateAmount float64   `json:"point" xorm:"decimal(19,2)"`                       /*积分抵扣金额*/
+	Remark          string    `json:"remark,omitempty" xorm:""`                         /*备注*/ /*变动是否推送给顾客*/
+	CreateBy        string    `json:"createBy,omitempty" xorm:""`
+}
+type ResultMileage struct {
+	Success bool `json:"success"`
+	Result  struct {
+		Token string `json:"token"`
+	}
+	Error struct{} `json:"error"`
+}
+
+func (Mileage) SetMslv2Mileage(ctx context.Context, mileage Mileage) error {
+	resultMileage := ResultMileage{}
+	url := fmt.Sprintf("%s/v1/mileage", config.Config().Services.Membership)
+	if _, err := httpreq.New(http.MethodPost, url, mileage).
+		WithBehaviorLogContext(behaviorlog.FromCtx(ctx)).
+		Call(&resultMileage); err != nil {
 		return err
 	}
 	return nil

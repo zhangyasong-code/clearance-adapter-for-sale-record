@@ -76,7 +76,7 @@ func (CslRefundController) CslReturnInsert(c echo.Context) error {
 			},
 		})
 	}
-	err := models.CslRefundInput{}.CslRefundInput(data)
+	err := models.CslRefundInput{}.CslRefundInput(c.Request().Context(), data)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, api.Result{
 			Error: api.Error{

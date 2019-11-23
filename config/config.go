@@ -64,6 +64,7 @@ type C struct {
 	Services struct {
 		PlaceManagementApi string
 		GetTokenApi        string
+		Membership         string
 	}
 	GetTokenUser struct {
 		AppId        string
