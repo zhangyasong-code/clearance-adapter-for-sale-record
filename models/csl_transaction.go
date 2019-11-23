@@ -9,10 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"xorm.io/core"
-
-	"github.com/pangpanglabs/goutils/number"
 	"github.com/sirupsen/logrus"
+	"xorm.io/core"
 )
 
 type SaleDtl struct {
@@ -187,35 +185,6 @@ type SaleMstsAndSaleDtls struct {
 	SaleDtls         []SaleDtl         `json:"saleDtls"`
 	SalePayments     []SalePayment     `json:"salePayments"`
 	StaffSaleRecords []StaffSaleRecord `json:"staffSaleRecords"`
-}
-
-type TargetReturnSale struct {
-	SaleDate             string         `query:"saleDate" json:"saleDate"`
-	SaleNo               string         `query:"saleNo" json:"saleNo"`
-	SaleDtlSeqNo         int64          `query:"saleDtlSeqNo" json:"saleDtlSeqNo,omitempty"`
-	CustomerNo           sql.NullString `query:"customerNo" json:"customerNo"`
-	CustomerName         sql.NullString `query:"customerName" json:"customerName"`
-	CustomerCardNo       sql.NullString `query:"customerCardNo" json:"customerCardNo"`
-	DepartStoreReceiptNo string         `query:"departStoreReceiptNo" json:"departStoreReceiptNo"`
-	NormalSaleTypeName   string         `query:"normalSaleTypeName" json:"normalSaleTypeName"`
-	BrandCode            string         `query:"brandCode" json:"brandCode,omitempty"`
-	ShopCode             string         `query:"styleCode" json:"styleCode,omitempty"`
-	StyleCode            string         `query:"shopCode" json:"shopCode,omitempty"`
-	ColorName            string         `query:"colorName" json:"colorName,omitempty"`
-	SizeCode             string         `query:"sizeCode" json:"sizeCode,omitempty"`
-	ProdCode             string         `query:"prodCode" json:"prodCode,omitempty"`
-	ProdName             string         `query:"prodName" json:"prodName,omitempty"`
-	SalePrice            float64        `query:"salePrice" json:"salePrice"`
-	SaleQty              int64          `query:"saleQty" json:"saleQty"`
-	SaleAmt              float64        `query:"saleAmt" json:"saleAmt"`
-	SellingAmt           float64        `query:"sellingAmt" json:"sellingAmt"`
-	DiscountAmt          float64        `query:"discountAmt" json:"discountAmt"`
-	OperatorName         string         `query:"operatorName" json:"operatorName"`
-	OperationDate        string         `query:"operationDate" json:"operationDate"`
-	OldShopSaleChk       bool           `query:"oldShopSaleChk" json:"oldShopSaleChk,omitempty"`
-	CustBrandCode        sql.NullString `query:"custBrandCode" json:"custBrandCode"`
-	RefundedQty          int64          `query:"refundedQty" json:"refundedQty"`
-	InUserID             string         `query:"inUserID" json:"inUserID"`
 }
 
 type ResultShop struct {
@@ -425,157 +394,6 @@ func (CustMileagePolicy) GetCustMileagePolicy(brandCode string) (CustMileagePoli
 		return CustMileagePolicy{}, err
 	}
 	return custMileagePolicy, nil
-}
-
-func (SaleMst) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate, endSaleDate, saleNo, deptStoreReceiptNo, customerNo, productCode string) (interface{}, error) {
-	var targetReturnSales []TargetReturnSale
-	var targetReturnDtailSaleMap []map[string][]byte
-	engine := factory.GetCSLEngine()
-	targetReturnDtailSaleMap, err := engine.Query(`select  
-	A.Dates          				AS Dates            
-    , A.SaleNo    					AS SaleNo                               
-    , B.DtSeq 						AS DtSeq                              
-    , A.CustNo 						AS CustomerNo                            
-    --, C.CustName 					AS CustomerName                    
-    , A.CustCardNo 					AS CustomerCardNo                
-    , A.DepartStoreReceiptNo 		AS DepartStoreReceiptNo            
-	, D.NormalSaleTypeName 			AS NormalSaleTypeName
-	, B.BrandCode   				AS BrandCode 
-	, B.ShopCode   					AS ShopCode      
-    , C.StyleCode 					AS StyleCode                             
-    , C.ColorName 					AS ColorName                         
-    , C.SizeCode 					AS SizeCode                     
-	, C.ProdCode 					AS ProdCode 
-	, C.ProdName 					AS ProdName             
-    , B.Price 						AS Price                                  
-    , B.SaleQty 					AS SaleQty                                
-	, B.SaleAmt 					AS SaleAmt
-	, B.SellingAmt     				AS SellingAmt                                   
-    , B.SaleAmt - B.SellingAmt 	 	AS DiscountAmt                    
-	, B.InDateTime 					AS OperationDate     
-	, 0 							AS OldShopSaleChk 
-	, B.InUserID 					AS InUserID
-    , CASE WHEN A.CustNo IS NULL THEN NULL ELSE  A.CustBrandCode END AS CustBrandCode  
-		from salemst A
-		inner join saledtl b 
-		on A.saleno=b.saleno
-		inner join product c
-		on b.prodcode=c.prodcode
-		inner JOIN NormalSaleType AS D ON b.NormalSaleTypeCode = D.NormalSaleTypeCode   
-		where A.saleno = ?`, saleNo)
-	if err != nil {
-		return nil, err
-	}
-	for _, value := range targetReturnDtailSaleMap {
-		var targetReturnSale TargetReturnSale
-		targetReturnSale.SaleNo = string(value["SaleNo"])
-		targetReturnSale.SaleDate = string(value["Dates"])
-		targetReturnSale.SaleDtlSeqNo, _ = strconv.ParseInt(string(value["DtSeq"]), 10, 64)
-		targetReturnSale.CustomerNo.String = string(value["CustomerNo"])
-		targetReturnSale.CustomerName.String = string(value["CustomerName"])
-		targetReturnSale.CustomerCardNo.String = string(value["CustomerCardNo"])
-		targetReturnSale.DepartStoreReceiptNo = string(value["DepartStoreReceiptNo"])
-		targetReturnSale.NormalSaleTypeName = string(value["NormalSaleTypeName"])
-		targetReturnSale.StyleCode = string(value["StyleCode"])
-		targetReturnSale.ColorName = string(value["ColorName"])
-		targetReturnSale.ProdCode = string(value["ProdCode"])
-		targetReturnSale.ProdName = string(value["ProdName"])
-		salePrice, _ := strconv.ParseFloat(string(value["SalePrice"]), 64)
-		targetReturnSale.SalePrice = number.ToFixed(salePrice, nil)
-		targetReturnSale.SaleQty, _ = strconv.ParseInt(string(value["SaleQty"]), 10, 64)
-		saleAmt, _ := strconv.ParseFloat(string(value["SaleAmt"]), 64)
-		targetReturnSale.SaleAmt = number.ToFixed(saleAmt, nil)
-		discountAmt, _ := strconv.ParseFloat(string(value["DiscountAmt"]), 64)
-		targetReturnSale.DiscountAmt = number.ToFixed(discountAmt, nil)
-		sellingAmt, _ := strconv.ParseFloat(string(value["SellingAmt"]), 64)
-		targetReturnSale.SellingAmt = number.ToFixed(sellingAmt, nil)
-		targetReturnSale.OperatorName = string(value["OperatorName"])
-		targetReturnSale.OperationDate = string(value["OperationDate"])
-		//targetReturnSale.OldShopSaleChk = bool(value["OldShopSaleChk"])
-		targetReturnSale.CustBrandCode.String = string(value["CustBrandCode"])
-		targetReturnSale.InUserID = string(value["InUserID"])
-		targetReturnSales = append(targetReturnSales, targetReturnSale)
-	}
-	if len(targetReturnSales) > 0 && targetReturnSales[0].SaleNo != "" {
-		SaleIsReturnedMap, err := engine.Query(`select 
-		* from saledtl 
-		where PreSaleNo=?`,
-			targetReturnSales[0].SaleNo)
-		for _, saleIsReturned := range SaleIsReturnedMap {
-			for key, targetReturnSale := range targetReturnSales {
-				if string(saleIsReturned["ProdCode"]) == targetReturnSale.ProdCode {
-					returnedQty, _ := strconv.ParseInt(string(saleIsReturned["SaleQty"]), 10, 64)
-					targetReturnSales[key].RefundedQty = returnedQty * -1
-				}
-			}
-		}
-		if err != nil {
-			return nil, err
-		}
-	}
-	return targetReturnSales, nil
-}
-
-func (SaleMst) GetCslSaleForReturn(brandCode, shopCode, startSaleDate, endSaleDate, saleNo, deptStoreReceiptNo, customerNo, productCode string) (interface{}, error) {
-	var targetReturnSales []TargetReturnSale
-	var targetReturnSaleMap []map[string][]byte
-	var has = false
-	engine := factory.GetCSLEngine()
-	targetReturnSaleMap, err := engine.Query(`EXEC up_CSLK_SMM_SearchTargetReturnSale_SaleDtl_R1 @BrandCode = ?,@ShopCode = ?,@StartSaleDate = ?,@EndSaleDate = ?,@SaleNo = ?,@DeptStoreReceiptNo = ?,@CustomerNo = ?,@ProductCode = ?`,
-		brandCode, shopCode, startSaleDate, endSaleDate, saleNo, deptStoreReceiptNo, customerNo, productCode)
-	if err != nil {
-		return nil, err
-	}
-	for _, value := range targetReturnSaleMap {
-		var targetReturnSale TargetReturnSale
-		targetReturnSale.SaleNo = string(value["SaleNo"])
-		targetReturnSale.SaleDate = string(value["SaleDate"])
-		targetReturnSale.SaleDtlSeqNo, _ = strconv.ParseInt(string(value["SaleDtlSeqNo"]), 10, 64)
-		targetReturnSale.CustomerNo.String = string(value["CustomerNo"])
-		targetReturnSale.CustomerName.String = string(value["CustomerName"])
-		targetReturnSale.CustomerCardNo.String = string(value["CustomerCardNo"])
-		targetReturnSale.DepartStoreReceiptNo = string(value["DeptStoreReceiptNo"])
-		targetReturnSale.NormalSaleTypeName = string(value["NormalSaleTypeName"])
-		targetReturnSale.BrandCode = string(value["BrandCode"])
-		targetReturnSale.ShopCode = string(value["ShopCode"])
-		targetReturnSale.StyleCode = string(value["StyleCode"])
-		targetReturnSale.ColorName = string(value["ColorName"])
-		salePrice, _ := strconv.ParseFloat(string(value["SalePrice"]), 64)
-		targetReturnSale.SalePrice = number.ToFixed(salePrice, nil)
-		targetReturnSale.SaleQty, _ = strconv.ParseInt(string(value["SaleQty"]), 10, 64)
-		saleAmt, _ := strconv.ParseFloat(string(value["SaleAmt"]), 64)
-		targetReturnSale.SaleAmt = number.ToFixed(saleAmt, nil)
-		discountAmt, _ := strconv.ParseFloat(string(value["DiscountAmt"]), 64)
-		targetReturnSale.DiscountAmt = number.ToFixed(discountAmt, nil)
-		targetReturnSale.OperatorName = string(value["OperatorName"])
-		targetReturnSale.OperationDate = string(value["OperationDate"])
-		//targetReturnSale.OldShopSaleChk = bool(value["OldShopSaleChk"])
-		targetReturnSale.CustBrandCode.String = string(value["CustBrandCode"])
-		if len(targetReturnSales) == 0 {
-			targetReturnSale.SellingAmt = targetReturnSale.SaleAmt - targetReturnSale.DiscountAmt
-			targetReturnSale.SellingAmt = number.ToFixed(targetReturnSale.SellingAmt, nil)
-			targetReturnSales = append(targetReturnSales, targetReturnSale)
-		} else {
-			for key, targetReturnSalefor := range targetReturnSales {
-				if targetReturnSalefor.SaleNo == targetReturnSale.SaleNo {
-					has = true
-					targetReturnSalefor.SaleQty += targetReturnSale.SaleQty
-					targetReturnSalefor.SaleAmt += targetReturnSale.SaleAmt
-					targetReturnSalefor.DiscountAmt += targetReturnSale.DiscountAmt
-					targetReturnSalefor.SellingAmt = targetReturnSalefor.SaleAmt - targetReturnSalefor.DiscountAmt
-					targetReturnSalefor.SaleAmt = number.ToFixed(targetReturnSalefor.SaleAmt, nil)
-					targetReturnSalefor.DiscountAmt = number.ToFixed(targetReturnSalefor.DiscountAmt, nil)
-					targetReturnSalefor.SellingAmt = number.ToFixed(targetReturnSalefor.SellingAmt, nil)
-					targetReturnSales[key] = targetReturnSalefor
-				}
-			}
-			if has == false {
-				targetReturnSales = append(targetReturnSales, targetReturnSale)
-			}
-			has = false
-		}
-	}
-	return targetReturnSales, nil
 }
 
 func (SaleMst) GetCslSales(ctx context.Context, requestInput RequestInput) (int64, []SaleMst, error) {
