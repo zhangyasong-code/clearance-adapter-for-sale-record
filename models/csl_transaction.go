@@ -503,3 +503,16 @@ func (SaleMst) GetSeqNo(sequenceNumber string) (int64, error) {
 	}
 	return seqNo, nil
 }
+
+func (SaleMst) GetCslMstBySaleNo(ctx context.Context, saleNo string) ([]SaleMst, error) {
+	engine := factory.GetCSLEngine()
+	engine.SetMapper(core.SameMapper{})
+
+	sql := "SELECT * from SaleMst where SaleNo ='" + saleNo + "'"
+
+	var saleMsts []SaleMst
+	if err := engine.SQL(sql).Find(&saleMsts); err != nil {
+		return nil, err
+	}
+	return saleMsts, nil
+}
