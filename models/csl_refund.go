@@ -167,9 +167,16 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 		cslRefundDtls = append(cslRefundDtls, cslRefundDtl)
 	}
 	if len(cslRefundDtls) > 0 && cslRefundDtls[0].SaleNo != "" {
-		SaleIsReturnedMap, err := engine.Query(`select 
-		* from saledtl 
-		where PreSaleNo=?`,
+		SaleIsReturnedMap, err := engine.Query(`SELECT 
+		B.ProdCode 					AS ProdCode 
+		,B.SaleQty 					AS SaleQty 
+		,B.SaleAmt 					AS SaleAmt 
+		,B.DiscountAmt 				AS DiscountAmt 
+		,B.SellingAmt 				AS SellingAmt 
+		,B.UseMileage 				AS UseMileage 
+		FROM SaleMst A WITH(NOLOCK)
+		INNER JOIN SaleDtl B with(nolock) on A.SaleNo=B.SaleNo
+		WHERE A.PreSaleNo= ? `,
 			cslRefundDtls[0].SaleNo)
 		for _, saleIsReturned := range SaleIsReturnedMap {
 			var returnedQtyAll int64
