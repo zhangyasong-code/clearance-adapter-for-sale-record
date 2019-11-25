@@ -89,7 +89,10 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 	fmt.Println("creat engine------->", time.Now())
 	engine := factory.GetCSLEngine()
 	fmt.Println("select A------->", time.Now())
-	targetReturnDtailSaleMap, err := engine.Query(`select  
+	targetReturnDtailSaleMap, err := engine.Query(`
+	declare @saleNo char(15)
+	set @saleNo = cast(? as char(15))
+	select  
 	A.Dates          				AS Dates            
     , A.SaleNo    					AS SaleNo                               
     , B.DtSeq 						AS DtSeq                              
@@ -119,18 +122,22 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 	, A.ObtainMileage 				AS ObtainMileage
 	, A.SaleAmt 					AS SaleMstSaleAmt
     , CASE WHEN A.CustNo IS NULL THEN NULL ELSE  A.CustBrandCode END AS CustBrandCode  
-		from salemst A
-		inner join saledtl b 
+		from salemst A WITH(NOLOCK)
+		inner join saledtl b WITH(NOLOCK)
 		on A.saleno=b.saleno
-		inner join product c
-		on b.prodcode=c.prodcode
-		inner JOIN NormalSaleType AS D ON b.NormalSaleTypeCode = D.NormalSaleTypeCode   
-		where A.saleno = ?`, saleNo)
+		inner join product c WITH(NOLOCK)
+		on b.prodcode=c.prodcode and b.brandcode=c.brandcode
+		inner JOIN NormalSaleType AS D WITH(NOLOCK)
+		ON b.NormalSaleTypeCode = D.NormalSaleTypeCode   
+		where A.saleno = @saleNo`, saleNo)
 	if err != nil {
 		return nil, err
 	}
 	fmt.Println("select B------->", time.Now())
-	SaleIsReturnedMap, err := engine.Query(`SELECT 
+	SaleIsReturnedMap, err := engine.Query(`
+	declare @saleNo char(15)
+	set @saleNo = cast(? as char(15))
+	SELECT 
 	B.ProdCode 					AS ProdCode 
 	,B.SaleQty 					AS SaleQty 
 	,B.SaleAmt 					AS SaleAmt 
@@ -138,8 +145,8 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 	,B.SellingAmt 				AS SellingAmt 
 	,B.UseMileage 				AS UseMileage 
 	FROM SaleMst A WITH(NOLOCK)
-	INNER JOIN SaleDtl B with(nolock) on A.SaleNo=B.SaleNo
-	WHERE A.PreSaleNo= ? `, saleNo)
+	INNER JOIN SaleDtl B WITH(NOLOCK) on A.SaleNo=B.SaleNo
+	WHERE A.PreSaleNo= @saleNo`, saleNo)
 	if err != nil {
 		return nil, err
 	}
