@@ -1007,7 +1007,7 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 	createTime := (time.Now()).Add(local)
 	for _, saleMst := range saleMstsAndSaleDtls.SaleMsts {
 		//check saleNo Whether it exists or not
-		successes, err := models.SaleRecordIdSuccessMapping{}.GetBySaleNo(saleMst.SaleNo, saleMst.SaleTransactionId)
+		successes, err := models.SaleRecordIdSuccessMapping{}.GetBySaleNo("", saleMst.SaleTransactionId)
 		if err != nil {
 			return err
 		}
