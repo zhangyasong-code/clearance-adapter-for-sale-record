@@ -249,7 +249,7 @@ func initDB(driver, connection string) (*xorm.Engine, error) {
 		panic(err)
 	}
 	env := os.Getenv("APP_ENV")
-	if env != "production" {
+	if env != "mslv2-production" {
 		db.ShowSQL(true)
 	}
 	// db.ShowSQL(false)
