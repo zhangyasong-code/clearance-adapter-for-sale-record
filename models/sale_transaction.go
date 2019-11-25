@@ -529,7 +529,7 @@ func (SaleTransaction) GetSaleTransactions(ctx context.Context, transactionId, o
 		query.Limit(maxResultCount, skipCount)
 	}
 
-	query.Desc("transaction_id")
+	query.Desc("id")
 
 	var saleTransactions []SaleTransaction
 	totalCount, err := query.FindAndCount(&saleTransactions)
