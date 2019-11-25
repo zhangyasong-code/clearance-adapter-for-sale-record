@@ -86,7 +86,9 @@ type CslRefundInput struct {
 func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate, endSaleDate, saleNo, deptStoreReceiptNo, customerNo, productCode string) (interface{}, error) {
 	var cslRefundDtls []CslRefundDtl
 	var targetReturnDtailSaleMap []map[string][]byte
+	fmt.Println("creat engine------->", time.Now())
 	engine := factory.GetCSLEngine()
+	fmt.Println("select A------->", time.Now())
 	targetReturnDtailSaleMap, err := engine.Query(`select  
 	A.Dates          				AS Dates            
     , A.SaleNo    					AS SaleNo                               
@@ -127,6 +129,21 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("select B------->", time.Now())
+	SaleIsReturnedMap, err := engine.Query(`SELECT 
+	B.ProdCode 					AS ProdCode 
+	,B.SaleQty 					AS SaleQty 
+	,B.SaleAmt 					AS SaleAmt 
+	,B.DiscountAmt 				AS DiscountAmt 
+	,B.SellingAmt 				AS SellingAmt 
+	,B.UseMileage 				AS UseMileage 
+	FROM SaleMst A WITH(NOLOCK)
+	INNER JOIN SaleDtl B with(nolock) on A.SaleNo=B.SaleNo
+	WHERE A.PreSaleNo= ? `, saleNo)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("for ------->", time.Now())
 	for _, value := range targetReturnDtailSaleMap {
 		salePrice, _ := strconv.ParseFloat(string(value["SalePrice"]), 64)
 		saleAmt, _ := strconv.ParseFloat(string(value["SaleAmt"]), 64)
@@ -167,17 +184,6 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 		cslRefundDtls = append(cslRefundDtls, cslRefundDtl)
 	}
 	if len(cslRefundDtls) > 0 && cslRefundDtls[0].SaleNo != "" {
-		SaleIsReturnedMap, err := engine.Query(`SELECT 
-		B.ProdCode 					AS ProdCode 
-		,B.SaleQty 					AS SaleQty 
-		,B.SaleAmt 					AS SaleAmt 
-		,B.DiscountAmt 				AS DiscountAmt 
-		,B.SellingAmt 				AS SellingAmt 
-		,B.UseMileage 				AS UseMileage 
-		FROM SaleMst A WITH(NOLOCK)
-		INNER JOIN SaleDtl B with(nolock) on A.SaleNo=B.SaleNo
-		WHERE A.PreSaleNo= ? `,
-			cslRefundDtls[0].SaleNo)
 		for _, saleIsReturned := range SaleIsReturnedMap {
 			var returnedQtyAll int64
 			var returnedAmtAll float64
@@ -208,10 +214,8 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 				}
 			}
 		}
-		if err != nil {
-			return nil, err
-		}
 	}
+	fmt.Println("end ------->", time.Now())
 	return cslRefundDtls, nil
 }
 
