@@ -191,14 +191,14 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 		cslRefundDtls = append(cslRefundDtls, cslRefundDtl)
 	}
 	if len(cslRefundDtls) > 0 && cslRefundDtls[0].SaleNo != "" {
-		for _, saleIsReturned := range SaleIsReturnedMap {
+		for key, targetReturnSale := range cslRefundDtls {
 			var returnedQtyAll int64
 			var returnedAmtAll float64
 			var returnedDiscountAmtAll float64
 			var returnedSellingAmtAll float64
 			var returnedUseMileageAll float64
 			var returnedObtainMileageAll float64
-			for key, targetReturnSale := range cslRefundDtls {
+			for _, saleIsReturned := range SaleIsReturnedMap {
 				if string(saleIsReturned["ProdCode"]) == targetReturnSale.ProdCode {
 					returnedQty, _ := strconv.ParseInt(string(saleIsReturned["SaleQty"]), 10, 64)
 					returnedAmt, _ := strconv.ParseFloat(string(saleIsReturned["SaleAmt"]), 64)
@@ -212,14 +212,14 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 					returnedSellingAmtAll += returnedSellingAmt
 					returnedUseMileageAll += returnedUesMileage
 					returnedObtainMileageAll += returnedObtainMileage
-					cslRefundDtls[key].RefundedQty = returnedQtyAll * -1
-					cslRefundDtls[key].ReturnedAmt = number.ToFixed(returnedAmtAll, nil) * -1
-					cslRefundDtls[key].ReturnedDiscountAmt = number.ToFixed(returnedDiscountAmtAll, nil) * -1
-					cslRefundDtls[key].ReturnedSellingAmt = number.ToFixed(returnedSellingAmtAll, nil) * -1
-					cslRefundDtls[key].ReturnedUseMileage = number.ToFixed(returnedUseMileageAll, nil) * -1
-					cslRefundDtls[key].ReturnedObtainMileage = number.ToFixed(returnedObtainMileageAll, nil) * -1
 				}
 			}
+			cslRefundDtls[key].RefundedQty = returnedQtyAll * -1
+			cslRefundDtls[key].ReturnedAmt = number.ToFixed(returnedAmtAll, nil) * -1
+			cslRefundDtls[key].ReturnedDiscountAmt = number.ToFixed(returnedDiscountAmtAll, nil) * -1
+			cslRefundDtls[key].ReturnedSellingAmt = number.ToFixed(returnedSellingAmtAll, nil) * -1
+			cslRefundDtls[key].ReturnedUseMileage = number.ToFixed(returnedUseMileageAll, nil) * -1
+			cslRefundDtls[key].ReturnedObtainMileage = number.ToFixed(returnedObtainMileageAll, nil) * -1
 		}
 	}
 	fmt.Println("end ------->", time.Now())
@@ -229,55 +229,66 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 func (CslRefundDtl) GetCslSaleForReturn(brandCode, shopCode, startSaleDate, endSaleDate, saleNo, deptStoreReceiptNo, customerNo, productCode string) (interface{}, error) {
 	var cslRefundDtls []CslRefundDtl
 	var targetReturnSaleMap []map[string][]byte
-	var has = false
+	saleNo = deptStoreReceiptNo
 	engine := factory.GetCSLEngine()
-	targetReturnSaleMap, err := engine.Query(`EXEC up_CSLK_SMM_SearchTargetReturnSale_SaleDtl_R1 @BrandCode = ?,@ShopCode = ?,@StartSaleDate = ?,@EndSaleDate = ?,@SaleNo = ?,@DeptStoreReceiptNo = ?,@CustomerNo = ?,@ProductCode = ?`,
-		brandCode, shopCode, startSaleDate, endSaleDate, saleNo, deptStoreReceiptNo, customerNo, productCode)
+	sql := fmt.Sprintf(
+		"	declare @startDate char(8)"+
+			"	declare @endDate char(8)"+
+			"	declare @shopCode char(4)"+
+			"	declare @brandCode varchar(4)"+
+			"	declare @deptStoreReceiptNo varchar(20)"+
+			"	declare @saleNo varchar(15)"+
+			"	set @brandCode = cast('%v' as varchar(15))"+
+			"	set @shopCode = cast('%v' as char(4))"+
+			"	set @startDate = cast('%v' as char(8))"+
+			"	set @endDate = cast('%v' as char(8))"+
+			"	set @deptStoreReceiptNo = cast('%v' as varchar(20))"+
+			"	set @saleNo = cast('%v' as varchar(15))"+
+			"	select"+
+			"	Dates          					AS Dates"+
+			"	, SaleNo    					AS SaleNo"+
+			"	, DepartStoreReceiptNo 			AS DepartStoreReceiptNo"+
+			"	, BrandCode   					AS BrandCode"+
+			"	, ShopCode   					AS ShopCode"+
+			"	, SaleQty 						AS SaleQty"+
+			"	, SaleAmt 						AS SaleAmt"+
+			"	, SellingAmt     				AS SellingAmt"+
+			"	, SaleAmt - SellingAmt 	 		AS DiscountAmt"+
+			"	, InDateTime 					AS OperationDate"+
+			"	, InUserID 						AS InUserID"+
+			"	FROM SaleMst WITH(NOLOCK)"+
+			"	WHERE ShopCode = @shopCode"+
+			"	AND BrandCode = @brandCode"+
+			"	AND (SaleOfficeCode is null or SaleOfficeCode<>'P009')",
+		brandCode, shopCode, startSaleDate, endSaleDate, deptStoreReceiptNo, saleNo)
+	if deptStoreReceiptNo != "" {
+		sql = sql + "	AND (DepartStoreReceiptNo = @deptStoreReceiptNo OR SaleNo = @saleNo)"
+	}
+	if startSaleDate != "" && endSaleDate != "" {
+		sql = sql + "	AND Dates BETWEEN @startDate AND @endDate"
+	}
+	targetReturnSaleMap, err := engine.Query(sql)
 	if err != nil {
 		return nil, err
 	}
 	for _, value := range targetReturnSaleMap {
 		var cslRefundDtl CslRefundDtl
+		saleAmt, _ := strconv.ParseFloat(string(value["SaleAmt"]), 64)
+		sellingAmt, _ := strconv.ParseFloat(string(value["SellingAmt"]), 64)
+		discountAmt, _ := strconv.ParseFloat(string(value["DiscountAmt"]), 64)
 		cslRefundDtl.SaleNo = string(value["SaleNo"])
-		cslRefundDtl.SaleDate = string(value["SaleDate"])
-		cslRefundDtl.SaleDtlSeqNo, _ = strconv.ParseInt(string(value["SaleDtlSeqNo"]), 10, 64)
-		cslRefundDtl.CustomerNo = string(value["CustomerNo"])
-		cslRefundDtl.CustomerName = string(value["CustomerName"])
-		cslRefundDtl.CustomerCardNo = string(value["CustomerCardNo"])
-		cslRefundDtl.DepartStoreReceiptNo = string(value["DeptStoreReceiptNo"])
-		cslRefundDtl.NormalSaleTypeName = string(value["NormalSaleTypeName"])
+		cslRefundDtl.SaleDate = string(value["Dates"])
+		cslRefundDtl.DepartStoreReceiptNo = string(value["DepartStoreReceiptNo"])
 		cslRefundDtl.BrandCode = string(value["BrandCode"])
 		cslRefundDtl.ShopCode = string(value["ShopCode"])
-		cslRefundDtl.StyleCode = string(value["StyleCode"])
-		cslRefundDtl.ColorName = string(value["ColorName"])
-		salePrice, _ := strconv.ParseFloat(string(value["SalePrice"]), 64)
-		cslRefundDtl.SalePrice = number.ToFixed(salePrice, nil)
 		cslRefundDtl.SaleQty, _ = strconv.ParseInt(string(value["SaleQty"]), 10, 64)
-		saleAmt, _ := strconv.ParseFloat(string(value["SaleAmt"]), 64)
 		cslRefundDtl.SaleAmt = number.ToFixed(saleAmt, nil)
-		discountAmt, _ := strconv.ParseFloat(string(value["DiscountAmt"]), 64)
+		cslRefundDtl.SellingAmt = number.ToFixed(sellingAmt, nil)
 		cslRefundDtl.DiscountAmt = number.ToFixed(discountAmt, nil)
-		cslRefundDtl.OperatorName = string(value["OperatorName"])
+		cslRefundDtl.OperatorName = string(value["InUserID"])
 		cslRefundDtl.OperationDate = string(value["OperationDate"])
-		cslRefundDtl.CustBrandCode = string(value["CustBrandCode"])
-		for key, cslRefundDtlfor := range cslRefundDtls {
-			if cslRefundDtlfor.SaleNo == cslRefundDtl.SaleNo {
-				has = true
-				cslRefundDtlfor.SaleQty += cslRefundDtl.SaleQty
-				cslRefundDtlfor.SaleAmt += cslRefundDtl.SaleAmt
-				cslRefundDtlfor.DiscountAmt += cslRefundDtl.DiscountAmt
-				cslRefundDtlfor.SellingAmt = number.ToFixed(cslRefundDtl.SaleAmt-cslRefundDtl.DiscountAmt, nil)
-				cslRefundDtlfor.SaleAmt = number.ToFixed(cslRefundDtlfor.SaleAmt, nil)
-				cslRefundDtlfor.DiscountAmt = number.ToFixed(cslRefundDtlfor.DiscountAmt, nil)
-				cslRefundDtlfor.SellingAmt = number.ToFixed(cslRefundDtlfor.SellingAmt, nil)
-				cslRefundDtls[key] = cslRefundDtlfor
-			}
-		}
-		if has == false {
-			cslRefundDtl.SellingAmt = number.ToFixed(cslRefundDtl.SaleAmt-cslRefundDtl.DiscountAmt, nil)
-			cslRefundDtls = append(cslRefundDtls, cslRefundDtl)
-		}
-		has = false
+
+		cslRefundDtls = append(cslRefundDtls, cslRefundDtl)
 	}
 	return cslRefundDtls, nil
 }
