@@ -116,7 +116,7 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
     , B.SaleAmt - B.SellingAmt 	 	AS DiscountAmt                    
 	, B.InDateTime 					AS OperationDate     
 	, 0 							AS OldShopSaleChk 
-	, B.InUserID 					AS InUserID
+	, A.InUserID 					AS InUserID
 	, B.UseMileage					AS UseMileage
 	, B.SaleEventNo 				AS SaleEventNo
 	, A.ObtainMileage 				AS ObtainMileage
@@ -326,6 +326,7 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 	saleDtls := make([]SaleDtl, 0)
 	salePayments := make([]SalePayment, 0)
 	saleDate := time.Now().Format("20060102")
+	inUserID = cslRefundInput.CslRefundDtls[0].InUserID
 	saleMstForQty, err := SaleMst{}.GetCslMstBySaleNo(ctx, cslRefundInput.CslRefundMst.PreSaleNo)
 	if err != nil {
 		return err
