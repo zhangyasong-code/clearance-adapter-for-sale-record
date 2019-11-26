@@ -128,7 +128,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 	salePayments := make([]models.SalePayment, 0)
 	staffSaleRecords := make([]models.StaffSaleRecord, 0)
 	for i, saleTransaction := range saleTAndSaleTDtls.SaleTransactions {
-		baseTrimCode = saleTransaction.BaseTrimCode
+		baseTrimCode = "A"
 		saleDate := saleTransaction.SaleDate.Format("20060102")
 
 		//get last endSeq and startStr in csl SaleMst
