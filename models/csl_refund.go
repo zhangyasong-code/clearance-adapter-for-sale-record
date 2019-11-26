@@ -121,6 +121,7 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 	, B.SaleEventNo 				AS SaleEventNo
 	, A.ObtainMileage 				AS ObtainMileage
 	, A.SaleAmt 					AS SaleMstSaleAmt
+	, B.EANCode 					AS EANCode
     , CASE WHEN A.CustNo IS NULL THEN NULL ELSE  A.CustBrandCode END AS CustBrandCode  
 		from salemst A WITH(NOLOCK)
 		inner join saledtl b WITH(NOLOCK)
@@ -188,6 +189,7 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 		cslRefundDtl.CustBrandCode = string(value["CustBrandCode"])
 		cslRefundDtl.InUserID = string(value["InUserID"])
 		cslRefundDtl.SaleEventNo, _ = strconv.ParseInt(string(value["SaleEventNo"]), 10, 64)
+		cslRefundDtl.EanCode = string(value["EANCode"])
 		cslRefundDtls = append(cslRefundDtls, cslRefundDtl)
 	}
 	if len(cslRefundDtls) > 0 && cslRefundDtls[0].SaleNo != "" {
