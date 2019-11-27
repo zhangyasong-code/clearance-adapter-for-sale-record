@@ -63,6 +63,9 @@ type CslRefundDtl struct {
 	ReturnedSellingAmt    float64 `query:"returnedSellingAmt" json:"returnedSellingAmt"`
 	ReturnedUseMileage    float64 `query:"returnedSeMileage" json:"returnedSeMileage"`
 	ReturnedObtainMileage float64 `query:"returnedObtainMileage" json:"returnedObtainMileage"`
+	ShopName              string  `query:"shopName" json:"shopName"`
+	BranchCode            string  `query:"branchCode" json:"branchCode"`
+	BranchName            string  `query:"branchName" json:"branchName"`
 }
 
 type CslRefundMst struct {
@@ -86,9 +89,7 @@ type CslRefundInput struct {
 func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate, endSaleDate, saleNo, deptStoreReceiptNo, customerNo, productCode string) (interface{}, error) {
 	var cslRefundDtls []CslRefundDtl
 	var targetReturnDtailSaleMap []map[string][]byte
-	fmt.Println("creat engine------->", time.Now())
 	engine := factory.GetCSLEngine()
-	fmt.Println("select A------->", time.Now())
 	targetReturnDtailSaleMap, err := engine.Query(`
 	declare @saleNo char(15)
 	set @saleNo = cast(? as char(15))
@@ -122,6 +123,9 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 	, A.ObtainMileage 				AS ObtainMileage
 	, A.SaleAmt 					AS SaleMstSaleAmt
 	, B.EANCode 					AS EANCode
+	, E.ShopName					AS ShopName
+	, F.BranchCode					AS BranchCode
+	, F.BranchName					AS BranchName
     , CASE WHEN A.CustNo IS NULL THEN NULL ELSE  A.CustBrandCode END AS CustBrandCode  
 		from salemst A WITH(NOLOCK)
 		inner join saledtl b WITH(NOLOCK)
@@ -130,11 +134,13 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 		on b.prodcode=c.prodcode and b.brandcode=c.brandcode
 		inner JOIN NormalSaleType AS D WITH(NOLOCK)
 		ON b.NormalSaleTypeCode = D.NormalSaleTypeCode   
+		inner JOIN Shop E
+		ON b.brandcode=E.brandcode and b.shopcode=E.shopcode
+		left join branch F on E.BranchCode =F.BranchCode
 		where A.saleno = @saleNo`, saleNo)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("select B------->", time.Now())
 	SaleIsReturnedMap, err := engine.Query(`
 	declare @saleNo char(15)
 	set @saleNo = cast(? as char(15))
@@ -151,7 +157,6 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("for ------->", time.Now())
 	for _, value := range targetReturnDtailSaleMap {
 		salePrice, _ := strconv.ParseFloat(string(value["SalePrice"]), 64)
 		saleAmt, _ := strconv.ParseFloat(string(value["SaleAmt"]), 64)
@@ -188,6 +193,9 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 		cslRefundDtl.OperationDate = string(value["OperationDate"])
 		cslRefundDtl.CustBrandCode = string(value["CustBrandCode"])
 		cslRefundDtl.InUserID = string(value["InUserID"])
+		cslRefundDtl.ShopName = string(value["ShopName"])
+		cslRefundDtl.BranchCode = string(value["BranchCode"])
+		cslRefundDtl.BranchName = string(value["BranchName"])
 		cslRefundDtl.SaleEventNo, _ = strconv.ParseInt(string(value["SaleEventNo"]), 10, 64)
 		cslRefundDtl.EanCode = string(value["EANCode"])
 		cslRefundDtls = append(cslRefundDtls, cslRefundDtl)
@@ -224,7 +232,6 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 			cslRefundDtls[key].ReturnedObtainMileage = number.ToFixed(returnedObtainMileageAll, nil) * -1
 		}
 	}
-	fmt.Println("end ------->", time.Now())
 	return cslRefundDtls, nil
 }
 
@@ -269,6 +276,7 @@ func (CslRefundDtl) GetCslSaleForReturn(brandCode, shopCode, startSaleDate, endS
 	if startSaleDate != "" && endSaleDate != "" {
 		sql = sql + "	AND Dates BETWEEN @startDate AND @endDate"
 	}
+	sql = sql + "	ORDER BY SaleNo DESC"
 	targetReturnSaleMap, err := engine.Query(sql)
 	if err != nil {
 		return nil, err
