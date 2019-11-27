@@ -209,9 +209,9 @@ type RequestTokenBody struct {
 	AppSecretKey string `json:"appSecretKey"`
 }
 
-func (SaleMst) GetlastSeq(shopCode, saleDate string) (string, error) {
+func (SaleMst) GetlastSeq(shopCode, saleDate, posNo string) (string, error) {
 	var saleNos []string
-	sql := "SELECT SaleNo from SaleMst where shopCode = " + "'" + shopCode + "'" + "and dates = " + "'" + saleDate + "'" + "order by SaleNo desc"
+	sql := "SELECT SaleNo from SaleMst where shopCode = " + "'" + shopCode + "'" + "and dates = " + "'" + saleDate + "'" + "and PosNo = " + "'" + posNo + "'" + " order by SaleNo desc"
 
 	if err := factory.GetCSLEngine().SQL(sql).Find(&saleNos); err != nil {
 		return "", err

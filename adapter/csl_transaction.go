@@ -136,7 +136,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			if saleTransaction.ShopCode == "" || saleDate == "" {
 				return nil, errors.New("ShopCode or saleDate is null")
 			}
-			lastSeq, err := models.SaleMst{}.GetlastSeq(saleTransaction.ShopCode, saleDate)
+			lastSeq, err := models.SaleMst{}.GetlastSeq(saleTransaction.ShopCode, saleDate, "8")
 			if err != nil {
 				return nil, err
 			}
