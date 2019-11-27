@@ -330,7 +330,7 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 	if err != nil {
 		return err
 	}
-	lastSeq, err := SaleMst{}.GetlastSeq(cslRefundInput.CslRefundDtls[0].ShopCode, saleDate)
+	lastSeq, err := SaleMst{}.GetlastSeq(cslRefundInput.CslRefundDtls[0].ShopCode, saleDate, "9")
 	if err != nil {
 		return err
 	}
