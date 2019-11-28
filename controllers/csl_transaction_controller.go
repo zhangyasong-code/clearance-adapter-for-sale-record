@@ -28,10 +28,10 @@ func (CslTransactionController) GetCslSaleTransactions(c echo.Context) error {
 	if data.SaleNo != "" {
 		data.SaleNos = append(data.SaleNos, data.SaleNo)
 	}
-	if len(data.SaleNos) == 0 {
+	if len(data.SaleNos) == 0 && (data.ShopCode == "" || data.Dates == "" || data.PosNo == "") {
 		return c.JSON(http.StatusBadRequest, api.Result{
 			Error: api.Error{
-				Message: "Must be input saleNo!",
+				Message: "Must be input ShopCode,Dates,PosNo !",
 			},
 		})
 	}

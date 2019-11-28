@@ -404,8 +404,23 @@ func (SaleMst) GetCslSales(ctx context.Context, requestInput RequestInput) (int6
 	for _, sn := range requestInput.SaleNos {
 		sns += "'" + sn + "'" + ","
 	}
-	sql := "SELECT * from SaleMst where SaleNo in (" + strings.TrimSuffix(sns, ",") + ")"
 
+	sql := "SELECT * from SaleMst where 1 = 1 "
+	if sns != "" {
+		sql += "and SaleNo in (" + strings.TrimSuffix(sns, ",") + ")"
+	}
+	if requestInput.ShopCode != "" {
+		sql += "and ShopCode = '" + requestInput.ShopCode + "'"
+	}
+	if requestInput.Dates != "" {
+		sql += "and Dates = '" + requestInput.Dates + "'"
+	}
+	if requestInput.SaleMode != "" {
+		sql += "and SaleMode = '" + requestInput.SaleMode + "'"
+	}
+	if requestInput.PosNo != "" {
+		sql += "and PosNo = '" + requestInput.PosNo + "'"
+	}
 	var saleMsts []SaleMst
 	err := engine.SQL(sql).Find(&saleMsts)
 	if err != nil {
@@ -414,15 +429,19 @@ func (SaleMst) GetCslSales(ctx context.Context, requestInput RequestInput) (int6
 	if len(saleMsts) == 0 {
 		return 0, nil, nil
 	}
-	saleDtls, err := SaleDtl{}.GetCslDtlBySaleNos(ctx, strings.TrimSuffix(sns, ","))
+	loadSaleNos := ""
+	for _, saleMst := range saleMsts {
+		loadSaleNos += "'" + saleMst.SaleNo + "'" + ","
+	}
+	saleDtls, err := SaleDtl{}.GetCslDtlBySaleNos(ctx, strings.TrimSuffix(loadSaleNos, ","))
 	if err != nil {
 		return 0, nil, err
 	}
-	salePayments, err := SalePayment{}.GetCslSalePaymentBySaleNos(ctx, strings.TrimSuffix(sns, ","))
+	salePayments, err := SalePayment{}.GetCslSalePaymentBySaleNos(ctx, strings.TrimSuffix(loadSaleNos, ","))
 	if err != nil {
 		return 0, nil, err
 	}
-	staffSaleRecords, err := StaffSaleRecord{}.GetCslStaffSaleRecordBySaleNos(ctx, strings.TrimSuffix(sns, ","))
+	staffSaleRecords, err := StaffSaleRecord{}.GetCslStaffSaleRecordBySaleNos(ctx, strings.TrimSuffix(loadSaleNos, ","))
 	if err != nil {
 		return 0, nil, err
 	}
