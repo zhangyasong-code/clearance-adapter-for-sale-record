@@ -523,16 +523,15 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 		saleEventAutoDiscountAmt = saleEventAutoDiscountAmt * -1
 		saleEventManualDiscountAmt = saleEventManualDiscountAmt * -1
 		saleVentDecisionDiscountAmt = saleVentDecisionDiscountAmt * -1
-		chinaFISaleAmt = chinaFISaleAmt * -1
-		estimateSaleAmt = estimateSaleAmt * -1
+		chinaFISaleAmt = sellingAmt * -1
+		estimateSaleAmt = sellingAmt * -1
 		sellingAmt = sellingAmt * -1
 		normalFee = normalFee * -1
 		saleEventFee = saleEventFee * -1
-		actualSaleAmt = actualSaleAmt * -1
+		actualSaleAmt = sellingAmt * -1
 		useMileage = useMileage * -1
 		discountAmt = discountAmt * -1
-		saleVentDecisionDiscountAmt = saleVentDecisionDiscountAmt * -1
-		shopEmpEstimateSaleAmt = shopEmpEstimateSaleAmt * -1
+		shopEmpEstimateSaleAmt = sellingAmt * -1
 		saleDtl := SaleDtl{
 			SaleNo:                            saleNo,
 			ShopCode:                          cslRefundDtl.ShopCode,
@@ -615,7 +614,6 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 	saleMst.ChinaFISaleAmt = 0
 	saleMst.ActualSaleAmt = 0
 	saleMst.EstimateSaleAmt = 0
-	saleMst.ShopEmpEstimateSaleAmt = 0
 	saleMst.ShopEmpEstimateSaleAmt = 0
 	saleMst.SaleAmt = 0
 	for _, saleDtl := range saleDtls {
