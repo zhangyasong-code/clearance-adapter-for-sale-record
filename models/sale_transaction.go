@@ -135,6 +135,10 @@ type RequestInput struct {
 	SaleTransactionId int64    `json:"saleTransactionId" query:"saleTransactionId"`
 	SaleNo            string   `json:"saleNo" query:"saleNo"`
 	SaleNos           []string `json:"saleNos"`
+	ShopCode          string   `json:"shopCode" query:"shopCode"`
+	Dates             string   `json:"dates" query:"dates"`
+	SaleMode          string   `json:"saleMode" query:"saleMode"`
+	PosNo             string   `json:"posNo" query:"posNo"`
 }
 
 type CslSaleMst struct {
