@@ -106,11 +106,10 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 
 // Transform ...
 func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
-	var endSeq int
-	var dtSeq, colleaguesId, saleQty int64
+	var dtSeq, colleaguesId, saleQty, seqNo int64
 	var saleEventNormalSaleRecognitionChk bool
-	var startStr, saleMode, eANCode, normalSaleTypeCode, useMileageSettleType, offerNo, couponNo,
-		inUserID, itemIds, baseTrimCode string
+	var saleMode, eANCode, normalSaleTypeCode, useMileageSettleType, offerNo, couponNo,
+		inUserID, itemIds, baseTrimCode, saleNo string
 	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo, preSaleDtSeq sql.NullInt64
 	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode,
 		secondaryEventSettleTypeCode, preSaleNo, creditCardFirmCode, custNo,
@@ -127,40 +126,59 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 	saleDtls := make([]models.SaleDtl, 0)
 	salePayments := make([]models.SalePayment, 0)
 	staffSaleRecords := make([]models.StaffSaleRecord, 0)
-	for i, saleTransaction := range saleTAndSaleTDtls.SaleTransactions {
+	for _, saleTransaction := range saleTAndSaleTDtls.SaleTransactions {
 		baseTrimCode = "A"
 		saleDate := saleTransaction.SaleDate.Format("20060102")
-
-		//get last endSeq and startStr in csl SaleMst
-		if i == 0 {
-			if saleTransaction.ShopCode == "" || saleDate == "" {
-				return nil, errors.New("ShopCode or saleDate is null")
-			}
-			lastSeq, err := models.SaleMst{}.GetlastSeq(saleTransaction.ShopCode, saleDate, MSLV2_POS)
-			if err != nil {
-				return nil, err
-			}
-			seq, str, err := models.SaleMst{}.GetSeqAndStartStr(lastSeq)
-			if err != nil {
-				return nil, err
-			}
-			endSeq = seq
-			startStr = str
+		saleNo = ""
+		seqNo = 0
+		if saleTransaction.ShopCode == "" || saleDate == "" {
+			return nil, errors.New("ShopCode or saleDate is null")
 		}
-
-		//Get SequenceNumber
-		sequenceNumber, nextSeq, str, err := models.SaleMst{}.GetSequenceNumber(endSeq, startStr)
+		checkSaleNo, err := models.CheckSaleNo{}.GetCheckSaleNoBySaleTransactionid(saleTransaction.Id)
 		if err != nil {
 			return nil, err
 		}
-		endSeq = nextSeq
-		startStr = str
-		saleNo := saleTransaction.ShopCode + saleDate[len(saleDate)-6:len(saleDate)] + MSLV2_POS + sequenceNumber
-
-		//get SeqNo
-		seqNo, err := models.SaleMst{}.GetSeqNo(sequenceNumber)
-		if err != nil {
-			return nil, err
+		saleNo = checkSaleNo.SaleNo
+		if saleNo == "" {
+			lastSaleNo, err := models.CheckSaleNo{}.GetLastSaleNo(saleTransaction.ShopCode, saleDate, MSLV2_POS)
+			if err != nil {
+				return nil, err
+			}
+			seq, str, err := models.SaleMst{}.GetSeqAndStartStr(lastSaleNo)
+			if err != nil {
+				return nil, err
+			}
+			//Get SequenceNumber
+			sequenceNumber, _, _, err := models.SaleMst{}.GetSequenceNumber(seq, str)
+			if err != nil {
+				return nil, err
+			}
+			//get SeqNo
+			seqNumber, err := models.SaleMst{}.GetSeqNo(sequenceNumber)
+			if err != nil {
+				return nil, err
+			}
+			seqNo = seqNumber
+			saleNo = saleTransaction.ShopCode + saleDate[len(saleDate)-6:len(saleDate)] + MSLV2_POS + sequenceNumber
+			checkSaleNo := &models.CheckSaleNo{
+				TransactionId:     saleTransaction.TransactionId,
+				SaleTransactionId: saleTransaction.Id,
+				OrderId:           saleTransaction.OrderId,
+				RefundId:          saleTransaction.RefundId,
+				ShopCode:          saleTransaction.ShopCode,
+				Dates:             saleDate,
+				SaleNo:            saleNo,
+				PosNo:             MSLV2_POS,
+				Processing:        true,
+				Whthersend:        false,
+			}
+			if err = checkSaleNo.Save(); err != nil {
+				return nil, err
+			}
+		} else {
+			if checkSaleNo.Processing == true || checkSaleNo.Whthersend == true {
+				continue
+			}
 		}
 
 		//Sale S 销售  Refund R 退货
@@ -1201,6 +1219,19 @@ func saveAndUpdateLog(ctx context.Context, saleMstInput models.SaleMst, saleMsts
 			if err := saleRecordIdFailMapping.Update(); err != nil {
 				return err
 			}
+		}
+		return nil
+	})
+
+	g.Go(func() error {
+		checkSaleNo, err := models.CheckSaleNo{}.GetCheckSaleNoBySaleTransactionid(saleMstInput.SaleTransactionId)
+		if err != nil {
+			return err
+		}
+		checkSaleNo.Processing = false
+		checkSaleNo.Whthersend = true
+		if err := checkSaleNo.Update(); err != nil {
+			return err
 		}
 		return nil
 	})

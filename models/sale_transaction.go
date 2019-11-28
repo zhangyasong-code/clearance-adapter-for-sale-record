@@ -141,6 +141,22 @@ type RequestInput struct {
 	PosNo             string   `json:"posNo" query:"posNo"`
 }
 
+type CheckSaleNo struct {
+	Id                int64     `json:"id"`
+	TransactionId     int64     `json:"transactionId" xorm:"index default 0"`
+	SaleTransactionId int64     `json:"saleTransactionId" xorm:"index default 0"`
+	OrderId           int64     `json:"orderId" xorm:"index default 0"`
+	RefundId          int64     `json:"refundId" xorm:"index default 0"`
+	ShopCode          string    `json:"shopCode" xorm:"index VARCHAR(30) notnull"`
+	Dates             string    `json:"dates" xorm:"index VARCHAR(30) notnull"`
+	SaleNo            string    `json:"saleNo" xorm:"index VARCHAR(30) notnull"`
+	PosNo             string    `json:"posNo" xorm:"index VARCHAR(30) notnull"`
+	Processing        bool      `json:"processing" xorm:"index"`
+	Whthersend        bool      `json:"whthersend" xorm:"index"`
+	CreatedAt         time.Time `json:"createdAt" xorm:"index created"`
+	UpdateAt          time.Time `json:"updateAt" xorm:"updated"`
+}
+
 type CslSaleMst struct {
 	Id                          int64                `json:"id"`
 	SaleTransactionId           int64                `json:"saleTransactionId" xorm:"index default 0"`
@@ -337,6 +353,15 @@ func (srfm *SaleRecordIdFailMapping) Save() error {
 		if err := srfm.Update(); err != nil {
 			return err
 		}
+	}
+	checkSaleNo, err := CheckSaleNo{}.GetCheckSaleNoBySaleTransactionid(srfm.SaleTransactionId)
+	if err != nil {
+		return err
+	}
+	checkSaleNo.Processing = false
+	checkSaleNo.Whthersend = false
+	if err := checkSaleNo.Update(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -799,4 +824,35 @@ func (SaleRecordIdSuccessMapping) GetBy(saleNo string, dtlSeqNo int) (SaleRecord
 		return successe, err
 	}
 	return successe, nil
+}
+func (CheckSaleNo) GetCheckSaleNoBySaleTransactionid(saleTranactionId int64) (CheckSaleNo, error) {
+	var checkSaleNo CheckSaleNo
+	if _, err := factory.GetCfsrEngine().Where("1=1").And("sale_transaction_id = ?", saleTranactionId).Get(&checkSaleNo); err != nil {
+		return CheckSaleNo{}, err
+	}
+	return checkSaleNo, nil
+}
+
+func (CheckSaleNo) GetLastSaleNo(shopCode, saleDate, posNo string) (string, error) {
+	var saleNo string
+	if _, err := factory.GetCfsrEngine().Table("check_sale_no").Select("sale_no").
+		Where("shop_code = ? ", shopCode).And("dates = ?", saleDate).
+		And("pos_no = ?", posNo).Desc("sale_no").Limit(1).Get(&saleNo); err != nil {
+		return "", err
+	}
+	return saleNo, nil
+}
+
+func (checkSaleNo *CheckSaleNo) Save() error {
+	if _, err := factory.GetCfsrEngine().Insert(checkSaleNo); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (checkSaleNo *CheckSaleNo) Update() error {
+	if _, err := factory.GetCfsrEngine().Where("sale_transaction_id = ?", checkSaleNo.SaleTransactionId).AllCols().Update(checkSaleNo); err != nil {
+		return err
+	}
+	return nil
 }
