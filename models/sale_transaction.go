@@ -788,3 +788,15 @@ func (cslStaffSaleRecord *CslStaffSaleRecord) Save() error {
 	}
 	return nil
 }
+
+func (SaleRecordIdSuccessMapping) GetBy(saleNo string, dtlSeqNo int) (SaleRecordIdSuccessMapping, error) {
+	var successe SaleRecordIdSuccessMapping
+	if saleNo == "" || dtlSeqNo == 0 {
+		return successe, nil
+	}
+
+	if _, err := factory.GetCfsrEngine().Where("sale_no = ?", saleNo).And("dtl_seq = ?", dtlSeqNo).Get(&successe); err != nil {
+		return successe, err
+	}
+	return successe, nil
+}
