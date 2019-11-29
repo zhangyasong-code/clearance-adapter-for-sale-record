@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -24,6 +25,7 @@ func (c TransactionController) Init(g *echo.Group) {
 	g.GET("/saleTransactions", c.GetSaleTransactions)
 	g.GET("/csl-saleTransactions", c.GetCslSaleTransactions)
 	g.GET("/csl-success", c.GetAllSaleSuccess)
+	g.GET("/csl-success/:saleNo/:dtlSeq", c.GetSaleSuccess)
 }
 
 func (TransactionController) RunSaleETL(c echo.Context) error {
@@ -248,5 +250,46 @@ func (TransactionController) GetAllSaleSuccess(c echo.Context) error {
 			TotalCount: totalCount,
 			Items:      items,
 		},
+	})
+}
+
+func (TransactionController) GetSaleSuccess(c echo.Context) error {
+	saleNo := c.Param("saleNo")
+	dtlSeq, err := strconv.Atoi(c.Param("dtlSeq"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
+	}
+
+	if saleNo == "" {
+		return c.JSON(http.StatusBadRequest, api.Result{
+			Error: api.Error{
+				Message: errors.New("saleNo is null").Error(),
+			},
+		})
+	}
+
+	if dtlSeq == 0 {
+		return c.JSON(http.StatusBadRequest, api.Result{
+			Error: api.Error{
+				Message: errors.New("dtlSeq is 0").Error(),
+			},
+		})
+	}
+
+	cslSale, err := models.SaleRecordIdSuccessMapping{}.GetBy(saleNo, dtlSeq)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
+	}
+	return c.JSON(http.StatusOK, api.Result{
+		Success: true,
+		Result:  cslSale,
 	})
 }
