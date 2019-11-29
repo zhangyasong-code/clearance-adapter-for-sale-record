@@ -117,7 +117,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		custGradeCode, complexShopSeqNo sql.NullString
 	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
 		discountAmt, actualSaleAmt, saleEventFee, normalFee, normalFeeRate, saleEventFeeRate, eventAutoDiscountAmt,
-		eventDecisionDiscountAmt, chinaFISaleAmt, estimateSaleAmt, useMileage, sellingAmt, discountAmtAsCost, saleAmt, normalPrice, shopEmpEstimateSaleAmt, paymentAmt float64
+		eventDecisionDiscountAmt, chinaFISaleAmt, estimateSaleAmt, useMileage, sellingAmt, discountAmtAsCost, saleAmt, normalPrice, shopEmpEstimateSaleAmt, paymentAmt, obtainMileage float64
 
 	saleTAndSaleTDtls, ok := source.(models.SaleTAndSaleTDtls)
 	if !ok {
@@ -279,9 +279,11 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if saleTransaction.CustomerId != 0 {
 			custNo = sql.NullString{strconv.FormatInt(saleTransaction.CustomerId, 10), true}
 		}
+		obtainMileage = saleTransaction.ObtainMileage
 		saleAmt = saleTransaction.TotalListPrice
 		if saleTransaction.RefundId != 0 {
 			saleAmt = saleAmt * -1
+			obtainMileage = obtainMileage * -1
 		}
 		saleMst := models.SaleMst{
 			SaleNo:                      saleNo,
@@ -301,7 +303,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			CustBrandCode:               mileage.BrandCode,
 			PreSaleNo:                   preSaleNo,
 			SaleAmt:                     saleAmt,
-			ObtainMileage:               saleTransaction.ObtainMileage,
+			ObtainMileage:               obtainMileage,
 			InUserID:                    inUserID,
 			ModiUserID:                  inUserID,
 			SendState:                   "",
