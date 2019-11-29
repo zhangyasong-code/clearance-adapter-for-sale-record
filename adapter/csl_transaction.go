@@ -679,7 +679,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				shopEmpEstimateSaleAmt = GetToFixedPrice(dtlSalesmanAmount.SalesmanSaleAmount, baseTrimCode)
 
 				if saleTransactionDtl.RefundItemId != 0 {
-					normalPrice = normalPrice * -1
 					saleQty = saleQty * -1
 					saleAmt = saleAmt * -1
 					eventAutoDiscountAmt = eventAutoDiscountAmt * -1
