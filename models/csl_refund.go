@@ -5,6 +5,7 @@ import (
 	"clearance/clearance-adapter-for-sale-record/factory"
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -87,6 +88,7 @@ type CslRefundInput struct {
 }
 
 func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate, endSaleDate, saleNo, deptStoreReceiptNo, customerNo, productCode string) (interface{}, error) {
+	return "", errors.New("暂停使用")
 	var cslRefundDtls []CslRefundDtl
 	var targetReturnDtailSaleMap []map[string][]byte
 	engine := factory.GetCSLEngine()
@@ -236,6 +238,7 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 }
 
 func (CslRefundDtl) GetCslSaleForReturn(brandCode, shopCode, startSaleDate, endSaleDate, saleNo, deptStoreReceiptNo, customerNo, productCode string) (interface{}, error) {
+	return "", errors.New("暂停使用")
 	var cslRefundDtls []CslRefundDtl
 	var targetReturnSaleMap []map[string][]byte
 	saleNo = deptStoreReceiptNo
@@ -316,6 +319,7 @@ const (
 )
 
 func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefundInput) error {
+	return errors.New("暂停使用")
 	var endSeq int
 	var dtSeq, saleQty int64 //colleaguesId
 	var saleEventNormalSaleRecognitionChk bool
@@ -461,7 +465,11 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 		if custMileagePolicy.CustMileagePolicyNo != 0 {
 			custMileagePolicyNo = sql.NullInt64{custMileagePolicy.CustMileagePolicyNo, true}
 		}
-		eventNo = sql.NullInt64{cslRefundDtl.SaleEventNo, false}
+		if cslRefundDtl.SaleEventNo != 0 {
+			eventNo = sql.NullInt64{cslRefundDtl.SaleEventNo, true}
+		} else {
+			eventNo = sql.NullInt64{0, false}
+		}
 		primaryCustEventNo = sql.NullInt64{0, false}
 		primaryEventTypeCode = sql.NullString{"", false}
 		secondaryCustEventNo = sql.NullInt64{0, false}
