@@ -540,7 +540,9 @@ func (SaleTransaction) GetSaleTransactions(ctx context.Context, transactionId, o
 	if err != nil {
 		return 0, nil, err
 	}
-
+	if len(saleTransactions) == 0 {
+		return 0, nil, nil
+	}
 	var saleTransactionIds []int64
 	for _, t := range saleTransactions {
 		saleTransactionIds = append(saleTransactionIds, t.Id)
@@ -573,6 +575,9 @@ func (SaleTransaction) GetSaleTransactions(ctx context.Context, transactionId, o
 }
 
 func (SaleTransaction) GetSaleTransactionDtls(ctx context.Context, saleTransactionIds []int64) ([]SaleTransactionDtl, error) {
+	if len(saleTransactionIds) == 0 {
+		return nil, nil
+	}
 	queryBuilder := func() xorm.Interface {
 		q := factory.GetCfsrEngine().Where("1=1")
 		if len(saleTransactionIds) > 0 {
@@ -590,6 +595,9 @@ func (SaleTransaction) GetSaleTransactionDtls(ctx context.Context, saleTransacti
 }
 
 func (SaleTransactionPayment) GetSaleTransactionPayments(ctx context.Context, saleTransactionIds []int64) ([]SaleTransactionPayment, error) {
+	if len(saleTransactionIds) == 0 {
+		return nil, nil
+	}
 	queryBuilder := func() xorm.Interface {
 		q := factory.GetCfsrEngine().Where("1=1")
 		if len(saleTransactionIds) > 0 {
