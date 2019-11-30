@@ -4,6 +4,7 @@ import (
 	"clearance/clearance-adapter-for-sale-record/factory"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/go-xorm/xorm"
 	"github.com/sirupsen/logrus"
@@ -29,7 +30,7 @@ type ElandShop struct {
 	ShopCode  string `json:"shopCode"`
 }
 
-func (Store) GetStore(storeId int64) (*Store, error) {
+func (Store) GetStore(storeId int64, withRemark bool) (*Store, error) {
 	var store Store
 	queryBuilder := func() xorm.Interface {
 		q := factory.GetPmEngine().ID(storeId)
@@ -45,9 +46,14 @@ func (Store) GetStore(storeId int64) (*Store, error) {
 		}).Error("Store not find!")
 		return nil, errors.New("Store not find!")
 	}
-
+	if !withRemark {
+		return &store, nil
+	}
 	elandShopInfo := ElandShopInfo{}
-	json.Unmarshal([]byte(store.Remark), &elandShopInfo)
+	err = json.Unmarshal([]byte(store.Remark), &elandShopInfo)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Store's remark Unmarshal error:%s", store.Remark))
+	}
 	store.ElandShops = elandShopInfo.ElandShopInfos
 	return &store, nil
 }
