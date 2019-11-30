@@ -427,25 +427,28 @@ func (saleRecord *AssortedSaleRecord) SplitSaleRecordByBrand(setting *number.Set
 		return newPayments
 	}
 
-	store, err := Store{}.GetStore(saleRecord.StoreId)
-	if err != nil {
-		return nil, err
-	}
-	getShopCode := func(brandCode string) string {
-		for _, elandShop := range store.ElandShops {
-			if elandShop.BrandCode == brandCode {
-				return elandShop.ShopCode
-			}
-		}
-		return ""
-	}
-
 	brandMap := getBrandMap(saleRecord)
 	assortedSaleRecords := make([]*AssortedSaleRecord, 0)
 	if len(brandMap) == 1 {
-		saleRecord.ShopCode = getShopCode(saleRecord.AssortedSaleRecordDtls[0].BrandCode)
+		store, err := Store{}.GetStore(saleRecord.StoreId, false)
+		if err != nil {
+			return nil, err
+		}
+		saleRecord.ShopCode = store.Code
 		assortedSaleRecords = append(assortedSaleRecords, saleRecord)
 	} else {
+		store, err := Store{}.GetStore(saleRecord.StoreId, true)
+		if err != nil {
+			return nil, err
+		}
+		getShopCode := func(brandCode string) string {
+			for _, elandShop := range store.ElandShops {
+				if elandShop.BrandCode == brandCode {
+					return elandShop.ShopCode
+				}
+			}
+			return ""
+		}
 		brandSaleRecordDtlMap := makeSaleRecordDtls(saleRecord, brandMap)
 		for brandCode, saleRecordDtls := range brandSaleRecordDtlMap {
 			newSaleRecord := makeNewSaleRecord(saleRecord)
