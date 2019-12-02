@@ -519,27 +519,25 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					}
 					return nil, err
 				}
-				eANCode = ""
-				if len(sku.Identifiers) != 0 {
-					if sku.Identifiers[0].Uid == "" {
-						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-							SaleTransactionId: saleTransaction.Id,
-							OrderId:           saleTransaction.OrderId,
-							RefundId:          saleTransaction.RefundId,
-							StoreId:           saleTransaction.StoreId,
-							TransactionId:     saleTransaction.TransactionId,
-							CreatedBy:         "API",
-							Error:             "Sku.Identifiers not exist.  SkuID : " + strconv.FormatInt(saleTransactionDtl.SkuId, 10),
-							Details:           "商品UID不存在！",
-						}
-						if err := SaleRecordIdFailMapping.Save(); err != nil {
-							return nil, err
-						}
-						return nil, errors.New("Sku.Identifiers not exist")
-					} else {
-						eANCode = sku.Identifiers[0].Uid
+
+				if len(sku.Identifiers) == 0 || sku.Identifiers[0].Uid == "" {
+					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+						SaleTransactionId: saleTransaction.Id,
+						OrderId:           saleTransaction.OrderId,
+						RefundId:          saleTransaction.RefundId,
+						StoreId:           saleTransaction.StoreId,
+						TransactionId:     saleTransaction.TransactionId,
+						CreatedBy:         "API",
+						Error:             "Sku.Identifiers not exist.  SkuID : " + strconv.FormatInt(saleTransactionDtl.SkuId, 10),
+						Details:           "商品UID不存在！",
 					}
+					if err := SaleRecordIdFailMapping.Save(); err != nil {
+						return nil, err
+					}
+					return nil, errors.New("Sku.Identifiers not exist")
 				}
+				eANCode = sku.Identifiers[0].Uid
+
 				if normalSaleTypeCode == "2" {
 					eventAutoDiscountAmt = GetToFixedPrice(saleTransactionDtl.TotalDistributedCartOfferPrice+saleTransactionDtl.TotalDistributedItemOfferPrice, baseTrimCode)
 					eventDecisionDiscountAmt = eventAutoDiscountAmt
