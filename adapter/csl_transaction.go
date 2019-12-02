@@ -59,21 +59,8 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 				Join("INNER", "sale_transaction_dtl",
 					"sale_transaction_dtl.transaction_id = sale_transaction.transaction_id and sale_transaction_dtl.sale_transaction_id = sale_transaction.id").
 				Where("sale_transaction.whether_send = ?", false)
-			// if dataInput.BrandCode != "" {
-			// 	q.And("sale_transaction_dtl.brand_code = ?", dataInput.BrandCode)
-			// }
-			// if dataInput.ChannelType != "" {
-			// 	q.And("sale_transaction.transaction_channel_type = ?", dataInput.ChannelType)
-			// }
-			if dataInput.OrderId != 0 {
-				q.And("sale_transaction.order_id = ?", dataInput.OrderId)
-			}
-			q.And("sale_transaction.refund_id = ?", dataInput.RefundId)
-			if dataInput.StartAt != "" && dataInput.EndAt != "" {
-				st, _ := time.Parse("2006-01-02 15:04:05", dataInput.StartAt)
-				et, _ := time.Parse("2006-01-02 15:04:05", dataInput.EndAt)
-				h, _ := time.ParseDuration("-8h")
-				q.And("sale_transaction.sale_date >= ?", st.Add(h)).And("sale_transaction.sale_date < ?", et.Add(h))
+			if dataInput.TransactionId != 0 {
+				q.And("sale_transaction.transaction_id = ?", dataInput.TransactionId)
 			}
 			return q
 		}

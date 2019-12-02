@@ -366,24 +366,8 @@ func (SaleRecordIdSuccessMapping) GetSaleSuccessData(transactionId int64, orderI
 }
 
 func (requestInput RequestInput) Validate() error {
-	// if requestInput.BrandCode == "" {
-	// 	return errors.New("BrandCode can not be null!")
-	// }
-	// if requestInput.ChannelType == "" {
-	// 	return errors.New("ChannelType can not be null!")
-	// }
-	if requestInput.StartAt != "" && requestInput.EndAt != "" {
-		_, err := time.Parse("2006-01-02 15:04:05", requestInput.StartAt)
-		if err != nil {
-			return errors.New("Please input the correct time format!")
-		}
-		_, err = time.Parse("2006-01-02 15:04:05", requestInput.EndAt)
-		if err != nil {
-			return errors.New("Please input the correct time format!")
-		}
-	}
-	if requestInput.OrderId == 0 && requestInput.RefundId == 0 && requestInput.StartAt == "" && requestInput.EndAt == "" {
-		return errors.New("In orderId and startAt must be have one condition!")
+	if requestInput.TransactionId == 0 {
+		return errors.New("TransactionId can not be 0!")
 	}
 	return nil
 }
