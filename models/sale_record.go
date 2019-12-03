@@ -52,10 +52,10 @@ type AssortedSaleRecord struct {
 	TransactionType             string                       `json:"transactionType"`
 	TransactionUpdateDate       time.Time                    `json:"transactionUpdateDate"`
 	BaseTrimCode                string                       `json:"baseTrimCode"`
-	AssortedSaleRecordDtls      []AssortedSaleRecordDtl      `json:"assortedSaleRecordDtls"`
+	AssortedSaleRecordDtls      []AssortedSaleRecordDtl      `json:"assortedSaleRecordDtls" xorm:"-"`
 	AssortedSaleRecordPayments  []AssortedSaleRecordPayment  `json:"assortedSaleRecordPayments" xorm:"-"`
-	AppliedSaleRecordCartOffers []AppliedSaleRecordCartOffer `json:"appliedSaleRecordCartOffers"`
-	ShopCode                    string                       `json:"shopCode"`
+	AppliedSaleRecordCartOffers []AppliedSaleRecordCartOffer `json:"appliedSaleRecordCartOffers" xorm:"-"`
+	ShopCode                    string                       `json:"shopCode" xorm:"-"`
 }
 
 type AssortedSaleRecordDtl struct {

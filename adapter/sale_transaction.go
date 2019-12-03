@@ -5,7 +5,6 @@ import (
 	"clearance/clearance-adapter-for-sale-record/models"
 	"context"
 	"errors"
-	"time"
 
 	"github.com/go-xorm/xorm"
 	"github.com/pangpanglabs/goetl"
@@ -25,86 +24,42 @@ func buildSrToClearanceETL() *goetl.ETL {
 
 // Extract ...
 func (etl SrToClearanceETL) Extract(ctx context.Context) (interface{}, error) {
-	saleRecords := []models.AssortedSaleRecord{}
-	saleRecordsDtl := []models.AssortedSaleRecordDtl{}
-	//分页查询   一次查1000条
-	skipCount := 0
-	data := ctx.Value("data")
-	dataInput := data.(models.RequestInput)
-	for {
-		var assortedSaleRecordAndDtls []struct {
-			AssortedSaleRecord    models.AssortedSaleRecord    `xorm:"extends"`
-			AssortedSaleRecordDtl models.AssortedSaleRecordDtl `xorm:"extends"`
-		}
-		query := func() xorm.Interface {
-			q := factory.GetSrEngine().Table("assorted_sale_record").
-				Join("INNER", "assorted_sale_record_dtl", "assorted_sale_record_dtl.transaction_id = assorted_sale_record.transaction_id").
-				Where("1 = 1")
-			// if dataInput.BrandCode != "" {
-			// 	q.And("assorted_sale_record_dtl.brand_code = ?", dataInput.BrandCode)
-			// }
-			// if dataInput.ChannelType != "" {
-			// 	q.And("assorted_sale_record.transaction_channel_type = ?", dataInput.ChannelType)
-			// }
-			if dataInput.TransactionId != 0 {
-				q.And("assorted_sale_record.transaction_id = ?", dataInput.TransactionId)
-			}
-			if dataInput.OrderId != 0 {
-				q.And("assorted_sale_record.order_id = ?", dataInput.OrderId)
-			}
-			q.And("assorted_sale_record.refund_id = ?", dataInput.RefundId)
-			if dataInput.StartAt != "" && dataInput.EndAt != "" {
-				st, _ := time.Parse("2006-01-02 15:04:05", dataInput.StartAt)
-				et, _ := time.Parse("2006-01-02 15:04:05", dataInput.EndAt)
-				h, _ := time.ParseDuration("-8h")
-				q.And("assorted_sale_record.transaction_create_date >= ?", st.Add(h)).And("assorted_sale_record.transaction_create_date < ?", et.Add(h))
-			}
-			return q
-		}
-		if err := query().Limit(maxResultCount, skipCount).Find(&assortedSaleRecordAndDtls); err != nil {
-			return nil, err
-		}
-		for _, assortedSaleRecordAndDtl := range assortedSaleRecordAndDtls {
-			check := true
-			for _, saleRecord := range saleRecords {
-				if assortedSaleRecordAndDtl.AssortedSaleRecord.OrderId == saleRecord.OrderId && assortedSaleRecordAndDtl.AssortedSaleRecord.RefundId == saleRecord.RefundId {
-					check = false
-				}
-			}
-			if len(saleRecords) == 0 || check {
-				saleRecords = append(saleRecords, assortedSaleRecordAndDtl.AssortedSaleRecord)
-			}
-			saleRecordsDtl = append(saleRecordsDtl, assortedSaleRecordAndDtl.AssortedSaleRecordDtl)
-		}
-		if len(assortedSaleRecordAndDtls) < maxResultCount {
-			break
-		} else {
-			skipCount += maxResultCount
-		}
+	dataInput := ctx.Value("data").(models.RequestInput)
+
+	if dataInput.TransactionId == 0 {
+		return nil, errors.New("ETL-Extract:TransactionId is zero.")
 	}
 
-	for i, saleRecord := range saleRecords {
-		saleRecordPayments := make([]models.AssortedSaleRecordPayment, 0)
-		if err := factory.GetSrEngine().Table("assorted_sale_record_payment").Where("transaction_id=?", saleRecord.TransactionId).Find(&saleRecordPayments); err != nil {
-			return nil, err
-		}
-		saleRecords[i].AssortedSaleRecordPayments = saleRecordPayments
-		for _, saleRecordDtl := range saleRecordsDtl {
-			if saleRecordDtl.TransactionId != saleRecord.TransactionId {
-				continue
-			}
-			saleRecords[i].AssortedSaleRecordDtls = append(saleRecords[i].AssortedSaleRecordDtls, saleRecordDtl)
-		}
+	var assortedSaleRecord models.AssortedSaleRecord
+	query := func() xorm.Interface {
+		q := factory.GetSrEngine().Table("assorted_sale_record").
+			Where("assorted_sale_record.transaction_id = ?", dataInput.TransactionId)
+		return q
+	}
+	if has, err := query().Get(&assortedSaleRecord); err != nil {
+		return nil, err
+	} else if !has {
+		return nil, errors.New("Search saleRecord error.")
 	}
 
-	return saleRecords, nil
+	saleRecordDtls := make([]models.AssortedSaleRecordDtl, 0)
+	if err := factory.GetSrEngine().Table("assorted_sale_record_dtl").Where("transaction_id=?", assortedSaleRecord.TransactionId).Find(&saleRecordDtls); err != nil {
+		return nil, err
+	}
+	assortedSaleRecord.AssortedSaleRecordDtls = saleRecordDtls
+	saleRecordPayments := make([]models.AssortedSaleRecordPayment, 0)
+	if err := factory.GetSrEngine().Table("assorted_sale_record_payment").Where("transaction_id=?", assortedSaleRecord.TransactionId).Find(&saleRecordPayments); err != nil {
+		return nil, err
+	}
+	assortedSaleRecord.AssortedSaleRecordPayments = saleRecordPayments
+	return assortedSaleRecord, nil
 }
 
 // Transform ...
 func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
 	assortedSaleRecords, ok := source.([]*models.AssortedSaleRecord)
 	if !ok {
-		return nil, errors.New("Convert Failed")
+		return nil, errors.New("ETL-Transform:Convert Failed")
 	}
 	saleTransactions := make([]models.SaleTransaction, 0)
 	for _, assortedSaleRecord := range assortedSaleRecords {
@@ -179,18 +134,16 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 
 // Before ...
 func (etl SrToClearanceETL) Before(ctx context.Context, source interface{}) (interface{}, error) {
-	assortedSaleRecords, ok := source.([]models.AssortedSaleRecord)
+	assortedSaleRecord, ok := source.(models.AssortedSaleRecord)
 	if !ok {
-		return nil, errors.New("Convert Failed")
+		return nil, errors.New("ETL-Before:Convert Failed")
 	}
 	newAssortedSaleRecords := make([]*models.AssortedSaleRecord, 0)
-	for _, assortedSaleRecord := range assortedSaleRecords {
-		result, err := (&assortedSaleRecord).SplitSaleRecordByBrand(nil)
-		if err != nil {
-			return nil, err
-		}
-		newAssortedSaleRecords = append(newAssortedSaleRecords, result...)
+	result, err := (&assortedSaleRecord).SplitSaleRecordByBrand(nil)
+	if err != nil {
+		return nil, err
 	}
+	newAssortedSaleRecords = append(newAssortedSaleRecords, result...)
 	return newAssortedSaleRecords, nil
 }
 
@@ -207,7 +160,7 @@ func (etl SrToClearanceETL) Load(ctx context.Context, source interface{}) error 
 	}
 	saleTransactions, ok := source.([]models.SaleTransaction)
 	if !ok {
-		return errors.New("Convert Failed")
+		return errors.New("ETL-Load:Convert Failed")
 	}
 
 	engine := factory.GetCfsrEngine()
