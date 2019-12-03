@@ -59,7 +59,7 @@ func TestCTCETLTransform(t *testing.T) {
 			},
 		}
 		//param >>> storeId
-		store, _ := models.Store{}.GetStore(1)
+		store, _ := models.Store{}.GetStore(1, false)
 
 		saleMstsAndSaleDtls, err := ClearanceToCslETL{}.Transform(context.Background(), saleTAndSaleTDtls)
 		So(err, ShouldBeNil)
@@ -94,7 +94,7 @@ func TestClearanceToCslETL(t *testing.T) {
 }
 
 func TestSaleNoLogic(t *testing.T) {
-	store, _ := models.Store{}.GetStore(1)
+	store, _ := models.Store{}.GetStore(1, false)
 	setUpRestAPIStubFixture()
 	Convey("First add data with the SaleNo test19081289999", t, func() {
 		saleMstsAndSaleDtls := models.SaleMstsAndSaleDtls{

@@ -113,9 +113,11 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 	saleDtls := make([]models.SaleDtl, 0)
 	salePayments := make([]models.SalePayment, 0)
 	staffSaleRecords := make([]models.StaffSaleRecord, 0)
+	local, _ := time.ParseDuration("8h")
 	for _, saleTransaction := range saleTAndSaleTDtls.SaleTransactions {
 		baseTrimCode = "A"
-		saleDate := saleTransaction.SaleDate.Format("20060102")
+		localSaleDate := (saleTransaction.UpdatedAt).Add(local)
+		saleDate := localSaleDate.Format("20060102")
 		saleNo = ""
 		seqNo = 0
 		if saleTransaction.ShopCode == "" || saleDate == "" {
