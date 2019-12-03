@@ -288,7 +288,8 @@ func (CslSaleMstStruct) GetCslSaleMst(brandCode, shopCode, startSaleDate, endSal
 			"	,InUserID 						AS InUserID"+
 			"	,SaleOfficeCode 				AS SaleOfficeCode"+
 			"	FROM SaleMst WITH(NOLOCK)"+
-			"	WHERE 1 = 1 ",
+			"	WHERE 1 = 1 "+
+			"	AND (SaleOfficeCode IS NULL OR SaleOfficeCode<>'P009')",
 		brandCode, shopCode, startSaleDate, endSaleDate, deptStoreReceiptNo, saleNo)
 	shopCodeList := ""
 	brandCodeList := ""
