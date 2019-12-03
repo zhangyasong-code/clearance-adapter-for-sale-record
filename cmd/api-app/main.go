@@ -222,6 +222,7 @@ func main() {
 				controllers.TransactionController{}.Init(e.Group("/v1/transaction"))
 				controllers.CslTransactionController{}.Init(e.Group("/v1/csl/transaction"))
 				controllers.CslRefundController{}.Init(e.Group("/v1/csl/refund"))
+				controllers.CslSellController{}.Init(e.Group("/v1/csl/sell"))
 				e.Pre(middleware.RemoveTrailingSlash())
 				e.Use(middleware.Recover())
 				e.Use(middleware.CORS())
