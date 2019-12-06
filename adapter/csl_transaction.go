@@ -96,7 +96,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 	var dtSeq, colleaguesId, saleQty, seqNo int64
 	var saleEventNormalSaleRecognitionChk bool
 	var saleMode, eANCode, normalSaleTypeCode, useMileageSettleType, offerNo, couponNo,
-		inUserID, itemIds, baseTrimCode, saleNo string
+		inUserID, itemIds, baseTrimCode, saleNo, custBrandCode, inUserName string
 	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo, preSaleDtSeq sql.NullInt64
 	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode,
 		secondaryEventSettleTypeCode, preSaleNo, creditCardFirmCode, custNo,
@@ -200,27 +200,33 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			}
 			preSaleNo = sql.NullString{successDtls[0].SaleNo, true}
 		}
-		//get mileage
-		mileage, err := models.PostMileage{}.GetMileage(saleTransaction.CustomerId, saleTransaction.TransactionId)
-		if err != nil {
-			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-				SaleTransactionId: saleTransaction.Id,
-				OrderId:           saleTransaction.OrderId,
-				RefundId:          saleTransaction.RefundId,
-				StoreId:           saleTransaction.StoreId,
-				TransactionId:     saleTransaction.TransactionId,
-				CreatedBy:         "API",
-				Error:             err.Error() + " TransactionId:" + strconv.FormatInt(saleTransaction.TransactionId, 10),
-				Details:           "查询PostMileage失败！",
-			}
-			if err := SaleRecordIdFailMapping.Save(); err != nil {
-				return nil, err
-			}
-			continue
-		}
+		custBrandCode = ""
 		custGradeCode = sql.NullString{"", false}
-		if mileage.GradeId != 0 {
-			custGradeCode = sql.NullString{strconv.FormatInt(mileage.GradeId, 10), true}
+		custNo = sql.NullString{"", false}
+		if saleTransaction.CustomerId != 0 {
+			custNo = sql.NullString{strconv.FormatInt(saleTransaction.CustomerId, 10), true}
+			//get mileage
+			mileage, err := models.PostMileage{}.GetMileage(saleTransaction.CustomerId, saleTransaction.TransactionId)
+			if err != nil {
+				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+					SaleTransactionId: saleTransaction.Id,
+					OrderId:           saleTransaction.OrderId,
+					RefundId:          saleTransaction.RefundId,
+					StoreId:           saleTransaction.StoreId,
+					TransactionId:     saleTransaction.TransactionId,
+					CreatedBy:         "API",
+					Error:             err.Error() + " TransactionId:" + strconv.FormatInt(saleTransaction.TransactionId, 10),
+					Details:           "查询PostMileage失败！",
+				}
+				if err := SaleRecordIdFailMapping.Save(); err != nil {
+					return nil, err
+				}
+				continue
+			}
+			custBrandCode = mileage.BrandCode
+			if mileage.GradeId != 0 {
+				custGradeCode = sql.NullString{strconv.FormatInt(mileage.GradeId, 10), true}
+			}
 		}
 		if strings.ToUpper(saleTransaction.TransactionChannelType) == "POS" && saleTransaction.TransactionCreatedId != 0 {
 			colleaguesId = saleTransaction.TransactionCreatedId
@@ -247,44 +253,45 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		} else {
 			inUserID = InUserID
 		}
-		salesPerson, err := models.Employee{}.GetEmployee(saleTransaction.SalesmanId)
-		if err != nil {
-			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-				SaleTransactionId: saleTransaction.Id,
-				OrderId:           saleTransaction.OrderId,
-				RefundId:          saleTransaction.RefundId,
-				StoreId:           saleTransaction.StoreId,
-				TransactionId:     saleTransaction.TransactionId,
-				CreatedBy:         "API",
-				Error:             err.Error() + " SalesmanId:" + strconv.FormatInt(saleTransaction.SalesmanId, 10),
-				Details:           "销售员信息不存在！",
+
+		inUserName = ""
+		if saleTransaction.SalesmanId != 0 {
+			salesPerson, err := models.Employee{}.GetEmployee(saleTransaction.SalesmanId)
+			if err != nil {
+				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+					SaleTransactionId: saleTransaction.Id,
+					OrderId:           saleTransaction.OrderId,
+					RefundId:          saleTransaction.RefundId,
+					StoreId:           saleTransaction.StoreId,
+					TransactionId:     saleTransaction.TransactionId,
+					CreatedBy:         "API",
+					Error:             err.Error() + " SalesmanId:" + strconv.FormatInt(saleTransaction.SalesmanId, 10),
+					Details:           "销售员信息不存在！",
+				}
+				if err := SaleRecordIdFailMapping.Save(); err != nil {
+					return nil, err
+				}
+				continue
 			}
-			if err := SaleRecordIdFailMapping.Save(); err != nil {
-				return nil, err
+			// colleague, err := models.Colleagues{}.GetColleaguesAuth(0, salesPerson.EmpId)
+			userInfo, err := models.UserInfo{}.GetUserInfo(salesPerson.EmpId)
+			if err != nil {
+				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+					SaleTransactionId: saleTransaction.Id,
+					OrderId:           saleTransaction.OrderId,
+					RefundId:          saleTransaction.RefundId,
+					StoreId:           saleTransaction.StoreId,
+					TransactionId:     saleTransaction.TransactionId,
+					CreatedBy:         "API",
+					Error:             err.Error() + " EmpId:" + salesPerson.EmpId,
+					Details:           "UserInfo信息不存在！",
+				}
+				if err := SaleRecordIdFailMapping.Save(); err != nil {
+					return nil, err
+				}
+				continue
 			}
-			continue
-		}
-		// colleague, err := models.Colleagues{}.GetColleaguesAuth(0, salesPerson.EmpId)
-		userInfo, err := models.UserInfo{}.GetUserInfo(salesPerson.EmpId)
-		if err != nil {
-			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-				SaleTransactionId: saleTransaction.Id,
-				OrderId:           saleTransaction.OrderId,
-				RefundId:          saleTransaction.RefundId,
-				StoreId:           saleTransaction.StoreId,
-				TransactionId:     saleTransaction.TransactionId,
-				CreatedBy:         "API",
-				Error:             err.Error() + " EmpId:" + salesPerson.EmpId,
-				Details:           "UserInfo信息不存在！",
-			}
-			if err := SaleRecordIdFailMapping.Save(); err != nil {
-				return nil, err
-			}
-			continue
-		}
-		custNo = sql.NullString{"", false}
-		if saleTransaction.CustomerId != 0 {
-			custNo = sql.NullString{strconv.FormatInt(saleTransaction.CustomerId, 10), true}
+			inUserName = userInfo.UserName
 		}
 		obtainMileage = saleTransaction.ObtainMileage
 		saleAmt = saleTransaction.TotalListPrice
@@ -307,7 +314,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			CustDivisionCode:            sql.NullString{"", false},
 			MileageCustChangeStatusCode: sql.NullString{"", false},
 			CustGradeCode:               custGradeCode,
-			CustBrandCode:               mileage.BrandCode,
+			CustBrandCode:               custBrandCode,
 			PreSaleNo:                   preSaleNo,
 			SaleAmt:                     saleAmt,
 			ObtainMileage:               obtainMileage,
@@ -408,6 +415,9 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 
 				if offerNo != "" && couponNo == "" {
 					promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(offerNo)
+					if promotionEvent.EventNo == "" {
+						err = errors.New("PromotionEvent的EventNo为空!")
+					}
 					if err != nil {
 						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 							SaleTransactionId: saleTransaction.Id,
@@ -417,7 +427,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 							TransactionId:     saleTransactionDtl.TransactionId,
 							TransactionDtlId:  saleTransactionDtl.TransactionDtlId,
 							CreatedBy:         "API",
-							Error:             err.Error() + " OfferNo:" + offerNo,
+							Error:             err.Error() + " OfferNo:" + offerNo + " EventNo:" + promotionEvent.EventNo,
 							Details:           "商品参加的活动不存在！",
 						}
 						if err := SaleRecordIdFailMapping.Save(); err != nil {
@@ -753,8 +763,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					PreSaleDtSeq:                      preSaleDtSeq,
 					NormalFeeRate:                     normalFeeRate,
 					SaleEventFeeRate:                  saleEventFeeRate,
-					InUserID:                          userInfo.UserName,
-					ModiUserID:                        userInfo.UserName,
+					InUserID:                          inUserName,
+					ModiUserID:                        inUserName,
 					SendState:                         "",
 					SendFlag:                          NotSynChronized,
 					DiscountAmt:                       discountAmt,
