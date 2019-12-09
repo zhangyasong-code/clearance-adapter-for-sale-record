@@ -535,3 +535,24 @@ func (SaleMst) GetCslMstBySaleNo(ctx context.Context, saleNo string) ([]SaleMst,
 	}
 	return saleMsts, nil
 }
+
+func (SaleMst) GetCslCustomer(ctx context.Context, brandCode string, custNo string) (string, error) {
+	if brandCode == "" || custNo == "" {
+		return "", errors.New(" custNo or brandCode is null")
+	}
+	var telNos []string
+	sql := "SELECT TelNo from Customer where BrandCode = " + "'" + brandCode + "'" + "and CustNo = " + "'" + custNo + "'"
+
+	if err := factory.GetCSLEngine().SQL(sql).Find(&telNos); err != nil {
+		return "", err
+	}
+	if len(telNos) != 0 {
+		return telNos[0], nil
+	} else {
+		logrus.WithFields(logrus.Fields{
+			"brandCode": brandCode,
+			"custNo":    custNo,
+		}).Error("Fail to GetSupGroupCode")
+		return "", errors.New("GetCslCustomer error!")
+	}
+}
