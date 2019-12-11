@@ -23,6 +23,8 @@ type CslSellStruct struct {
 
 type CslSaleMstStruct struct {
 	SaleNo               string             `json:"saleNo" xorm:"index"`
+	BranchCode           string             `json:"branchCode"`
+	ShopName             string             `json:"shopName"`
 	DepartStoreReceiptNo string             `json:"departStoreReceiptNo"`
 	SaleMode             string             `json:"saleMode"`
 	BrandCode            string             `json:"brandCode"`
@@ -41,6 +43,10 @@ type CslSaleMstStruct struct {
 	UseMileage           float64            `json:"useMileage"`
 	PaymentName          string             `json:"paymentName"`
 	PrimaryEventName     string             `json:"primaryEventName"` //积分Event
+	SaleManId            int64              `query:"saleManId" json:"saleManId"`
+	PreSaleNo            string             `query:"preSaleNo" json:"preSaleNo"`
+	RefundReason         string             `query:"refundReason" json:"refundReason"`
+	Msl2Message          string             `query:"msl2Message" json:"msl2Message"`
 	SaleDtls             []CslSaleDtlStruct `json:"saleDtls"`
 }
 
@@ -75,7 +81,9 @@ func (CslSaleDtlStruct) GetCslSaleDtl(saleNo string) (interface{}, error) {
 		set @saleNo = cast(? as char(15))
 		select  
 		A.SaleNo    					AS SaleNo  
-		, C.UserName 				AS UserName 
+		, B.BranchCode					AS BranchCode
+		, B.ShopName					AS ShopName
+		, C.UserName 					AS UserName 
 		, D.CustName					AS CustName 
 		, A.SaleMode          			AS SaleMode
 		, A.Dates    					AS Dates
@@ -94,6 +102,8 @@ func (CslSaleDtlStruct) GetCslSaleDtl(saleNo string) (interface{}, error) {
 		, A.CustNo 						AS CustNo
 		, G.EventName 					AS PrimaryEventName
 		FROM SaleMst A WITH(NOLOCK)
+		INNER JOIN Shop B
+		ON A.BrandCode=B.BrandCode AND A.ShopCode=B.ShopCode
 		LEFT JOIN UserInfo C WITH(NOLOCK)
 		ON A.InUserID=C.UserID
 		LEFT JOIN Customer D WITH(NOLOCK)
@@ -131,6 +141,8 @@ func (CslSaleDtlStruct) GetCslSaleDtl(saleNo string) (interface{}, error) {
 			cslSaleMstStruct.UseMileage = number.ToFixed(useMileage, nil)
 		}
 		cslSaleMstStruct.SaleNo = string(value["SaleNo"])
+		cslSaleMstStruct.BranchCode = string(value["BranchCode"])
+		cslSaleMstStruct.ShopName = string(value["ShopName"])
 		cslSaleMstStruct.Dates = string(value["Dates"])
 		cslSaleMstStruct.DepartStoreReceiptNo = string(value["DepartStoreReceiptNo"])
 		cslSaleMstStruct.BrandCode = string(value["BrandCode"])

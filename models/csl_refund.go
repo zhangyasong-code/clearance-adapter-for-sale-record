@@ -88,7 +88,6 @@ type CslRefundInput struct {
 }
 
 func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate, endSaleDate, saleNo, deptStoreReceiptNo, customerNo, productCode string) (interface{}, error) {
-	return "", errors.New("暂停使用")
 	var cslRefundDtls []CslRefundDtl
 	var targetReturnDtailSaleMap []map[string][]byte
 	engine := factory.GetCSLEngine()
@@ -238,7 +237,6 @@ func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate
 }
 
 func (CslRefundDtl) GetCslSaleForReturn(brandCode, shopCode, startSaleDate, endSaleDate, saleNo, deptStoreReceiptNo, customerNo, productCode string) (interface{}, error) {
-	return "", errors.New("暂停使用")
 	var cslRefundDtls []CslRefundDtl
 	var targetReturnSaleMap []map[string][]byte
 	saleNo = deptStoreReceiptNo
@@ -318,32 +316,26 @@ const (
 	InUserID         = "MSLV2"
 )
 
-func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefundInput) error {
-	return errors.New("暂停使用")
-	var endSeq int
-	var dtSeq, saleQty int64 //colleaguesId
-	var saleEventNormalSaleRecognitionChk bool
-	var refundedObtainMileage float64
-	var startStr, strSeqNo, saleMode, eANCode, normalSaleTypeCode, useMileageSettleType,
-		inUserID, paymentCode string //itemIds, baseTrimCode,payCreditCardFirmCode, offerNo, couponNo
-	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo, preSaleDtSeq sql.NullInt64
-	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode,
-		secondaryEventSettleTypeCode, preSaleNo, custNo, custCardNo,
-		custGradeCode, complexShopSeqNo sql.NullString
-	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
-		discountAmt, actualSaleAmt, saleEventFee, normalFee, normalFeeRate, saleEventFeeRate, eventAutoDiscountAmt,
-		eventDecisionDiscountAmt, chinaFISaleAmt, estimateSaleAmt, useMileage, sellingAmt, discountAmtAsCost, saleAmt, normalPrice, shopEmpEstimateSaleAmt, paymentAmt float64
-
-	saleMsts := make([]SaleMst, 0)
-	saleDtls := make([]SaleDtl, 0)
-	salePayments := make([]SalePayment, 0)
+func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslSaleMstStruct) error {
 	saleDate := time.Now().Format("20060102")
-	inUserID = cslRefundInput.CslRefundDtls[0].InUserID
-	saleMstForQty, err := SaleMst{}.GetCslMstBySaleNo(ctx, cslRefundInput.CslRefundMst.PreSaleNo)
+	var saleDtls []SaleDtl
+	var saleMst SaleMst
+	preSaleMst := SaleMst{}
+	preSaleMstList, err := SaleMst{}.GetCslMstBySaleNo(ctx, cslRefundInput.PreSaleNo)
 	if err != nil {
 		return err
 	}
-	lastSeq, err := SaleMst{}.GetlastSeq(cslRefundInput.CslRefundDtls[0].ShopCode, saleDate, MSLV1_REFUND_POS)
+	if len(preSaleMstList) > 0 {
+		preSaleMst = preSaleMstList[0]
+	} else {
+		return errors.New("没有找到CSL原单编号：" + cslRefundInput.PreSaleNo)
+	}
+	preSaleDtls, err := SaleDtl{}.GetCslDtlBySaleNos(ctx, cslRefundInput.PreSaleNo)
+	if err != nil {
+		return err
+	}
+	//----------------------------。
+	lastSeq, err := SaleMst{}.GetlastSeq(cslRefundInput.ShopCode, saleDate, MSLV1_REFUND_POS)
 	if err != nil {
 		return err
 	}
@@ -351,12 +343,8 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 	if err != nil {
 		return err
 	}
-	endSeq = seq
-	startStr = str
-	roundSetting := &number.Setting{
-		RoundDigit:    0,
-		RoundStrategy: "round",
-	}
+	endSeq := seq
+	startStr := str
 	//Get SequenceNumber
 	sequenceNumber, nextSeq, str, err := SaleMst{}.GetSequenceNumber(endSeq, startStr)
 	if err != nil {
@@ -364,10 +352,10 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 	}
 	endSeq = nextSeq
 	startStr = str
-	saleNo := cslRefundInput.CslRefundDtls[0].ShopCode + saleDate[len(saleDate)-6:len(saleDate)] + MSLV1_REFUND_POS + sequenceNumber
+	saleNo := cslRefundInput.ShopCode + saleDate[len(saleDate)-6:len(saleDate)] + MSLV1_REFUND_POS + sequenceNumber
 
 	//get SeqNo
-	strSeqNo = ""
+	strSeqNo := ""
 	startStrs := []string{"A", "B", "C", "D", "E", "F", "G"}
 	for _, startStr := range startStrs {
 		if strings.HasPrefix(sequenceNumber, startStr) {
@@ -381,24 +369,8 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 	if err != nil {
 		return err
 	}
-	saleMode = ""
-	complexShopSeqNo = sql.NullString{"", false}
-
-	preSaleNo = sql.NullString{"", false}
-
-	saleMode = Refund
-	preSaleNo = sql.NullString{cslRefundInput.CslRefundMst.PreSaleNo, true}
-	// get mileage
-	if cslRefundInput.CslRefundDtls[0].ObtainMileage != 0 {
-		for _, cslRefundDtl := range cslRefundInput.CslRefundDtls {
-			refundDtlProportion := number.ToFixed(float64(cslRefundDtl.RefundQty)/float64(saleMstForQty[0].SaleQty), nil)
-			refundDtlObtainMileage := number.ToFixed(refundDtlProportion*cslRefundDtl.ObtainMileage, roundSetting)
-			refundedObtainMileage += refundDtlObtainMileage
-		}
-		refundedObtainMileage = number.ToFixed(refundedObtainMileage, nil)
-	}
-	custGradeCode = sql.NullString{"", false}
-	salesPerson, err := Employee{}.GetEmployee(cslRefundInput.CslRefundMst.SaleManId)
+	//获取CSL销售人
+	salesPerson, err := Employee{}.GetEmployee(cslRefundInput.SaleManId)
 	if err != nil {
 		return err
 	}
@@ -406,236 +378,14 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 	if err != nil {
 		return err
 	}
-	custNo = sql.NullString{"", false}
-	custCardNo = sql.NullString{"", false}
-	if cslRefundInput.CslRefundDtls[0].CustomerNo != "" {
-		custNo = sql.NullString{cslRefundInput.CslRefundDtls[0].CustomerNo, true}
-	}
-	if cslRefundInput.CslRefundDtls[0].CustomerCardNo != "" {
-		custCardNo = sql.NullString{cslRefundInput.CslRefundDtls[0].CustomerCardNo, true}
-	}
-	saleAmt = cslRefundInput.CslRefundMst.RefundAmt
-	saleQty = cslRefundInput.CslRefundMst.RefundQty
-	saleAmt = saleAmt * -1
-	saleQty = saleQty * -1
-	saleMst := SaleMst{
-		SaleNo:                      saleNo,
-		SeqNo:                       seqNo,
-		PosNo:                       MSLV1_REFUND_POS,
-		Dates:                       saleDate,
-		ShopCode:                    cslRefundInput.CslRefundDtls[0].ShopCode,
-		SaleMode:                    saleMode,
-		CustNo:                      custNo,
-		CustCardNo:                  custCardNo,
-		PrimaryCustEventNo:          sql.NullInt64{0, false},
-		SecondaryCustEventNo:        sql.NullInt64{0, false},
-		DepartStoreReceiptNo:        cslRefundInput.CslRefundDtls[0].DepartStoreReceiptNo,
-		CustDivisionCode:            sql.NullString{"", false},
-		MileageCustChangeStatusCode: sql.NullString{"", false},
-		CustGradeCode:               custGradeCode,
-		CustBrandCode:               cslRefundInput.CslRefundDtls[0].CustBrandCode,
-		PreSaleNo:                   preSaleNo,
-		SaleQty:                     saleQty,
-		SaleAmt:                     saleAmt,
-		ObtainMileage:               refundedObtainMileage * -1,
-		InUserID:                    inUserID,
-		ModiUserID:                  inUserID,
-		SendState:                   "",
-		SendFlag:                    NotSynChronized,
-		DiscountAmtAsCost:           0,
-		ComplexShopSeqNo:            complexShopSeqNo,
-		SaleOfficeCode:              MSLv2_0,
-		Freight:                     sql.NullFloat64{0, false},
-		TMall_UseMileage:            sql.NullFloat64{0, false},
-		TMall_ObtainMileage:         sql.NullFloat64{0, false},
-		TransactionId:               0,
-		StoreId:                     0,
-		OrderId:                     0,
-		RefundId:                    0,
-		SaleTransactionId:           0,
-	}
-	dtSeq = 0
-	for _, cslRefundDtl := range cslRefundInput.CslRefundDtls {
-		dtSeq += 1
-		saleMst.BrandCode = cslRefundDtl.BrandCode
-		custMileagePolicy, err := CustMileagePolicy{}.GetCustMileagePolicy(cslRefundDtl.BrandCode)
-		if err != nil {
-			return err
-		}
-		if custMileagePolicy.CustMileagePolicyNo != 0 {
-			custMileagePolicyNo = sql.NullInt64{custMileagePolicy.CustMileagePolicyNo, true}
-		}
-		if cslRefundDtl.SaleEventNo != 0 {
-			eventNo = sql.NullInt64{cslRefundDtl.SaleEventNo, true}
-		} else {
-			eventNo = sql.NullInt64{0, false}
-		}
-		primaryCustEventNo = sql.NullInt64{0, false}
-		primaryEventTypeCode = sql.NullString{"", false}
-		secondaryCustEventNo = sql.NullInt64{0, false}
-		secondaryEventTypeCode = sql.NullString{"", false}
-		eventTypeCode = sql.NullString{"", false}
-		saleEventSaleBaseAmt = 0
-		saleEventDiscountBaseAmt = 0
-		normalSaleTypeCode = cslRefundDtl.NormalSaleTypeCode
-		saleEventAutoDiscountAmt = 0
-		saleEventManualDiscountAmt = 0
-		saleVentDecisionDiscountAmt = 0
-		discountAmt = 0
-		primaryEventSettleTypeCode = sql.NullString{"", false}
-		secondaryEventSettleTypeCode = sql.NullString{"", false}
-		useMileageSettleType = "1"
-		// offerNo = ""
-		// couponNo = ""
-		saleEventFee = 0
-		normalFee = 0
-		normalFeeRate = 0
-		saleEventFeeRate = 0
-		eventAutoDiscountAmt = 0
-		eventDecisionDiscountAmt = 0
-		chinaFISaleAmt = 0
-		estimateSaleAmt = 0
-		useMileage = 0
-		sellingAmt = 0
-		discountAmtAsCost = 0
-		saleQty = 0
-		saleAmt = 0
-		saleEventNormalSaleRecognitionChk = false
-		if cslRefundDtl.UseMileage != 0 {
-			refundDtlProportion := number.ToFixed(float64(cslRefundDtl.RefundQty)/float64(cslRefundDtl.SaleQty), nil)
-			useMileage = number.ToFixed(refundDtlProportion*cslRefundDtl.UseMileage, roundSetting)
-		}
-		eANCode = cslRefundDtl.EanCode
-		priceTypeCode, err := SaleMst{}.GetPriceTypeCode(cslRefundDtl.BrandCode, cslRefundDtl.StyleCode)
-		if err != nil {
-			return err
-		}
-		supGroupCode, err := SaleMst{}.GetSupGroupCode(cslRefundDtl.BrandCode, cslRefundDtl.StyleCode)
-		if err != nil {
-			return err
-		}
-		preSaleDtSeq = sql.NullInt64{cslRefundDtl.PreSaleDtSeq, true}
-		discountAmt = cslRefundDtl.DiscountAmt
-		estimateSaleAmt = cslRefundDtl.RefundAmt
-		sellingAmt = cslRefundDtl.RefundAmt
-		chinaFISaleAmt = cslRefundDtl.RefundAmt
-		normalPrice = cslRefundDtl.SalePrice
-		saleQty = cslRefundDtl.RefundQty
-		saleAmt = cslRefundDtl.RefundAmt
+	//----------------------------》
+	saleMode := ""
+	complexShopSeqNo := sql.NullString{"", false}
+	preSaleNo := sql.NullString{"", false}
 
-		normalPrice = normalPrice * -1
-		saleQty = saleQty * -1
-		saleAmt = saleAmt * -1
-		eventAutoDiscountAmt = eventAutoDiscountAmt * -1
-		eventDecisionDiscountAmt = eventDecisionDiscountAmt * -1
-		saleEventAutoDiscountAmt = saleEventAutoDiscountAmt * -1
-		saleEventManualDiscountAmt = saleEventManualDiscountAmt * -1
-		saleVentDecisionDiscountAmt = saleVentDecisionDiscountAmt * -1
-		chinaFISaleAmt = sellingAmt * -1
-		estimateSaleAmt = sellingAmt * -1
-		sellingAmt = sellingAmt * -1
-		normalFee = normalFee * -1
-		saleEventFee = saleEventFee * -1
-		actualSaleAmt = sellingAmt * -1
-		useMileage = useMileage * -1
-		discountAmt = discountAmt * -1
-		shopEmpEstimateSaleAmt = sellingAmt * -1
-		saleDtl := SaleDtl{
-			SaleNo:                            saleNo,
-			ShopCode:                          cslRefundDtl.ShopCode,
-			BrandCode:                         cslRefundDtl.BrandCode,
-			DtSeq:                             dtSeq,
-			CustMileagePolicyNo:               custMileagePolicyNo,
-			SeqNo:                             seqNo,
-			Dates:                             saleDate,
-			PosNo:                             MSLV1_REFUND_POS,
-			NormalSaleTypeCode:                normalSaleTypeCode,
-			PrimaryCustEventNo:                primaryCustEventNo,
-			PrimaryEventTypeCode:              primaryEventTypeCode,
-			PrimaryEventSettleTypeCode:        primaryEventSettleTypeCode,
-			SecondaryCustEventNo:              secondaryCustEventNo,
-			SecondaryEventTypeCode:            secondaryEventTypeCode,
-			SecondaryEventSettleTypeCode:      secondaryEventSettleTypeCode,
-			SaleEventNo:                       eventNo,
-			SaleEventTypeCode:                 eventTypeCode,
-			SaleReturnReasonCode:              sql.NullString{"", false},
-			ProdCode:                          cslRefundDtl.ProdCode,
-			EANCode:                           eANCode,
-			PriceTypeCode:                     priceTypeCode,
-			SupGroupCode:                      supGroupCode,
-			SaipType:                          SaipType,
-			NormalPrice:                       normalPrice,
-			Price:                             normalPrice,
-			PriceDecisionDate:                 saleDate,
-			SaleQty:                           saleQty,
-			SaleAmt:                           saleAmt + useMileage,
-			EventAutoDiscountAmt:              eventAutoDiscountAmt,
-			EventDecisionDiscountAmt:          eventDecisionDiscountAmt,
-			SaleEventSaleBaseAmt:              saleEventSaleBaseAmt,
-			SaleEventDiscountBaseAmt:          saleEventDiscountBaseAmt,
-			SaleEventNormalSaleRecognitionChk: saleEventNormalSaleRecognitionChk,
-			SaleEventInterShopSalePermitChk:   false,
-			SaleEventAutoDiscountAmt:          saleEventAutoDiscountAmt,
-			SaleEventManualDiscountAmt:        saleEventManualDiscountAmt,
-			SaleVentDecisionDiscountAmt:       saleVentDecisionDiscountAmt,
-			ChinaFISaleAmt:                    chinaFISaleAmt,
-			EstimateSaleAmt:                   estimateSaleAmt,
-			SellingAmt:                        sellingAmt,
-			NormalFee:                         normalFee,
-			SaleEventFee:                      saleEventFee,
-			ActualSaleAmt:                     actualSaleAmt,
-			UseMileage:                        useMileage,
-			PreSaleNo:                         preSaleNo,
-			PreSaleDtSeq:                      preSaleDtSeq,
-			NormalFeeRate:                     normalFeeRate,
-			SaleEventFeeRate:                  saleEventFeeRate,
-			InUserID:                          userInfo.UserName,
-			ModiUserID:                        userInfo.UserName,
-			SendState:                         "",
-			SendFlag:                          NotSynChronized,
-			DiscountAmt:                       useMileage,
-			DiscountAmtAsCost:                 discountAmtAsCost,
-			UseMileageSettleType:              useMileageSettleType,
-			EstimateSaleAmtForConsumer:        estimateSaleAmt,
-			SaleEventDiscountAmtForConsumer:   saleVentDecisionDiscountAmt,
-			ShopEmpEstimateSaleAmt:            shopEmpEstimateSaleAmt,
-			PromotionID:                       sql.NullInt64{0, false},
-			TMallEventID:                      sql.NullInt64{0, false},
-			TMall_ObtainMileage:               sql.NullFloat64{0, false},
-			SaleOfficeCode:                    MSLv2_0,
-			OrderItemId:                       0,
-			RefundItemId:                      0,
-			TransactionDtlId:                  0,
-			StyleCode:                         cslRefundDtl.StyleCode,
-			SaleTransactionId:                 0,
-			SaleTransactionDtlId:              0,
-			TransactionId:                     0,
-		}
-		saleDtls = append(saleDtls, saleDtl)
+	saleMode = Refund
+	preSaleNo = sql.NullString{cslRefundInput.PreSaleNo, true}
 
-	}
-	//set value for saleMst "UseMileage", "SellingAmt","ChinaFISaleAmt","ActualSaleAmt"
-	saleMst.CustMileagePolicyNo = custMileagePolicyNo
-	saleMst.UseMileage = 0
-	saleMst.SellingAmt = 0
-	saleMst.DiscountAmt = 0
-	saleMst.ChinaFISaleAmt = 0
-	saleMst.ActualSaleAmt = 0
-	saleMst.EstimateSaleAmt = 0
-	saleMst.ShopEmpEstimateSaleAmt = 0
-	saleMst.SaleAmt = 0
-	for _, saleDtl := range saleDtls {
-		if saleMst.SaleNo == saleDtl.SaleNo {
-			saleMst.UseMileage += saleDtl.UseMileage
-			saleMst.SellingAmt += saleDtl.SellingAmt
-			saleMst.ChinaFISaleAmt += saleDtl.SellingAmt
-			saleMst.ActualSaleAmt += saleDtl.SellingAmt
-			saleMst.EstimateSaleAmt += saleDtl.SellingAmt
-			saleMst.DiscountAmt += saleDtl.DiscountAmt
-			saleMst.ShopEmpEstimateSaleAmt += saleDtl.SellingAmt
-			saleMst.SaleAmt += saleDtl.SaleAmt
-		}
-	}
 	saleMst.UseMileage = number.ToFixed(saleMst.UseMileage, nil)
 	saleMst.SellingAmt = number.ToFixed(saleMst.SellingAmt, nil)
 	saleMst.DiscountAmt = number.ToFixed(saleMst.DiscountAmt, nil)
@@ -644,25 +394,148 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 	saleMst.EstimateSaleAmt = number.ToFixed(saleMst.EstimateSaleAmt, nil)
 	saleMst.ShopEmpEstimateSaleAmt = number.ToFixed(saleMst.ShopEmpEstimateSaleAmt, nil)
 	saleMst.FeeAmt = number.ToFixed(saleMst.FeeAmt, nil)
-	saleMst.EstimateSaleAmtForConsumer = saleMst.EstimateSaleAmt
-	saleMst.ActualSellingAmt = saleMst.SellingAmt
-	paymentCode = "11"
-	paymentAmt = cslRefundInput.CslRefundMst.RefundAmt * -1
-	// }
+	saleMst.EstimateSaleAmtForConsumer = number.ToFixed(saleMst.EstimateSaleAmt, nil)
+	saleMst.ActualSellingAmt = number.ToFixed(saleMst.ActualSellingAmt, nil)
+
+	saleMst = SaleMst{
+		SaleNo:           saleNo,
+		SeqNo:            seqNo,
+		PosNo:            MSLV1_REFUND_POS,
+		Dates:            saleDate,
+		InUserID:         userInfo.UserName,
+		ModiUserID:       userInfo.UserName,
+		SaleMode:         saleMode,
+		PreSaleNo:        preSaleNo,
+		SaleOfficeCode:   MSLv2_0,
+		SendFlag:         NotSynChronized,
+		SendState:        "",
+		ShopCode:         preSaleMst.ShopCode,
+		CustNo:           preSaleMst.CustNo,
+		CustCardNo:       preSaleMst.CustCardNo,
+		CustGradeCode:    preSaleMst.CustGradeCode,
+		CustBrandCode:    preSaleMst.CustBrandCode,
+		SaleQty:          preSaleMst.SaleQty * -1,
+		SaleAmt:          preSaleMst.SaleAmt * -1,
+		ObtainMileage:    preSaleMst.ObtainMileage * -1,
+		EstimateSaleAmt:  preSaleMst.EstimateSaleAmt * -1,
+		ActualSellingAmt: preSaleMst.ActualSellingAmt * -1,
+		UseMileage:       preSaleMst.UseMileage * -1,
+		SellingAmt:       preSaleMst.SellingAmt * -1,
+		DiscountAmt:      preSaleMst.DiscountAmt * -1,
+		ChinaFISaleAmt:   preSaleMst.ChinaFISaleAmt * -1,
+		ActualSaleAmt:    preSaleMst.ActualSaleAmt * -1,
+		FeeAmt:           preSaleMst.FeeAmt * -1,
+		EstimateSaleAmtForConsumer:  preSaleMst.EstimateSaleAmtForConsumer * -1,
+		ShopEmpEstimateSaleAmt:      preSaleMst.ShopEmpEstimateSaleAmt * -1,
+		ComplexShopSeqNo:            complexShopSeqNo,
+		DiscountAmtAsCost:           0,
+		TransactionId:               0,
+		StoreId:                     0,
+		OrderId:                     0,
+		RefundId:                    0,
+		SaleTransactionId:           0,
+		DepartStoreReceiptNo:        "",
+		Freight:                     sql.NullFloat64{0, false},
+		TMall_UseMileage:            sql.NullFloat64{0, false},
+		TMall_ObtainMileage:         sql.NullFloat64{0, false},
+		PrimaryCustEventNo:          sql.NullInt64{0, false},
+		SecondaryCustEventNo:        sql.NullInt64{0, false},
+		CustDivisionCode:            sql.NullString{"", false},
+		MileageCustChangeStatusCode: sql.NullString{"", false},
+	}
+	var dtSeq int64 = 0
+	for _, preSaleDtl := range preSaleDtls {
+		dtSeq += 1
+		saleDtl := SaleDtl{
+			SaleNo:            saleNo,
+			DtSeq:             dtSeq,
+			SeqNo:             seqNo,
+			Dates:             saleDate,
+			InUserID:          userInfo.UserName,
+			ModiUserID:        userInfo.UserName,
+			PosNo:             MSLV1_REFUND_POS,
+			SaleOfficeCode:    MSLv2_0,
+			SendState:         "",
+			SendFlag:          NotSynChronized,
+			PriceDecisionDate: saleDate,
+			PreSaleNo:         preSaleNo,
+			PreSaleDtSeq:      sql.NullInt64{preSaleDtl.DtSeq, true},
+
+			StyleCode:                         preSaleDtl.StyleCode,
+			ShopCode:                          preSaleDtl.ShopCode,
+			BrandCode:                         preSaleDtl.BrandCode,
+			ProdCode:                          preSaleDtl.ProdCode,
+			EANCode:                           preSaleDtl.EANCode,
+			CustMileagePolicyNo:               preSaleDtl.CustMileagePolicyNo,
+			NormalSaleTypeCode:                preSaleDtl.NormalSaleTypeCode,
+			PrimaryCustEventNo:                preSaleDtl.PrimaryCustEventNo,
+			PrimaryEventTypeCode:              preSaleDtl.PrimaryEventTypeCode,
+			PrimaryEventSettleTypeCode:        preSaleDtl.PrimaryEventSettleTypeCode,
+			SecondaryCustEventNo:              preSaleDtl.SecondaryCustEventNo,
+			SecondaryEventTypeCode:            preSaleDtl.SecondaryEventTypeCode,
+			SecondaryEventSettleTypeCode:      preSaleDtl.SecondaryEventSettleTypeCode,
+			SaleEventNo:                       preSaleDtl.SaleEventNo,
+			SaleEventTypeCode:                 preSaleDtl.SaleEventTypeCode,
+			PriceTypeCode:                     preSaleDtl.PriceTypeCode,
+			SupGroupCode:                      preSaleDtl.SupGroupCode,
+			SaipType:                          preSaleDtl.SaipType,
+			UseMileageSettleType:              preSaleDtl.UseMileageSettleType,
+			SaleEventNormalSaleRecognitionChk: preSaleDtl.SaleEventNormalSaleRecognitionChk,
+
+			NormalPrice:                     preSaleDtl.NormalPrice,
+			Price:                           preSaleDtl.Price,
+			SaleQty:                         preSaleDtl.SaleQty * -1,
+			SaleAmt:                         preSaleDtl.SaleAmt * -1,
+			EventAutoDiscountAmt:            preSaleDtl.EventAutoDiscountAmt * -1,
+			EventDecisionDiscountAmt:        preSaleDtl.EventDecisionDiscountAmt * -1,
+			SaleEventSaleBaseAmt:            preSaleDtl.SaleEventSaleBaseAmt,
+			SaleEventDiscountBaseAmt:        preSaleDtl.SaleEventDiscountBaseAmt,
+			SaleEventAutoDiscountAmt:        preSaleDtl.SaleEventAutoDiscountAmt * -1,
+			SaleEventManualDiscountAmt:      preSaleDtl.SaleEventManualDiscountAmt * -1,
+			SaleVentDecisionDiscountAmt:     preSaleDtl.SaleVentDecisionDiscountAmt * -1,
+			ChinaFISaleAmt:                  preSaleDtl.ChinaFISaleAmt * -1,
+			EstimateSaleAmt:                 preSaleDtl.EstimateSaleAmt * -1,
+			SellingAmt:                      preSaleDtl.SellingAmt * -1,
+			NormalFee:                       preSaleDtl.NormalFee * -1,
+			SaleEventFee:                    preSaleDtl.SaleEventFee * -1,
+			ActualSaleAmt:                   preSaleDtl.ActualSaleAmt * -1,
+			UseMileage:                      preSaleDtl.UseMileage * -1,
+			NormalFeeRate:                   preSaleDtl.NormalFeeRate,
+			SaleEventFeeRate:                preSaleDtl.SaleEventFeeRate,
+			DiscountAmt:                     preSaleDtl.DiscountAmt * -1,
+			DiscountAmtAsCost:               preSaleDtl.DiscountAmtAsCost * -1,
+			EstimateSaleAmtForConsumer:      preSaleDtl.EstimateSaleAmtForConsumer * -1,
+			SaleEventDiscountAmtForConsumer: preSaleDtl.SaleEventDiscountAmtForConsumer * -1,
+			ShopEmpEstimateSaleAmt:          preSaleDtl.ShopEmpEstimateSaleAmt * -1,
+			SaleEventInterShopSalePermitChk: false,
+			SaleReturnReasonCode:            sql.NullString{"", false},
+			PromotionID:                     sql.NullInt64{0, false},
+			TMallEventID:                    sql.NullInt64{0, false},
+			TMall_ObtainMileage:             sql.NullFloat64{0, false},
+			OrderItemId:                     0,
+			RefundItemId:                    0,
+			TransactionDtlId:                0,
+			SaleTransactionId:               0,
+			SaleTransactionDtlId:            0,
+			TransactionId:                   0,
+		}
+		saleDtls = append(saleDtls, saleDtl)
+
+	}
+
+	paymentCode := "11"
 	salePayment := SalePayment{
 		SaleNo:             saleMst.SaleNo,
 		SeqNo:              1,
 		PaymentCode:        paymentCode,
-		PaymentAmt:         paymentAmt,
-		InUserID:           inUserID,
-		ModiUserID:         inUserID,
+		PaymentAmt:         saleMst.SellingAmt,
+		InUserID:           userInfo.UserName,
+		ModiUserID:         userInfo.UserName,
 		SendFlag:           "R",
 		CreditCardFirmCode: sql.NullString{"", false},
 		TransactionId:      saleMst.TransactionId,
 		SaleTransactionId:  saleMst.SaleTransactionId,
 	}
-	salePayments = append(salePayments, salePayment)
-	saleMsts = append(saleMsts, saleMst)
 	engine := factory.GetCSLEngine()
 	engine.SetMapper(core.SameMapper{})
 	//create session
@@ -673,13 +546,11 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 	}
 	local, _ := time.ParseDuration("8h")
 	createTime := (time.Now()).Add(local)
-	for _, saleMstFor := range saleMsts {
-		saleMstFor.InDateTime = createTime
-		saleMstFor.ModiDateTime = createTime
-		if _, err := session.Table("dbo.SaleMst").Insert(&saleMstFor); err != nil {
-			session.Rollback()
-			return err
-		}
+	saleMst.InDateTime = createTime
+	saleMst.ModiDateTime = createTime
+	if _, err := session.Table("dbo.SaleMst").Insert(&saleMst); err != nil {
+		session.Rollback()
+		return err
 	}
 	for _, saleDtlFor := range saleDtls {
 		saleDtlFor.InDateTime = createTime
@@ -689,15 +560,13 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 			return err
 		}
 	}
-	for _, salePaymentFor := range salePayments {
-		salePaymentFor.InDateTime = createTime
-		salePaymentFor.ModiDateTime = createTime
-		if _, err := session.Table("dbo.SalePayment").Insert(&salePaymentFor); err != nil {
-			session.Rollback()
-			return err
-		}
+	salePayment.InDateTime = createTime
+	salePayment.ModiDateTime = createTime
+	if _, err := session.Table("dbo.SalePayment").Insert(&salePayment); err != nil {
+		session.Rollback()
+		return err
 	}
-	if cslRefundInput.CslRefundDtls[0].CustomerCardNo != "" {
+	if saleMst.CustNo.String != "" {
 		if _, err := session.Query(`EXEC up_CSLK_SMM_UpdateCustomerStateBySale_CustMileageInfo_U1 @SaleNo = ?`, saleMst.SaleNo); err != nil {
 			return err
 		}
@@ -705,28 +574,35 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslRefu
 	if err := session.Commit(); err != nil {
 		return err
 	}
-	if cslRefundInput.CslRefundDtls[0].CustomerCardNo != "" {
-		s := strings.Split(cslRefundInput.CslRefundDtls[0].CustomerName, ",")
-		mallId, err := strconv.ParseInt(s[0], 10, 64)
-		if err != nil {
-			return err
-		}
-		if err := (Mileage{}).SetMslv2Mileage(ctx, Mileage{
-			// MemberId:        2,
-			// Mobile:          "",
-			MallId:          mallId,
-			TenantCode:      s[1],
-			CardNo:          cslRefundInput.CslRefundDtls[0].CustomerCardNo,
-			Type:            "A",
-			TradeDate:       time.Now(),
-			Point:           saleMst.UseMileage,
-			CalculateAmount: saleMst.ObtainMileage,
-			Remark:          "CSL1.0退货",
-			CreateBy:        "CSL1.0退货",
-		}); err != nil {
-			fmt.Println(err)
-		}
-	}
+	// if saleMst.CustNo.String != "" {
+	// 	msl2Message := strings.Split(cslRefundInput.Msl2Message, ",")
+	// 	mallId, err := strconv.ParseInt(msl2Message[0], 10, 64)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	telNo, err := (SaleMst{}).GetCslCustomer(ctx, saleMst.BrandCode, saleMst.CustNo.String)
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 	}
+	// 	mileage, err := (Mileage{}).GetMileage(ctx, telNo, msl2Message[1], msl2Message[0])
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 	}
+	// 	if err := (Mileage{}).SetMslv2Mileage(ctx, Mileage{
+	// 		MemberId:   mileage.MemberId,
+	// 		CardNo:     mileage.CardNo,
+	// 		Mobile:     mileage.Mobile,
+	// 		MallId:     mallId,
+	// 		TenantCode: msl2Message[1],
+	// 		Type:       "A",
+	// 		TradeDate:  time.Now(),
+	// 		Point:      number.ToFixed(saleMst.UseMileage*-1+saleMst.ObtainMileage, nil),
+	// 		Remark:     "CSL1.0退货",
+	// 		CreateBy:   "CSL1.0退货",
+	// 	}); err != nil {
+	// 		fmt.Println(err)
+	// 	}
+	// }
 	return nil
 }
 
@@ -744,11 +620,13 @@ type Mileage struct {
 	CreateBy        string    `json:"createBy,omitempty" xorm:""`
 }
 type ResultMileage struct {
-	Success bool `json:"success"`
-	Result  struct {
-		Token string `json:"token"`
-	}
-	Error struct{} `json:"error"`
+	Success bool    `json:"success"`
+	Result  Mileage `json:"token"`
+	Error   struct {
+		Code    int         `json:"code,omitempty"`
+		Message string      `json:"message,omitempty"`
+		Details interface{} `json:"details,omitempty"`
+	} `json:"error"`
 }
 
 func (Mileage) SetMslv2Mileage(ctx context.Context, mileage Mileage) error {
@@ -760,4 +638,18 @@ func (Mileage) SetMslv2Mileage(ctx context.Context, mileage Mileage) error {
 		return err
 	}
 	return nil
+}
+
+func (Mileage) GetMileage(ctx context.Context, mobile string, tenantCode string, mallIds string) (Mileage, error) {
+	resultMileage := ResultMileage{}
+	url := fmt.Sprintf("%s/v1/mileage?mobile=%s&tenantCode=%s&mallIds=%s", config.Config().Services.Membership, mobile, tenantCode, mallIds)
+	if _, err := httpreq.New(http.MethodGet, url, nil).
+		WithBehaviorLogContext(behaviorlog.FromCtx(ctx)).
+		Call(&resultMileage); err != nil {
+		return Mileage{}, err
+	}
+	if resultMileage.Success != true {
+		return Mileage{}, errors.New(fmt.Sprintf("%v|%v|%v", resultMileage.Error.Code, resultMileage.Error.Message, resultMileage.Error.Details))
+	}
+	return resultMileage.Result, nil
 }

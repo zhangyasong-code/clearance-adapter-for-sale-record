@@ -68,7 +68,7 @@ func (CslRefundController) GetCslSaleForReturn(c echo.Context) error {
 }
 
 func (CslRefundController) CslReturnInsert(c echo.Context) error {
-	var data models.CslRefundInput
+	var data models.CslSaleMstStruct
 	if err := c.Bind(&data); err != nil {
 		return c.JSON(http.StatusBadRequest, api.Result{
 			Error: api.Error{
