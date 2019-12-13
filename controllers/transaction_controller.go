@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"clearance/clearance-adapter-for-sale-record/adapter"
 	"clearance/clearance-adapter-for-sale-record/models"
@@ -177,14 +178,28 @@ func (TransactionController) RunSaleETLAndCslETL(c echo.Context) error {
 		})
 	}
 
-	cslETL := goetl.New(adapter.ClearanceToCslETL{})
-	cslETL.After(adapter.ClearanceToCslETL{}.ReadyToLoad)
-	if err := cslETL.Run(context.WithValue(c.Request().Context(), "data", data)); err != nil {
-		return c.JSON(http.StatusInternalServerError, api.Result{
-			Error: api.Error{
-				Message: err.Error(),
-			},
-		})
+	if strings.ToUpper(data.TransactionChannelType) == "POS" {
+		cslETL := goetl.New(adapter.ClearanceToCslETL{})
+		cslETL.After(adapter.ClearanceToCslETL{}.ReadyToLoad)
+		if err := cslETL.Run(context.WithValue(c.Request().Context(), "data", data)); err != nil {
+			return c.JSON(http.StatusInternalServerError, api.Result{
+				Error: api.Error{
+					Message: err.Error(),
+				},
+			})
+		}
+	}
+
+	if strings.ToUpper(data.TransactionChannelType) == "EMALL" {
+		cslTSaleETL := goetl.New(adapter.ClearanceToCslTSaleETL{})
+		cslTSaleETL.After(adapter.ClearanceToCslTSaleETL{}.ReadyToLoad)
+		if err := cslTSaleETL.Run(context.WithValue(c.Request().Context(), "data", data)); err != nil {
+			return c.JSON(http.StatusInternalServerError, api.Result{
+				Error: api.Error{
+					Message: err.Error(),
+				},
+			})
+		}
 	}
 
 	return c.JSON(http.StatusOK, api.Result{

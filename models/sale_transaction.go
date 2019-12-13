@@ -33,6 +33,9 @@ type SaleTransaction struct {
 	OuterOrderNo           string                   `json:"outerOrderNo" xorm:"index VARCHAR(30) notnull" validate:"required"`
 	TransactionChannelType string                   `json:"transactionChannelType" xorm:"index VARCHAR(30) notnull"`
 	BaseTrimCode           string                   `json:"baseTrimCode" xorm:"index VARCHAR(30)"`
+	FreightPrice           float64                  `json:"freightPrice" xorm:"DECIMAL(18,2) default 0" `
+	SalesmanShopCode       string                   `json:"salesmanShopCode" xorm:"index VARCHAR(30)"`
+	SalesmanEmpId          string                   `json:"salesmanEmpId" xorm:"index VARCHAR(30)"`
 	Dtls                   []SaleTransactionDtl     `json:"dtls" xorm:"-"`
 	Payments               []SaleTransactionPayment `json:"payments" xorm:"-"`
 	WhetherSend            bool                     `json:"whetherSend" xorm:"index default false"`
@@ -90,71 +93,75 @@ type SaleTAndSaleTDtls struct {
 }
 
 type SaleRecordIdSuccessMapping struct {
-	Id                int64     `json:"id"`
-	SaleTransactionId int64     `json:"saleTransactionId" xorm:"index default 0" validate:"required"`
-	SaleNo            string    `json:"saleNo" xorm:"index VARCHAR(30) notnull"`
-	TransactionId     int64     `json:"transactionId" xorm:"index default 0"`
-	OrderId           int64     `json:"orderId" xorm:"index default 0"`
-	RefundId          int64     `json:"refundId" xorm:"index default 0"`
-	OrderItemId       int64     `json:"orderItemId" xorm:"index default 0"`
-	RefundItemId      int64     `json:"refundItemId" xorm:"index default 0"`
-	DtlSeq            int64     `json:"dtlSeq" xorm:"index default 0"`
-	CreatedAt         time.Time `json:"createdAt" xorm:"created"`
-	CreatedBy         string    `json:"createdBy" xorm:"index VARCHAR(30) notnull"`
-	UpdatedAt         time.Time `json:"updatedAt" xorm:"updated"`
+	Id                     int64     `json:"id"`
+	SaleTransactionId      int64     `json:"saleTransactionId" xorm:"index default 0" validate:"required"`
+	TransactionChannelType string    `json:"transactionChannelType" xorm:"index VARCHAR(30) default 'POS'"`
+	SaleNo                 string    `json:"saleNo" xorm:"index VARCHAR(30) notnull"`
+	TransactionId          int64     `json:"transactionId" xorm:"index default 0"`
+	OrderId                int64     `json:"orderId" xorm:"index default 0"`
+	RefundId               int64     `json:"refundId" xorm:"index default 0"`
+	OrderItemId            int64     `json:"orderItemId" xorm:"index default 0"`
+	RefundItemId           int64     `json:"refundItemId" xorm:"index default 0"`
+	DtlSeq                 int64     `json:"dtlSeq" xorm:"index default 0"`
+	CreatedAt              time.Time `json:"createdAt" xorm:"created"`
+	CreatedBy              string    `json:"createdBy" xorm:"index VARCHAR(30) notnull"`
+	UpdatedAt              time.Time `json:"updatedAt" xorm:"updated"`
 }
 
 type SaleRecordIdFailMapping struct {
-	Id                int64     `json:"id"`
-	SaleTransactionId int64     `json:"saleTransactionId" xorm:"index default 0" validate:"required"`
-	OrderId           int64     `json:"orderId" xorm:"index default 0"`
-	RefundId          int64     `json:"refundId" xorm:"index default 0"`
-	StoreId           int64     `json:"storeId" xorm:"index default 0"`
-	TransactionId     int64     `json:"transactionId" xorm:"index default 0"`
-	TransactionDtlId  int64     `json:"transactionDtlId" xorm:"index default 0"`
-	Error             string    `json:"error" xorm:"VARCHAR(1000)"`
-	Details           string    `json:"details" xorm:"VARCHAR(100)"`
-	Data              string    `json:"data" xorm:"TEXT"`
-	IsCreate          bool      `json:"isCreate" xorm:"index notnull default false"`
-	CreatedAt         time.Time `json:"createdAt" xorm:"created"`
-	CreatedBy         string    `json:"createdBy" xorm:"index VARCHAR(30)"`
-	UpdatedAt         time.Time `json:"updatedAt" xorm:"updated"`
+	Id                     int64     `json:"id"`
+	SaleTransactionId      int64     `json:"saleTransactionId" xorm:"index default 0" validate:"required"`
+	TransactionChannelType string    `json:"transactionChannelType" xorm:"index VARCHAR(30) default 'POS'"`
+	OrderId                int64     `json:"orderId" xorm:"index default 0"`
+	RefundId               int64     `json:"refundId" xorm:"index default 0"`
+	StoreId                int64     `json:"storeId" xorm:"index default 0"`
+	TransactionId          int64     `json:"transactionId" xorm:"index default 0"`
+	TransactionDtlId       int64     `json:"transactionDtlId" xorm:"index default 0"`
+	Error                  string    `json:"error" xorm:"VARCHAR(1000)"`
+	Details                string    `json:"details" xorm:"VARCHAR(100)"`
+	Data                   string    `json:"data" xorm:"TEXT"`
+	IsCreate               bool      `json:"isCreate" xorm:"index notnull default false"`
+	CreatedAt              time.Time `json:"createdAt" xorm:"created"`
+	CreatedBy              string    `json:"createdBy" xorm:"index VARCHAR(30)"`
+	UpdatedAt              time.Time `json:"updatedAt" xorm:"updated"`
 }
 
 type RequestInput struct {
-	BrandCode         string   `json:"brandCode" query:"brandCode"`
-	ChannelType       string   `json:"channelType" query:"channelType"`
-	OrderId           int64    `json:"orderId" query:"orderId"`
-	RefundId          int64    `json:"refundId" query:"refundId"`
-	StartAt           string   `json:"startAt" query:"startAt"`
-	EndAt             string   `json:"endAt" query:"endAt"`
-	MaxResultCount    int      `json:"maxResultCount" query:"maxResultCount"`
-	SkipCount         int      `json:"skipCount" query:"skipCount"`
-	StoreId           int      `json:"storeId" query:"storeId"`
-	TransactionId     int64    `json:"transactionId" query:"transactionId"`
-	SaleTransactionId int64    `json:"saleTransactionId" query:"saleTransactionId"`
-	SaleNo            string   `json:"saleNo" query:"saleNo"`
-	SaleNos           []string `json:"saleNos"`
-	ShopCode          string   `json:"shopCode" query:"shopCode"`
-	Dates             string   `json:"dates" query:"dates"`
-	SaleMode          string   `json:"saleMode" query:"saleMode"`
-	PosNo             string   `json:"posNo" query:"posNo"`
+	BrandCode              string   `json:"brandCode" query:"brandCode"`
+	ChannelType            string   `json:"channelType" query:"channelType"`
+	OrderId                int64    `json:"orderId" query:"orderId"`
+	RefundId               int64    `json:"refundId" query:"refundId"`
+	StartAt                string   `json:"startAt" query:"startAt"`
+	EndAt                  string   `json:"endAt" query:"endAt"`
+	MaxResultCount         int      `json:"maxResultCount" query:"maxResultCount"`
+	SkipCount              int      `json:"skipCount" query:"skipCount"`
+	StoreId                int      `json:"storeId" query:"storeId"`
+	TransactionId          int64    `json:"transactionId" query:"transactionId"`
+	SaleTransactionId      int64    `json:"saleTransactionId" query:"saleTransactionId"`
+	SaleNo                 string   `json:"saleNo" query:"saleNo"`
+	SaleNos                []string `json:"saleNos"`
+	ShopCode               string   `json:"shopCode" query:"shopCode"`
+	Dates                  string   `json:"dates" query:"dates"`
+	SaleMode               string   `json:"saleMode" query:"saleMode"`
+	PosNo                  string   `json:"posNo" query:"posNo"`
+	TransactionChannelType string   `json:"transactionChannelType"`
 }
 
 type CheckSaleNo struct {
-	Id                int64     `json:"id"`
-	TransactionId     int64     `json:"transactionId" xorm:"index default 0"`
-	SaleTransactionId int64     `json:"saleTransactionId" xorm:"index default 0"`
-	OrderId           int64     `json:"orderId" xorm:"index default 0"`
-	RefundId          int64     `json:"refundId" xorm:"index default 0"`
-	ShopCode          string    `json:"shopCode" xorm:"index VARCHAR(30) notnull"`
-	Dates             string    `json:"dates" xorm:"index VARCHAR(30) notnull"`
-	SaleNo            string    `json:"saleNo" xorm:"index VARCHAR(30) notnull"`
-	PosNo             string    `json:"posNo" xorm:"index VARCHAR(30) notnull"`
-	Processing        bool      `json:"processing" xorm:"index"`
-	Whthersend        bool      `json:"whthersend" xorm:"index"`
-	CreatedAt         time.Time `json:"createdAt" xorm:"index created"`
-	UpdateAt          time.Time `json:"updateAt" xorm:"updated"`
+	Id                     int64     `json:"id"`
+	TransactionId          int64     `json:"transactionId" xorm:"index default 0"`
+	SaleTransactionId      int64     `json:"saleTransactionId" xorm:"index default 0"`
+	TransactionChannelType string    `json:"transactionChannelType" xorm:"index VARCHAR(30) default 'POS'"`
+	OrderId                int64     `json:"orderId" xorm:"index default 0"`
+	RefundId               int64     `json:"refundId" xorm:"index default 0"`
+	ShopCode               string    `json:"shopCode" xorm:"index VARCHAR(30) notnull"`
+	Dates                  string    `json:"dates" xorm:"index VARCHAR(30) notnull"`
+	SaleNo                 string    `json:"saleNo" xorm:"index VARCHAR(30) notnull"`
+	PosNo                  string    `json:"posNo" xorm:"index VARCHAR(30) notnull"`
+	Processing             bool      `json:"processing" xorm:"index"`
+	Whthersend             bool      `json:"whthersend" xorm:"index"`
+	CreatedAt              time.Time `json:"createdAt" xorm:"index created"`
+	UpdateAt               time.Time `json:"updateAt" xorm:"updated"`
 }
 
 type CslSaleMst struct {
@@ -366,7 +373,7 @@ func (srfm *SaleRecordIdFailMapping) Save() error {
 	return nil
 }
 
-func (SaleRecordIdSuccessMapping) GetSaleSuccessData(transactionId int64, orderId int64, itemId int64) ([]SaleRecordIdSuccessMapping, error) {
+func (SaleRecordIdSuccessMapping) GetSaleSuccessData(transactionId int64, orderId int64, itemId int64, transactionChannelType string) ([]SaleRecordIdSuccessMapping, error) {
 	var success []SaleRecordIdSuccessMapping
 	queryBuilder := func() xorm.Interface {
 		q := factory.GetCfsrEngine().Where("1 = 1")
@@ -378,6 +385,9 @@ func (SaleRecordIdSuccessMapping) GetSaleSuccessData(transactionId int64, orderI
 		}
 		if itemId != 0 {
 			q.And("order_item_id = ?", itemId)
+		}
+		if transactionChannelType != "" {
+			q.And("transaction_channel_type = ?", transactionChannelType)
 		}
 		return q
 	}
@@ -393,6 +403,9 @@ func (SaleRecordIdSuccessMapping) GetSaleSuccessData(transactionId int64, orderI
 func (requestInput RequestInput) Validate() error {
 	if requestInput.TransactionId == 0 {
 		return errors.New("TransactionId can not be 0!")
+	}
+	if requestInput.TransactionChannelType == "" {
+		return errors.New("TransactionChannelType can not be null!")
 	}
 	return nil
 }
@@ -471,16 +484,18 @@ func (saleTransaction *SaleTransaction) Update() error {
 	return nil
 }
 
-func (SaleTransaction) Get(SaleTransactionId int64, transactionId int64) (SaleTransaction, error) {
+func (SaleTransaction) Get(saleTransactionId int64, transactionId int64) (SaleTransaction, error) {
 	var saleTransactions []struct {
 		SaleTransaction    SaleTransaction    `xorm:"extends"`
 		SaleTransactionDtl SaleTransactionDtl `xorm:"extends"`
 	}
-	if err := factory.GetCfsrEngine().Table("sale_transaction").
-		Join("INNER", "sale_transaction_dtl", "sale_transaction_dtl.transaction_id = sale_transaction.transaction_id").
-		Where("sale_transaction.transaction_id = ? ", transactionId).
-		And("sale_transaction.id = ?", SaleTransactionId).
-		Find(&saleTransactions); err != nil {
+	queryBuilder := func() xorm.Interface {
+		q := factory.GetCfsrEngine().Table("sale_transaction").
+			Join("INNER", "sale_transaction_dtl", "sale_transaction_dtl.transaction_id = sale_transaction.transaction_id").
+			Where("1 = 1").And("sale_transaction.transaction_id = ? ", transactionId).And("sale_transaction.id = ?", saleTransactionId)
+		return q
+	}
+	if err := queryBuilder().Find(&saleTransactions); err != nil {
 		return SaleTransaction{}, err
 	}
 	var saleTransaction SaleTransaction
@@ -753,13 +768,7 @@ func (CslSaleMst) GetAll(requestInput RequestInput) ([]CslSaleMst, error) {
 
 func (CslSaleMst) Delete(requestInput RequestInput) error {
 	queryBuilder := func() xorm.Interface {
-		q := factory.GetCfsrEngine().Where("1 = 1")
-		if requestInput.TransactionId != 0 {
-			q.And("transaction_id = ?", requestInput.TransactionId)
-		}
-		if requestInput.SaleTransactionId != 0 {
-			q.And("sale_transaction_id = ?", requestInput.SaleTransactionId)
-		}
+		q := factory.GetCfsrEngine().Where("1 = 1").And("sale_transaction_id = ?", requestInput.SaleTransactionId)
 		return q
 	}
 	if _, err := queryBuilder().Delete(&CslSaleDtl{}); err != nil {
