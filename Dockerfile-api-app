@@ -1,4 +1,4 @@
-FROM pangpanglabs/golang:builder AS builder
+FROM pangpanglabs/golang:builder-beta AS builder
 RUN go get github.com/pangpanglabs/goetl
 ADD . /go/src/clearance/clearance-adapter-for-sale-record
 WORKDIR /go/src/clearance/clearance-adapter-for-sale-record/cmd/api-app
