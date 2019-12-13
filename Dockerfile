@@ -1,4 +1,5 @@
-FROM pangpanglabs/golang:builder AS builder
+FROM pangpanglabs/golang:builder-beta AS builder
+
 WORKDIR /go/src/clearance/clearance-adapter-for-sale-record
 COPY . .
 # disable cgo
