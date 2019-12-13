@@ -219,12 +219,13 @@ func (CslSaleDtlStruct) GetCslSaleDtl(saleNo string) (interface{}, error) {
 		declare @saleNo char(15)
 		set @saleNo = cast(? as char(15))
 		SELECT
-		SaleQty 			AS SaleQty
-		,SellingAmt 		AS SellingAmt
-		,PreSaleNo			AS PreSaleNo
-		,PreSaleDtSeq		AS PreSaleDtSeq
-		FROM SaleDtl B WITH(NOLOCK) 
-		WHERE B.PreSaleNo= @saleNo`, saleNo)
+			B.SaleQty 			AS SaleQty
+			,B.SellingAmt 		AS SellingAmt
+			,B.PreSaleNo		AS PreSaleNo
+			,B.PreSaleDtSeq		AS PreSaleDtSeq
+		FROM SaleMst A WITH(NOLOCK)
+			INNER JOIN SaleDtl B WITH(NOLOCK) on A.SaleNo=B.SaleNo
+		WHERE A.PreSaleNo= @saleNo`, saleNo)
 	if err != nil {
 		return nil, err
 	}
