@@ -330,7 +330,7 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslSale
 	} else {
 		return errors.New("没有找到CSL原单编号：" + cslRefundInput.PreSaleNo)
 	}
-	preSaleDtls, err := SaleDtl{}.GetCslDtlBySaleNos(ctx, cslRefundInput.PreSaleNo)
+	preSaleDtls, err := SaleDtl{}.GetCslDtlBySaleNos(ctx, "'"+cslRefundInput.PreSaleNo+"'")
 	if err != nil {
 		return err
 	}
@@ -369,7 +369,7 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslSale
 	if err != nil {
 		return err
 	}
-	//获取CSL销售人
+	//获取业绩分配人
 	salesPerson, err := Employee{}.GetEmployee(cslRefundInput.SaleManId)
 	if err != nil {
 		return err
@@ -377,6 +377,13 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslSale
 	userInfo, err := UserInfo{}.GetUserInfo(salesPerson.EmpId)
 	if err != nil {
 		return err
+	}
+	colleaguetUserID := ""
+	colleagues, err := Colleagues{}.GetColleaguesAuth(cslRefundInput.UserId, "")
+	if colleagues.UserName != "" {
+		colleaguetUserID = colleagues.UserName
+	} else {
+		colleaguetUserID = InUserID
 	}
 	//----------------------------》
 	saleMode := ""
@@ -398,33 +405,35 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslSale
 	saleMst.ActualSellingAmt = number.ToFixed(saleMst.ActualSellingAmt, nil)
 
 	saleMst = SaleMst{
-		SaleNo:           saleNo,
-		SeqNo:            seqNo,
-		PosNo:            MSLV1_REFUND_POS,
-		Dates:            saleDate,
-		InUserID:         userInfo.UserName,
-		ModiUserID:       userInfo.UserName,
-		SaleMode:         saleMode,
-		PreSaleNo:        preSaleNo,
-		SaleOfficeCode:   MSLv2_0,
-		SendFlag:         NotSynChronized,
-		SendState:        "",
-		ShopCode:         preSaleMst.ShopCode,
-		CustNo:           preSaleMst.CustNo,
-		CustCardNo:       preSaleMst.CustCardNo,
-		CustGradeCode:    preSaleMst.CustGradeCode,
-		CustBrandCode:    preSaleMst.CustBrandCode,
-		SaleQty:          preSaleMst.SaleQty * -1,
-		SaleAmt:          preSaleMst.SaleAmt * -1,
-		ObtainMileage:    preSaleMst.ObtainMileage * -1,
-		EstimateSaleAmt:  preSaleMst.EstimateSaleAmt * -1,
-		ActualSellingAmt: preSaleMst.ActualSellingAmt * -1,
-		UseMileage:       preSaleMst.UseMileage * -1,
-		SellingAmt:       preSaleMst.SellingAmt * -1,
-		DiscountAmt:      preSaleMst.DiscountAmt * -1,
-		ChinaFISaleAmt:   preSaleMst.ChinaFISaleAmt * -1,
-		ActualSaleAmt:    preSaleMst.ActualSaleAmt * -1,
-		FeeAmt:           preSaleMst.FeeAmt * -1,
+		SaleNo:                      saleNo,
+		SeqNo:                       seqNo,
+		PosNo:                       MSLV1_REFUND_POS,
+		Dates:                       saleDate,
+		InUserID:                    colleaguetUserID,
+		ModiUserID:                  colleaguetUserID,
+		SaleMode:                    saleMode,
+		PreSaleNo:                   preSaleNo,
+		SaleOfficeCode:              cslRefundInput.SaleOfficeCode,
+		SendFlag:                    NotSynChronized,
+		SendState:                   "",
+		BrandCode:                   preSaleMst.BrandCode,
+		ShopCode:                    preSaleMst.ShopCode,
+		CustNo:                      preSaleMst.CustNo,
+		CustCardNo:                  preSaleMst.CustCardNo,
+		CustGradeCode:               preSaleMst.CustGradeCode,
+		CustBrandCode:               preSaleMst.CustBrandCode,
+		SaleQty:                     preSaleMst.SaleQty * -1,
+		SaleAmt:                     preSaleMst.SaleAmt * -1,
+		ObtainMileage:               preSaleMst.ObtainMileage * -1,
+		EstimateSaleAmt:             preSaleMst.EstimateSaleAmt * -1,
+		ActualSellingAmt:            preSaleMst.ActualSellingAmt * -1,
+		UseMileage:                  preSaleMst.UseMileage * -1,
+		SellingAmt:                  preSaleMst.SellingAmt * -1,
+		DiscountAmt:                 preSaleMst.DiscountAmt * -1,
+		ChinaFISaleAmt:              preSaleMst.ChinaFISaleAmt * -1,
+		ActualSaleAmt:               preSaleMst.ActualSaleAmt * -1,
+		FeeAmt:                      preSaleMst.FeeAmt * -1,
+		DepartStoreReceiptNo:        preSaleMst.DepartStoreReceiptNo,
 		EstimateSaleAmtForConsumer:  preSaleMst.EstimateSaleAmtForConsumer * -1,
 		ShopEmpEstimateSaleAmt:      preSaleMst.ShopEmpEstimateSaleAmt * -1,
 		ComplexShopSeqNo:            complexShopSeqNo,
@@ -434,7 +443,6 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslSale
 		OrderId:                     0,
 		RefundId:                    0,
 		SaleTransactionId:           0,
-		DepartStoreReceiptNo:        "",
 		Freight:                     sql.NullFloat64{0, false},
 		TMall_UseMileage:            sql.NullFloat64{0, false},
 		TMall_ObtainMileage:         sql.NullFloat64{0, false},
@@ -454,7 +462,7 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslSale
 			InUserID:          userInfo.UserName,
 			ModiUserID:        userInfo.UserName,
 			PosNo:             MSLV1_REFUND_POS,
-			SaleOfficeCode:    MSLv2_0,
+			SaleOfficeCode:    cslRefundInput.SaleOfficeCode,
 			SendState:         "",
 			SendFlag:          NotSynChronized,
 			PriceDecisionDate: saleDate,
@@ -529,8 +537,8 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslSale
 		SeqNo:              1,
 		PaymentCode:        paymentCode,
 		PaymentAmt:         saleMst.SellingAmt,
-		InUserID:           userInfo.UserName,
-		ModiUserID:         userInfo.UserName,
+		InUserID:           colleaguetUserID,
+		ModiUserID:         colleaguetUserID,
 		SendFlag:           "R",
 		CreditCardFirmCode: sql.NullString{"", false},
 		TransactionId:      saleMst.TransactionId,
