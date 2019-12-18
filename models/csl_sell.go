@@ -34,6 +34,7 @@ type CslSaleMstStruct struct {
 	SaleAmt              float64            `json:"saleAmt"`
 	DiscountAmt          float64            `json:"discountAmt"`
 	SellingAmt           float64            `json:"sellingAmt"`
+	UserId               int64              `json:"userId"`
 	InUserID             string             `json:"inUserID"`
 	InDateTime           string             `json:"inDateTime"`
 	SaleOfficeCode       string             `json:"saleOfficeCode"`
