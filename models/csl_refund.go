@@ -319,6 +319,7 @@ const (
 func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslSaleMstStruct) error {
 	saleDate := time.Now().Format("20060102")
 	var saleDtls []SaleDtl
+	var salePayments []SalePayment
 	var saleMst SaleMst
 	preSaleMst := SaleMst{}
 	preSaleMstList, err := SaleMst{}.GetCslMstBySaleNo(ctx, cslRefundInput.PreSaleNo)
@@ -331,6 +332,10 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslSale
 		return errors.New("没有找到CSL原单编号：" + cslRefundInput.PreSaleNo)
 	}
 	preSaleDtls, err := SaleDtl{}.GetCslDtlBySaleNos(ctx, "'"+cslRefundInput.PreSaleNo+"'")
+	if err != nil {
+		return err
+	}
+	preSalePayments, err := SalePayment{}.GetCslSalePaymentBySaleNos(ctx, "'"+cslRefundInput.PreSaleNo+"'")
 	if err != nil {
 		return err
 	}
@@ -528,21 +533,19 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslSale
 			TransactionId:                   0,
 		}
 		saleDtls = append(saleDtls, saleDtl)
-
 	}
-
-	paymentCode := "11"
-	salePayment := SalePayment{
-		SaleNo:             saleMst.SaleNo,
-		SeqNo:              1,
-		PaymentCode:        paymentCode,
-		PaymentAmt:         saleMst.SellingAmt,
-		InUserID:           colleaguetUserID,
-		ModiUserID:         colleaguetUserID,
-		SendFlag:           "R",
-		CreditCardFirmCode: sql.NullString{"", false},
-		TransactionId:      saleMst.TransactionId,
-		SaleTransactionId:  saleMst.SaleTransactionId,
+	for _, preSalePayment := range preSalePayments {
+		salePayment := SalePayment{
+			SaleNo:             saleNo,
+			SeqNo:              preSalePayment.SeqNo,
+			PaymentCode:        preSalePayment.PaymentCode,
+			PaymentAmt:         preSalePayment.PaymentAmt * -1,
+			CreditCardFirmCode: preSalePayment.CreditCardFirmCode,
+			InUserID:           colleaguetUserID,
+			ModiUserID:         colleaguetUserID,
+			SendFlag:           "R",
+		}
+		salePayments = append(salePayments, salePayment)
 	}
 	engine := factory.GetCSLEngine()
 	engine.SetMapper(core.SameMapper{})
@@ -568,11 +571,13 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslSale
 			return err
 		}
 	}
-	salePayment.InDateTime = createTime
-	salePayment.ModiDateTime = createTime
-	if _, err := session.Table("dbo.SalePayment").Insert(&salePayment); err != nil {
-		session.Rollback()
-		return err
+	for _, salePaymentFor := range salePayments {
+		salePaymentFor.InDateTime = createTime
+		salePaymentFor.ModiDateTime = createTime
+		if _, err := session.Table("dbo.SalePayment").Insert(&salePaymentFor); err != nil {
+			session.Rollback()
+			return err
+		}
 	}
 	if saleMst.CustNo.String != "" {
 		if _, err := session.Query(`EXEC up_CSLK_SMM_UpdateCustomerStateBySale_CustMileageInfo_U1 @SaleNo = ?`, saleMst.SaleNo); err != nil {

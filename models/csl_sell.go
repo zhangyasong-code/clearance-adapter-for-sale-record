@@ -43,6 +43,7 @@ type CslSaleMstStruct struct {
 	CustName             string             `json:"custName"`
 	UseMileage           float64            `json:"useMileage"`
 	PaymentName          string             `json:"paymentName"`
+	PaymentCode          string             `json:"paymentCode"`
 	PrimaryEventName     string             `json:"primaryEventName"` //积分Event
 	SaleManId            int64              `query:"saleManId" json:"saleManId"`
 	PreSaleNo            string             `query:"preSaleNo" json:"preSaleNo"`
@@ -100,6 +101,7 @@ func (CslSaleDtlStruct) GetCslSaleDtl(saleNo string) (interface{}, error) {
 		, A.SaleOfficeCode 				AS SaleOfficeCode
 		, A.UseMileage 					AS UseMileage
 		, F.PaymentName 				AS PaymentName
+		, F.PaymentCode 				AS PaymentCode
 		, A.CustNo 						AS CustNo
 		, G.EventName 					AS PrimaryEventName
 		FROM SaleMst A WITH(NOLOCK)
@@ -155,6 +157,7 @@ func (CslSaleDtlStruct) GetCslSaleDtl(saleNo string) (interface{}, error) {
 		cslSaleMstStruct.CustName = string(value["CustName"])
 		cslSaleMstStruct.CustNo = string(value["CustNo"])
 		cslSaleMstStruct.PaymentName = string(value["PaymentName"])
+		cslSaleMstStruct.PaymentCode = string(value["PaymentCode"])
 		cslSaleMstStruct.PrimaryEventName = string(value["PrimaryEventName"])
 		cslSaleMstStructs = append(cslSaleMstStructs, cslSaleMstStruct)
 	}
