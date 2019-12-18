@@ -31,6 +31,7 @@ type CslSaleMstStruct struct {
 	ShopCode             string             `json:"shopCode"`
 	Dates                string             `json:"dates"`
 	SaleQty              int64              `json:"saleQty"`
+	RefundedQty          int64              `json:"refundedQty"`
 	SaleAmt              float64            `json:"saleAmt"`
 	DiscountAmt          float64            `json:"discountAmt"`
 	SellingAmt           float64            `json:"sellingAmt"`
@@ -223,21 +224,24 @@ func (CslSaleDtlStruct) GetCslSaleDtl(saleNo string) (interface{}, error) {
 		declare @saleNo char(15)
 		set @saleNo = cast(? as char(15))
 		SELECT
-			B.SaleQty 			AS SaleQty
+			A.SaleQty			AS SaleMstQty
+			,B.SaleQty 			AS SaleQty
 			,B.SellingAmt 		AS SellingAmt
 			,B.PreSaleNo		AS PreSaleNo
 			,B.PreSaleDtSeq		AS PreSaleDtSeq
 		FROM SaleMst A WITH(NOLOCK)
 			INNER JOIN SaleDtl B WITH(NOLOCK) on A.SaleNo=B.SaleNo
-		WHERE A.PreSaleNo= @saleNo`, saleNo)
+		WHERE A.PreSaleNo = @saleNo AND A.SaleMode = 'R'`, saleNo)
 	if err != nil {
 		return nil, err
 	}
+	var saleMstQty int64 = 0
 	if len(cslSaleDtlStructs) > 0 && cslSaleDtlStructs[0].SaleNo != "" {
 		for key, targetReturnSale := range cslSaleDtlStructs {
 			var returnedQtyAll int64
 			var returnedSellingAmtAll float64
 			for _, saleIsReturned := range SaleIsReturnedMap {
+				saleMstQty, _ = strconv.ParseInt(string(saleIsReturned["SaleMstQty"]), 10, 64)
 				isReturnedPreSaleDtSeq, _ := strconv.ParseInt(string(saleIsReturned["PreSaleDtSeq"]), 10, 64)
 				if isReturnedPreSaleDtSeq == targetReturnSale.DtSeq &&
 					string(saleIsReturned["PreSaleNo"]) == targetReturnSale.SaleNo {
@@ -253,6 +257,7 @@ func (CslSaleDtlStruct) GetCslSaleDtl(saleNo string) (interface{}, error) {
 	}
 	if len(cslSaleMstStructs) > 0 && len(cslSaleDtlStructs) > 0 {
 		saleMst := cslSaleMstStructs[0]
+		saleMst.RefundedQty = saleMstQty * -1
 		saleMst.SaleDtls = cslSaleDtlStructs
 		return saleMst, nil
 	}
@@ -305,7 +310,8 @@ func (CslSaleMstStruct) GetCslSaleMst(brandCode, shopCode, startSaleDate, endSal
 			"	,InUserID 						AS InUserID"+
 			"	,SaleOfficeCode 				AS SaleOfficeCode"+
 			"	FROM SaleMst WITH(NOLOCK)"+
-			"	WHERE 1 = 1 "+
+			"	WHERE 1 = 1"+
+			"	AND SaleQty<>0"+
 			"	AND (SaleOfficeCode IS NULL OR SaleOfficeCode<>'P009')",
 		brandCode, shopCode, startSaleDate, endSaleDate, deptStoreReceiptNo, saleNo)
 	shopCodeList := ""

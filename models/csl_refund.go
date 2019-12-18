@@ -321,6 +321,22 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslSale
 	var saleDtls []SaleDtl
 	var salePayments []SalePayment
 	var saleMst SaleMst
+	engine := factory.GetCSLEngine()
+	engine.SetMapper(core.SameMapper{})
+	//create session
+	session := engine.NewSession()
+	defer session.Close()
+	if err := session.Begin(); err != nil {
+		return err
+	}
+	getPreSaleSql := "SELECT * from SaleMst WHERE SaleMode = 'R' AND PreSaleNo ='" + cslRefundInput.PreSaleNo + "'"
+	var refundedSaleMsts []SaleMst
+	if err := session.SQL(getPreSaleSql).Find(&refundedSaleMsts); err != nil {
+		return err
+	}
+	if len(refundedSaleMsts) > 0 {
+		return errors.New("此单已经退货：" + cslRefundInput.PreSaleNo)
+	}
 	preSaleMst := SaleMst{}
 	preSaleMstList, err := SaleMst{}.GetCslMstBySaleNo(ctx, cslRefundInput.PreSaleNo)
 	if err != nil {
@@ -546,14 +562,6 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslSale
 			SendFlag:           "R",
 		}
 		salePayments = append(salePayments, salePayment)
-	}
-	engine := factory.GetCSLEngine()
-	engine.SetMapper(core.SameMapper{})
-	//create session
-	session := engine.NewSession()
-	defer session.Close()
-	if err := session.Begin(); err != nil {
-		return err
 	}
 	local, _ := time.ParseDuration("8h")
 	createTime := (time.Now()).Add(local)
