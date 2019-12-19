@@ -1,8 +1,13 @@
 package models
 
 import (
+	"clearance/clearance-adapter-for-sale-record/factory"
+	"context"
 	"database/sql"
+	"strings"
 	"time"
+
+	"xorm.io/core"
 )
 
 type T_SaleMst struct {
@@ -97,4 +102,88 @@ type T_SaleMstsAndSaleDtls struct {
 	T_SaleMsts     []T_SaleMst     `json:"t_SaleMsts"`
 	T_SaleDtls     []T_SaleDtl     `json:"t_SaleDtls"`
 	T_SalePayments []T_SalePayment `json:"t_SalePayments"`
+}
+
+func (T_SaleMst) GetCslTSales(ctx context.Context, requestInput RequestInput) (int64, []T_SaleMst, error) {
+	engine := factory.GetCSLEngine()
+	engine.SetMapper(core.SameMapper{})
+
+	sns := ""
+	for _, sn := range requestInput.SaleNos {
+		sns += "'" + sn + "'" + ","
+	}
+
+	sql := "SELECT * from T_SaleMst where 1 = 1 "
+	if sns != "" {
+		sql += "and SaleNo in (" + strings.TrimSuffix(sns, ",") + ")"
+	}
+	if requestInput.ShopCode != "" {
+		sql += "and ShopCode = '" + requestInput.ShopCode + "'"
+	}
+	if requestInput.Dates != "" {
+		sql += "and Dates = '" + requestInput.Dates + "'"
+	}
+	if requestInput.SaleMode != "" {
+		sql += "and SaleMode = '" + requestInput.SaleMode + "'"
+	}
+	var t_SaleMsts []T_SaleMst
+	err := engine.SQL(sql).Find(&t_SaleMsts)
+	if err != nil {
+		return 0, nil, err
+	}
+	if len(t_SaleMsts) == 0 {
+		return 0, nil, nil
+	}
+	loadSaleNos := ""
+	for _, t_SaleMst := range t_SaleMsts {
+		loadSaleNos += "'" + t_SaleMst.SaleNo + "'" + ","
+	}
+	tSaleDtls, err := T_SaleDtl{}.GetCslTDtlBySaleNos(ctx, strings.TrimSuffix(loadSaleNos, ","))
+	if err != nil {
+		return 0, nil, err
+	}
+	tSalePayments, err := T_SalePayment{}.GetCslTSalePaymentBySaleNos(ctx, strings.TrimSuffix(loadSaleNos, ","))
+	if err != nil {
+		return 0, nil, err
+	}
+
+	for i, t_SaleMst := range t_SaleMsts {
+		for _, tSaleDtl := range tSaleDtls {
+			if tSaleDtl.SaleNo == t_SaleMst.SaleNo {
+				t_SaleMsts[i].T_SaleDtls = append(t_SaleMsts[i].T_SaleDtls, tSaleDtl)
+			}
+		}
+		for _, tSalePayment := range tSalePayments {
+			if tSalePayment.SaleNo == t_SaleMst.SaleNo {
+				t_SaleMsts[i].T_SalePayments = append(t_SaleMsts[i].T_SalePayments, tSalePayment)
+			}
+		}
+	}
+	return 0, t_SaleMsts, nil
+}
+
+func (T_SaleDtl) GetCslTDtlBySaleNos(ctx context.Context, saleNos string) ([]T_SaleDtl, error) {
+	engine := factory.GetCSLEngine()
+	engine.SetMapper(core.SameMapper{})
+
+	sql := "SELECT * from T_SaleDtl where SaleNo in (" + saleNos + ")"
+
+	var t_SaleDtls []T_SaleDtl
+	if err := engine.SQL(sql).Find(&t_SaleDtls); err != nil {
+		return nil, err
+	}
+	return t_SaleDtls, nil
+}
+
+func (T_SalePayment) GetCslTSalePaymentBySaleNos(ctx context.Context, saleNos string) ([]T_SalePayment, error) {
+	engine := factory.GetCSLEngine()
+	engine.SetMapper(core.SameMapper{})
+
+	sql := "SELECT * from T_SalePayment where SaleNo in (" + saleNos + ")"
+
+	var t_SalePayments []T_SalePayment
+	if err := engine.SQL(sql).Find(&t_SalePayments); err != nil {
+		return nil, err
+	}
+	return t_SalePayments, nil
 }
