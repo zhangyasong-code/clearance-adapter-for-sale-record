@@ -25,6 +25,7 @@ func (c TransactionController) Init(g *echo.Group) {
 	g.GET("/fail-log", c.GetFailDataLog)
 	g.GET("/saleTransactions", c.GetSaleTransactions)
 	g.GET("/csl-saleTransactions", c.GetCslSaleTransactions)
+	g.GET("/csl-t-saleTransactions", c.GetCslTSaleTransactions)
 	g.GET("/csl-success", c.GetAllSaleSuccess)
 	g.GET("/csl-success/:saleNo/:dtlSeq", c.GetSaleSuccess)
 }
@@ -91,6 +92,37 @@ func (TransactionController) GetCslSaleTransactions(c echo.Context) error {
 		},
 	})
 }
+
+func (TransactionController) GetCslTSaleTransactions(c echo.Context) error {
+	var data models.RequestInput
+	if err := c.Bind(&data); err != nil {
+		return c.JSON(http.StatusBadRequest, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
+	}
+	if data.MaxResultCount == 0 {
+		data.MaxResultCount = 10
+	}
+	totalCount, items, err := models.CslTSaleMst{}.GetCslTSaleBySaleTransactions(c.Request().Context(), data)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
+	}
+
+	return c.JSON(http.StatusOK, api.Result{
+		Success: true,
+		Result: api.ArrayResult{
+			TotalCount: totalCount,
+			Items:      items,
+		},
+	})
+}
+
 func (TransactionController) GetSaleTransactions(c echo.Context) error {
 	transactionId, _ := strconv.ParseInt(c.QueryParam("transactionId"), 10, 64)
 	orderId, _ := strconv.ParseInt(c.QueryParam("orderId"), 10, 64)
