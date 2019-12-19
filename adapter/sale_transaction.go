@@ -84,6 +84,9 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 			TransactionChannelType: assortedSaleRecord.TransactionChannelType,
 			TotalDiscountPrice:     assortedSaleRecord.TotalDiscountPrice,
 			BaseTrimCode:           assortedSaleRecord.BaseTrimCode,
+			FreightPrice:           assortedSaleRecord.FreightPrice,
+			SalesmanShopCode:       assortedSaleRecord.SalesmanShopCode,
+			SalesmanEmpId:          assortedSaleRecord.SalesmanEmpId,
 		}
 		saleTransactionDtls := make([]models.SaleTransactionDtl, 0)
 		for _, assortedSaleRecordDtl := range assortedSaleRecord.AssortedSaleRecordDtls {
