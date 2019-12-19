@@ -44,6 +44,7 @@ type CslTSaleMst struct {
 	SaleEventName              string            `query:"saleEventName" json:"saleEventName"`
 	OfflineShopCode            sql.NullString    `query:"offlineShopCode" json:"offlineShopCode"`
 	SaleMan                    sql.NullString    `query:"saleMan" json:"saleMan"`
+	CreatedAt                  time.Time         `json:"createdAt" xorm:"created"`
 	CslTSaleDtls               []CslTSaleDtl     `json:"cslTSaleDtls" xorm:"-"`
 	CslTSalePayments           []CslTSalePayment `json:"cslTSalePayments" xorm:"-"`
 }
@@ -80,6 +81,7 @@ type CslTSaleDtl struct {
 	InDateTime                 time.Time       `query:"inDateTime" json:"inDateTime"`
 	ModiUserID                 string          `query:"modiUserID" json:"modiUserID"`
 	ModiDateTime               time.Time       `query:"modiDateTime" json:"modiDateTime"`
+	CreatedAt                  time.Time       `json:"createdAt" xorm:"created"`
 }
 
 type CslTSalePayment struct {
@@ -95,6 +97,7 @@ type CslTSalePayment struct {
 	InDateTime        time.Time      `query:"inDateTime" json:"inDateTime"`
 	ModiUserID        string         `query:"modiUserID" json:"modiUserID"`
 	ModiDateTime      time.Time      `query:"modiDateTime" json:"modiDateTime"`
+	CreatedAt         time.Time      `json:"createdAt" xorm:"created"`
 }
 
 func (cslTSaleMst *CslTSaleMst) Save() error {
