@@ -425,10 +425,14 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 
 				if offerNo != "" && couponNo == "" {
 					promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(offerNo)
-					if promotionEvent.EventNo == "" {
+					if promotionEvent == nil || promotionEvent.EventNo == "" {
 						err = errors.New("PromotionEvent的EventNo为空!")
 					}
 					if err != nil {
+						eventNo := ""
+						if promotionEvent != nil {
+							eventNo = promotionEvent.EventNo
+						}
 						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 							SaleTransactionId:      saleTransaction.Id,
 							TransactionChannelType: saleTransaction.TransactionChannelType,
@@ -438,7 +442,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 							TransactionId:          saleTransactionDtl.TransactionId,
 							TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
 							CreatedBy:              "API",
-							Error:                  err.Error() + " OfferNo:" + offerNo + " EventNo:" + promotionEvent.EventNo,
+							Error:                  err.Error() + " OfferNo:" + offerNo + " EventNo:" + eventNo,
 							Details:                "商品参加的活动不存在！",
 						}
 						if err := SaleRecordIdFailMapping.Save(); err != nil {
