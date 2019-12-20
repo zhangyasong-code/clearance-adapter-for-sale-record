@@ -173,7 +173,7 @@ func (etl SrToClearanceETL) Load(ctx context.Context, source interface{}) error 
 		return err
 	}
 	for _, saleTransaction := range saleTransactions {
-		_, dbSaleTransactions, err := models.SaleTransaction{}.GetSaleTransactions(ctx, saleTransaction.TransactionId, 0, 0, saleTransaction.ShopCode, 1, 0)
+		_, dbSaleTransactions, err := models.SaleTransaction{}.GetSaleTransactions(ctx, saleTransaction.TransactionId, 0, 0, saleTransaction.ShopCode, saleTransaction.TransactionChannelType, 1, 0)
 		if err != nil {
 			return err
 		}
