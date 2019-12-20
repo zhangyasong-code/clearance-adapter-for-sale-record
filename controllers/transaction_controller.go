@@ -132,8 +132,8 @@ func (TransactionController) GetSaleTransactions(c echo.Context) error {
 		maxResultCount = 10
 	}
 	skipCount, _ := strconv.Atoi(c.QueryParam("skipCount"))
-
-	totalCount, items, err := models.SaleTransaction{}.GetSaleTransactions(c.Request().Context(), transactionId, orderId, RefundId, "", maxResultCount, skipCount)
+	transactionChannelType := c.QueryParam("transactionChannelType")
+	totalCount, items, err := models.SaleTransaction{}.GetSaleTransactions(c.Request().Context(), transactionId, orderId, RefundId, "", transactionChannelType, maxResultCount, skipCount)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, api.Result{
 			Error: api.Error{

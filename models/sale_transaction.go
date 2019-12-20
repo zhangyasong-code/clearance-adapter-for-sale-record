@@ -533,7 +533,7 @@ func (SaleRecordIdSuccessMapping) GetBySaleNo(salNo string, saleTransactionId in
 	return successes, nil
 }
 
-func (SaleTransaction) GetSaleTransactions(ctx context.Context, transactionId, orderId, RefundId int64, shopCode string, maxResultCount, skipCount int) (int64, []SaleTransaction, error) {
+func (SaleTransaction) GetSaleTransactions(ctx context.Context, transactionId, orderId, RefundId int64, shopCode, transactionChannelType string, maxResultCount, skipCount int) (int64, []SaleTransaction, error) {
 
 	queryBuilder := func() xorm.Interface {
 		q := factory.GetCfsrEngine().Where("1=1")
@@ -548,6 +548,9 @@ func (SaleTransaction) GetSaleTransactions(ctx context.Context, transactionId, o
 		}
 		if shopCode != "" {
 			q.And("shop_code =?", shopCode)
+		}
+		if transactionChannelType != "" {
+			q.And("transaction_channel_type = ?", transactionChannelType)
 		}
 		return q
 	}
