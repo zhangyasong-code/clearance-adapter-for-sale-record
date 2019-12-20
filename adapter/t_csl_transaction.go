@@ -449,7 +449,7 @@ func (etl ClearanceToCslTSaleETL) Transform(ctx context.Context, source interfac
 					ProdCode:                   sku.Code,
 					EANCode:                    eANCode,
 					NormalPrice:                normalPrice,
-					Price:                      normalPrice,
+					Price:                      saleTransactionDtl.SalePrice,
 					SaleQty:                    saleQty,
 					SaleAmt:                    saleAmt,
 					DiscountAmt:                discountAmt,
