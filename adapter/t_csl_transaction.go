@@ -21,7 +21,7 @@ import (
 
 const (
 	MSLV2_EMALL = "1"
-	ChannelCode = "MSLV2"
+	ChannelCode = "MSL2"
 )
 
 // Clearance到CSL_T_sale
