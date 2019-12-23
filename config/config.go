@@ -61,6 +61,9 @@ type C struct {
 		Driver     string
 		Connection string
 	}
+	BehaviorLog struct {
+		Kafka echomiddleware.KafkaConfig
+	}
 	Services struct {
 		PlaceManagementApi string
 		GetTokenApi        string
@@ -69,9 +72,6 @@ type C struct {
 	GetTokenUser struct {
 		AppId        string
 		AppSecretKey string
-	}
-	BehaviorLog struct {
-		Kafka echomiddleware.KafkaConfig
 	}
 	AppEnv      string
 	ServiceName string
