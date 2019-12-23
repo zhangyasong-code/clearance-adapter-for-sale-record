@@ -108,6 +108,7 @@ func (CslSaleDtlStruct) GetCslSaleDtl(saleNo string) (interface{}, error) {
 		, F.PaymentCode 				AS PaymentCode
 		, A.CustNo 						AS CustNo
 		, G.EventName 					AS PrimaryEventName
+		, ''							AS Status
 		FROM SaleMst A WITH(NOLOCK)
 			INNER JOIN Shop B
 			ON A.BrandCode=B.BrandCode AND A.ShopCode=B.ShopCode
@@ -146,6 +147,7 @@ func (CslSaleDtlStruct) GetCslSaleDtl(saleNo string) (interface{}, error) {
 		, F.PaymentCode 				AS PaymentCode
 		, A.CustNo 						AS CustNo
 		, G.EventName 					AS PrimaryEventName
+		, 'registered'					AS Status
 		FROM ReturnSaleMst A WITH(NOLOCK)
 			INNER JOIN Shop B
 			ON A.BrandCode=B.BrandCode AND A.ShopCode=B.ShopCode
@@ -202,7 +204,7 @@ func (CslSaleDtlStruct) GetCslSaleDtl(saleNo string) (interface{}, error) {
 		cslSaleMstStruct.PaymentName = string(value["PaymentName"])
 		cslSaleMstStruct.PaymentCode = string(value["PaymentCode"])
 		cslSaleMstStruct.PrimaryEventName = string(value["PrimaryEventName"])
-		cslSaleMstStruct.Status = "registered"
+		cslSaleMstStruct.Status = string(value["Status"])
 		cslSaleMstStructs = append(cslSaleMstStructs, cslSaleMstStruct)
 	}
 	saleDtlMap, err := engine.Query(`
