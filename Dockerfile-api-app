@@ -18,7 +18,7 @@ FROM pangpanglabs/alpine-ssl
 # copy config files to image
 COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/*.yml /go/src/clearance/clearance-adapter-for-sale-record/
 # copy kafka cert files to image
-COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/certfile/ ./certfile/
+COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/cmd/api-app/certfile/ ./certfile/
 # COPY --from=builder /swagger-ui/ ./swagger-ui/
 # copy execute file to image
 WORKDIR /go/src/clearance/clearance-adapter-for-sale-record/cmd/api-app
