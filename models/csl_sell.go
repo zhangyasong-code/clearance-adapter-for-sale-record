@@ -50,6 +50,7 @@ type CslSaleMstStruct struct {
 	PreSaleNo            string             `query:"preSaleNo" json:"preSaleNo"`
 	RefundReason         string             `query:"refundReason" json:"refundReason"`
 	Msl2Message          string             `query:"msl2Message" json:"msl2Message"`
+	Status               string             `query:"status" json:"status"`
 	SaleDtls             []CslSaleDtlStruct `json:"saleDtls"`
 }
 
@@ -537,6 +538,7 @@ func (CslSaleMstStruct) GetCslSaleMst(brandCode, shopCode, startSaleDate, endSal
 		cslSaleMstStruct.InUserID = string(value["InUserID"])
 		cslSaleMstStruct.InDateTime = string(value["InDateTime"])
 		cslSaleMstStruct.SaleOfficeCode = string(value["SaleOfficeCode"])
+		cslSaleMstStruct.Status = "registered"
 
 		cslSaleMstStructs = append(cslSaleMstStructs, cslSaleMstStruct)
 		cslSellStruct.SaleAmtAll = number.ToFixed(cslSellStruct.SaleAmtAll, nil)
