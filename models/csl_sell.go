@@ -202,6 +202,7 @@ func (CslSaleDtlStruct) GetCslSaleDtl(saleNo string) (interface{}, error) {
 		cslSaleMstStruct.PaymentName = string(value["PaymentName"])
 		cslSaleMstStruct.PaymentCode = string(value["PaymentCode"])
 		cslSaleMstStruct.PrimaryEventName = string(value["PrimaryEventName"])
+		cslSaleMstStruct.Status = "registered"
 		cslSaleMstStructs = append(cslSaleMstStructs, cslSaleMstStruct)
 	}
 	saleDtlMap, err := engine.Query(`
