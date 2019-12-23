@@ -15,6 +15,7 @@ func (c CslRefundController) Init(g *echo.Group) {
 	g.GET("/csl-sale-for-return", c.GetCslSaleForReturn)
 	g.GET("/csl-sale-detail-for-return", c.GetCslSaleDetailForReturn)
 	g.POST("/csl-return-insert", c.CslReturnInsert)
+	g.POST("/csl-return-approve-insert", c.CslReturnSaleInput)
 }
 
 func (CslRefundController) GetCslSaleDetailForReturn(c echo.Context) error {
@@ -77,6 +78,29 @@ func (CslRefundController) CslReturnInsert(c echo.Context) error {
 		})
 	}
 	err := models.CslRefundInput{}.CslRefundInput(c.Request().Context(), data)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
+	}
+	return c.JSON(http.StatusOK, api.Result{
+		Success: true,
+		Result:  api.ArrayResult{},
+	})
+}
+
+func (CslRefundController) CslReturnSaleInput(c echo.Context) error {
+	var data models.CslSaleMstStruct
+	if err := c.Bind(&data); err != nil {
+		return c.JSON(http.StatusBadRequest, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
+	}
+	err := models.CslRefundInput{}.CslReturnSaleInput(c.Request().Context(), data)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, api.Result{
 			Error: api.Error{

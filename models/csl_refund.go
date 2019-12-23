@@ -87,6 +87,124 @@ type CslRefundInput struct {
 	CslRefundMst  CslRefundMst   `json:"cslRefundMst"`
 }
 
+type ReturnSaleDtl struct {
+	ReturnSaleNo                      string         `query:"returnSaleNo" json:"returnSaleNo" xorm:"pk"`
+	DtSeq                             int64          `query:"dtSeq" json:"dtSeq" xorm:"pk"`
+	BrandCode                         string         `query:"brandCode" json:"brandCode"`
+	ShopCode                          string         `query:"shopCode" json:"shopCode"`
+	Dates                             string         `query:"dates" json:"dates"`
+	PosNo                             string         `query:"posNo" json:"posNo"`
+	SeqNo                             int64          `query:"seqNo" json:"seqNo"`
+	NormalSaleTypeCode                string         `query:"normalSaleTypeCode" json:"normalSaleTypeCode"`
+	CustMileagePolicyNo               string         `query:"custMileagePolicyNo" json:"custMileagePolicyNo"`
+	PrimaryCustEventNo                sql.NullInt64  `query:"primaryCustEventNo" json:"primaryCustEventNo"`
+	PrimaryEventTypeCode              sql.NullString `query:"primaryEventTypeCode" json:"primaryEventTypeCode"`
+	PrimaryEventSettleTypeCode        sql.NullString `query:"primaryEventSettleTypeCode" json:"primaryEventSettleTypeCode"`
+	SecondaryCustEventNo              sql.NullInt64  `query:"secondaryCustEventNo" json:"secondaryCustEventNo"`
+	SecondaryEventTypeCode            sql.NullString `query:"secondaryEventTypeCode" json:"secondaryEventTypeCode"`
+	SecondaryEventSettleTypeCode      sql.NullString `query:"secondaryEventSettleTypeCode" json:"secondaryEventSettleTypeCode"`
+	SaleEventNo                       sql.NullInt64  `query:"saleEventNo" json:"saleEventNo"`
+	SaleEventTypeCode                 sql.NullString `query:"saleEventTypeCode" json:"saleEventTypeCode"`
+	SaleReturnReasonCode              sql.NullString `query:"saleReturnReasonCode" json:"saleReturnReasonCode"`
+	ProdCode                          string         `query:"prodCode" json:"prodCode"`
+	EANCode                           string         `query:"eANCode" json:"eANCode"`
+	PriceTypeCode                     string         `query:"priceTypeCode" json:"priceTypeCode"`
+	SupGroupCode                      string         `query:"supGroupCode" json:"supGroupCode"`
+	SaipType                          string         `query:"saipType" json:"saipType"`
+	NormalPrice                       float64        `query:"normalPrice" json:"normalPrice"`
+	Price                             float64        `query:"price" json:"price"`
+	PriceDecisionDate                 string         `query:"priceDecisionDate" json:"priceDecisionDate"`
+	SaleQty                           int64          `query:"saleQty" json:"saleQty"`
+	SaleAmt                           float64        `query:"saleAmt" json:"saleAmt"`
+	EventAutoDiscountAmt              float64        `query:"eventAutoDiscountAmt" json:"eventAutoDiscountAmt"`
+	EventDecisionDiscountAmt          float64        `query:"eventDecisionDiscountAmt" json:"eventDecisionDiscountAmt"`
+	SaleEventSaleBaseAmt              float64        `query:"saleEventSaleBaseAmt" json:"saleEventSaleBaseAmt"`
+	SaleEventDiscountBaseAmt          float64        `query:"saleEventDiscountBaseAmt" json:"saleEventDiscountBaseAmt"`
+	SaleEventNormalSaleRecognitionChk bool           `query:"saleEventNormalSaleRecognitionChk" json:"saleEventNormalSaleRecognitionChk"`
+	SaleEventInterShopSalePermitChk   bool           `query:"saleEventInterShopSalePermitChk" json:"saleEventInterShopSalePermitChk"`
+	SaleEventAutoDiscountAmt          float64        `query:"saleEventAutoDiscountAmt" json:"saleEventAutoDiscountAmt"`
+	SaleEventManualDiscountAmt        float64        `query:"saleEventManualDiscountAmt" json:"saleEventManualDiscountAmt"`
+	SaleVentDecisionDiscountAmt       float64        `query:"saleVentDecisionDiscountAmt" json:"saleVentDecisionDiscountAmt"`
+	ChinaFISaleAmt                    float64        `query:"chinaFISaleAmt" json:"chinaFISaleAmt"`
+	EstimateSaleAmt                   float64        `query:"estimateSaleAmt" json:"estimateSaleAmt"`
+	SellingAmt                        float64        `query:"sellingAmt" json:"sellingAmt"`
+	NormalFee                         float64        `query:"normalFee" json:"normalFee"`
+	SaleEventFee                      float64        `query:"saleEventFee" json:"saleEventFee"`
+	ActualSaleAmt                     float64        `query:"actualSaleAmt" json:"actualSaleAmt"`
+	UseMileage                        float64        `query:"useMileage" json:"useMileage"`
+	PreSaleNo                         sql.NullString `query:"preSaleNo" json:"preSaleNo"`
+	PreSaleDtSeq                      sql.NullInt64  `query:"preSaleDtSeq" json:"preSaleDtSeq"`
+	NormalFeeRate                     float64        `query:"normalFeeRate" json:"normalFeeRate"`
+	SaleEventFeeRate                  float64        `query:"saleEventFeeRate" json:"saleEventFeeRate"`
+	InUserID                          string         `query:"inUserID" json:"inUserID"`
+	InDateTime                        time.Time      `query:"inDateTime" json:"inDateTime"`
+	DiscountAmt                       float64        `query:"discountAmt" json:"discountAmt"`
+	DiscountAmtAsCost                 float64        `query:"discountAmtAsCost" json:"discountAmtAsCost"`
+	UseMileageSettleType              string         `query:"useMileageSettleType" json:"useMileageSettleType"`
+	EstimateSaleAmtForConsumer        float64        `query:"estimateSaleAmtForConsumer" json:"estimateSaleAmtForConsumer"`
+	SaleEventDiscountAmtForConsumer   float64        `query:"saleEventDiscountAmtForConsumer" json:"saleEventDiscountAmtForConsumer"`
+	ShopEmpEstimateSaleAmt            float64        `query:"shopEmpEstimateSaleAmt" json:"shopEmpEstimateSaleAmt"`
+
+	ObtainMileage float64 `query:"obtainMileage" json:"obtainMileage"`
+}
+
+type ReturnSaleMst struct {
+	ReturnSaleNo                string         `query:"returnSaleNo" json:"returnSaleNo" xorm:"pk"`
+	BrandCode                   string         `query:"brandCode" json:"brandCode"`
+	ShopCode                    string         `query:"shopCode" json:"shopCode"`
+	Dates                       string         `query:"dates" json:"dates"`
+	PosNo                       string         `query:"posNo" json:"posNo"`
+	SeqNo                       int64          `query:"seqNo" json:"seqNo"`
+	SaleMode                    string         `query:"saleMode" json:"saleMode"`
+	PolicyNo                    int64          `query:"policyNo" json:"policyNo"`
+	CustNo                      sql.NullString `query:"custNo" json:"custNo"`
+	CustCardNo                  sql.NullString `query:"custCardNo" json:"custCardNo"`
+	CustMileagePolicyNo         sql.NullInt64  `query:"custMileagePolicyNo" json:"custMileagePolicyNo"`
+	PrimaryCustEventNo          sql.NullInt64  `query:"primaryCustEventNo" json:"primaryCustEventNo"`
+	SecondaryCustEventNo        sql.NullInt64  `query:"secondaryCustEventNo" json:"secondaryCustEventNo"`
+	DepartStoreReceiptNo        string         `query:"departStoreReceiptNo" json:"departStoreReceiptNo"`
+	SaleQty                     int64          `query:"saleQty" json:"saleQty"`
+	SaleAmt                     float64        `query:"saleAmt" json:"saleAmt"`
+	DiscountAmt                 float64        `query:"discountAmt" json:"discountAmt"`
+	ChinaFISaleAmt              float64        `query:"chinaFISaleAmt" json:"chinaFISaleAmt"`
+	EstimateSaleAmt             float64        `query:"estimateSaleAmt" json:"estimateSaleAmt"`
+	SellingAmt                  float64        `query:"sellingAmt" json:"sellingAmt"`
+	FeeAmt                      float64        `query:"feeAmt" json:"feeAmt"`
+	ActualSaleAmt               float64        `query:"actualSaleAmt" json:"actualSaleAmt"`
+	UseMileage                  float64        `query:"useMileage" json:"useMileage"`
+	ObtainMileage               float64        `query:"obtainMileage" json:"obtainMileage"`
+	InUserID                    string         `query:"inUserID" json:"inUserID"`
+	InDateTime                  time.Time      `query:"inDateTime" json:"inDateTime"`
+	DiscountAmtAsCost           float64        `query:"discountAmtAsCost" json:"discountAmtAsCost"`
+	CustDivisionCode            sql.NullString `query:"custDivisionCode" json:"custDivisionCode"`
+	MileageCustChangeStatusCode sql.NullString `query:"mileageCustChangeStatusCode" json:"mileageCustChangeStatusCode"`
+	CustGradeCode               sql.NullString `query:"custGradeCode" json:"custGradeCode"`
+	PreSaleNo                   sql.NullString `query:"preSaleNo" json:"preSaleNo"`
+	ActualSellingAmt            float64        `query:"actualSellingAmt" json:"actualSellingAmt"`
+	EstimateSaleAmtForConsumer  float64        `query:"estimateSaleAmtForConsumer" json:"estimateSaleAmtForConsumer"`
+	ShopEmpEstimateSaleAmt      float64        `query:"shopEmpEstimateSaleAmt" json:"shopEmpEstimateSaleAmt"`
+	ComplexShopSeqNo            sql.NullString `query:"complexShopSeqNo" json:"complexShopSeqNo"`
+	CustBrandCode               string         `query:"custBrandCode" json:"custBrandCode"`
+	FirstApprovalStatus         string         `query:"firstApprovalStatus" json:"firstApprovalStatus"`
+	FirstApprovalUserID         string         `query:"firstApprovalUserID" json:"firstApprovalUserID"`
+	FirstApprovalDateTime       time.Time      `query:"firstApprovalDateTime" json:"firstApprovalDateTime"`
+	SecondApprovalStatus        string         `query:"secondApprovalStatus" json:"secondApprovalStatus"`
+	SecondApprovalUserID        string         `query:"secondApprovalUserID" json:"secondApprovalUserID"`
+	SecondApprovalDateTime      time.Time      `query:"secondApprovalDateTime" json:"secondApprovalDateTime"`
+	SaleSeqNo                   string         `query:"saleSeqNo" json:"saleSeqNo"`
+	SaleOfficeCode              string         `query:"saleOfficeCode" json:"saleOfficeCode"`
+}
+
+type ReturnSalePayment struct {
+	ReturnSaleNo       string         `query:"returnSaleNo" json:"returnSaleNo" xorm:"pk"`
+	SeqNo              int64          `query:"seqNo" json:"seqNo" xorm:"pk"`
+	PaymentCode        string         `query:"paymentCode" json:"paymentCode"`
+	PaymentAmt         float64        `query:"paymentAmt" json:"paymentAmt"`
+	InUserID           string         `query:"inUserID" json:"inUserID"`
+	InDateTime         time.Time      `query:"inDateTime" json:"inDateTime"`
+	CreditCardFirmCode sql.NullString `query:"creditCardFirmCode" json:"creditCardFirmCode"`
+}
+
 func (CslRefundDtl) GetCslSaleDetailForReturn(brandCode, shopCode, startSaleDate, endSaleDate, saleNo, deptStoreReceiptNo, customerNo, productCode string) (interface{}, error) {
 	var cslRefundDtls []CslRefundDtl
 	var targetReturnDtailSaleMap []map[string][]byte
@@ -314,6 +432,7 @@ const (
 	NotSynChronized  = "R" // R 未同步
 	SaipType         = "00"
 	InUserID         = "MSLV2"
+	Approval_Status  = "N"
 )
 
 func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslSaleMstStruct) error {
@@ -587,8 +706,303 @@ func (CslRefundInput) CslRefundInput(ctx context.Context, cslRefundInput CslSale
 			return err
 		}
 	}
+	if _, err := session.Query(`update returnsalemst set FirstApprovalStatus='A', SecondApprovalStatus='A' where PreSaleNo = ?`, cslRefundInput.PreSaleNo); err != nil {
+		session.Rollback()
+		return err
+	}
 	if saleMst.CustNo.String != "" {
 		if _, err := session.Query(`EXEC up_CSLK_SMM_UpdateCustomerStateBySale_CustMileageInfo_U1 @SaleNo = ?`, saleMst.SaleNo); err != nil {
+			return err
+		}
+	}
+	if err := session.Commit(); err != nil {
+		return err
+	}
+	// if saleMst.CustNo.String != "" {
+	// 	msl2Message := strings.Split(cslRefundInput.Msl2Message, ",")
+	// 	mallId, err := strconv.ParseInt(msl2Message[0], 10, 64)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	telNo, err := (SaleMst{}).GetCslCustomer(ctx, saleMst.BrandCode, saleMst.CustNo.String)
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 	}
+	// 	mileage, err := (Mileage{}).GetMileage(ctx, telNo, msl2Message[1], msl2Message[0])
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 	}
+	// 	if err := (Mileage{}).SetMslv2Mileage(ctx, Mileage{
+	// 		MemberId:   mileage.MemberId,
+	// 		CardNo:     mileage.CardNo,
+	// 		Mobile:     mileage.Mobile,
+	// 		MallId:     mallId,
+	// 		TenantCode: msl2Message[1],
+	// 		Type:       "A",
+	// 		TradeDate:  time.Now(),
+	// 		Point:      number.ToFixed(saleMst.UseMileage*-1+saleMst.ObtainMileage, nil),
+	// 		Remark:     "CSL1.0退货",
+	// 		CreateBy:   "CSL1.0退货",
+	// 	}); err != nil {
+	// 		fmt.Println(err)
+	// 	}
+	// }
+	return nil
+}
+
+func (CslRefundInput) CslReturnSaleInput(ctx context.Context, cslRefundInput CslSaleMstStruct) error {
+	saleDate := time.Now().Format("20060102")
+	var saleDtls []ReturnSaleDtl
+	var salePayments []ReturnSalePayment
+	var saleMst ReturnSaleMst
+	var policyNo int64
+	engine := factory.GetCSLEngine()
+	engine.SetMapper(core.SameMapper{})
+	//create session
+	session := engine.NewSession()
+	defer session.Close()
+	if err := session.Begin(); err != nil {
+		return err
+	}
+	getPolicyNoSql := "SELECT * from SaleReturnControlPolicy WHERE TypeCode = 'D' AND BrandCode ='" + cslRefundInput.BrandCode + "'"
+	policyMap, err := session.Query(getPolicyNoSql)
+	if err != nil {
+		return err
+	}
+	for _, value := range policyMap {
+		policyNo, _ = strconv.ParseInt(string(value["value"]), 10, 64)
+	}
+	getPreSaleSql := "SELECT * from ReturnSaleMst WHERE SaleMode = 'R' AND SecondApprovalStatus IN ('A','N') AND PreSaleNo ='" + cslRefundInput.PreSaleNo + "'"
+	var refundedSaleMsts []ReturnSaleMst
+	if err := session.SQL(getPreSaleSql).Find(&refundedSaleMsts); err != nil {
+		return err
+	}
+	if len(refundedSaleMsts) > 0 {
+		return errors.New("此单已有审批中的退货：" + cslRefundInput.PreSaleNo)
+	}
+	preSaleMst := SaleMst{}
+	preSaleMstList, err := SaleMst{}.GetCslMstBySaleNo(ctx, cslRefundInput.PreSaleNo)
+	if err != nil {
+		return err
+	}
+	if len(preSaleMstList) > 0 {
+		preSaleMst = preSaleMstList[0]
+	} else {
+		return errors.New("没有找到CSL原单编号：" + cslRefundInput.PreSaleNo)
+	}
+	preSaleDtls, err := SaleDtl{}.GetCslDtlBySaleNos(ctx, "'"+cslRefundInput.PreSaleNo+"'")
+	if err != nil {
+		return err
+	}
+	preSalePayments, err := SalePayment{}.GetCslSalePaymentBySaleNos(ctx, "'"+cslRefundInput.PreSaleNo+"'")
+	if err != nil {
+		return err
+	}
+	//----------------------------。
+	lastSeq, err := SaleMst{}.GetlastSeq(cslRefundInput.ShopCode, saleDate, MSLV1_REFUND_POS)
+	if err != nil {
+		return err
+	}
+	seq, str, err := SaleMst{}.GetSeqAndStartStr(lastSeq)
+	if err != nil {
+		return err
+	}
+	endSeq := seq
+	startStr := str
+	//Get SequenceNumber
+	sequenceNumber, nextSeq, str, err := SaleMst{}.GetSequenceNumber(endSeq, startStr)
+	if err != nil {
+		return err
+	}
+	endSeq = nextSeq
+	startStr = str
+	saleNo := "R" + cslRefundInput.ShopCode + saleDate[len(saleDate)-6:len(saleDate)] + MSLV1_REFUND_POS + sequenceNumber
+
+	//get SeqNo
+	strSeqNo := ""
+	startStrs := []string{"A", "B", "C", "D", "E", "F", "G"}
+	for _, startStr := range startStrs {
+		if strings.HasPrefix(sequenceNumber, startStr) {
+			strSeqNo = sequenceNumber[len(sequenceNumber)-3 : len(sequenceNumber)]
+			break
+		} else {
+			strSeqNo = sequenceNumber
+		}
+	}
+	seqNo, err := strconv.ParseInt(strSeqNo, 10, 64)
+	if err != nil {
+		return err
+	}
+	//获取业绩分配人
+	salesPerson, err := Employee{}.GetEmployee(cslRefundInput.SaleManId)
+	if err != nil {
+		return err
+	}
+	userInfo, err := UserInfo{}.GetUserInfo(salesPerson.EmpId)
+	if err != nil {
+		return err
+	}
+	colleaguetUserID := ""
+	colleagues, err := Colleagues{}.GetColleaguesAuth(cslRefundInput.UserId, "")
+	if colleagues.UserName != "" {
+		colleaguetUserID = colleagues.UserName
+	} else {
+		colleaguetUserID = InUserID
+	}
+	//----------------------------》
+	saleMode := ""
+	complexShopSeqNo := sql.NullString{"", false}
+	preSaleNo := sql.NullString{"", false}
+
+	saleMode = Refund
+	preSaleNo = sql.NullString{cslRefundInput.PreSaleNo, true}
+
+	saleMst.UseMileage = number.ToFixed(saleMst.UseMileage, nil)
+	saleMst.SellingAmt = number.ToFixed(saleMst.SellingAmt, nil)
+	saleMst.DiscountAmt = number.ToFixed(saleMst.DiscountAmt, nil)
+	saleMst.ChinaFISaleAmt = number.ToFixed(saleMst.ChinaFISaleAmt, nil)
+	saleMst.ActualSaleAmt = number.ToFixed(saleMst.ActualSaleAmt, nil)
+	saleMst.EstimateSaleAmt = number.ToFixed(saleMst.EstimateSaleAmt, nil)
+	saleMst.ShopEmpEstimateSaleAmt = number.ToFixed(saleMst.ShopEmpEstimateSaleAmt, nil)
+	saleMst.FeeAmt = number.ToFixed(saleMst.FeeAmt, nil)
+	saleMst.EstimateSaleAmtForConsumer = number.ToFixed(saleMst.EstimateSaleAmt, nil)
+	saleMst.ActualSellingAmt = number.ToFixed(saleMst.ActualSellingAmt, nil)
+
+	saleMst = ReturnSaleMst{
+		ReturnSaleNo:               saleNo,
+		SeqNo:                      seqNo,
+		PosNo:                      MSLV1_REFUND_POS,
+		Dates:                      saleDate,
+		InUserID:                   colleaguetUserID,
+		SaleMode:                   saleMode,
+		PreSaleNo:                  preSaleNo,
+		SaleOfficeCode:             MSLv2_0,
+		BrandCode:                  preSaleMst.BrandCode,
+		ShopCode:                   preSaleMst.ShopCode,
+		CustNo:                     preSaleMst.CustNo,
+		CustCardNo:                 preSaleMst.CustCardNo,
+		CustGradeCode:              preSaleMst.CustGradeCode,
+		CustBrandCode:              preSaleMst.CustBrandCode,
+		SaleQty:                    preSaleMst.SaleQty * -1,
+		SaleAmt:                    preSaleMst.SaleAmt * -1,
+		ObtainMileage:              preSaleMst.ObtainMileage * -1,
+		EstimateSaleAmt:            preSaleMst.EstimateSaleAmt * -1,
+		ActualSellingAmt:           preSaleMst.ActualSellingAmt * -1,
+		UseMileage:                 preSaleMst.UseMileage * -1,
+		SellingAmt:                 preSaleMst.SellingAmt * -1,
+		DiscountAmt:                preSaleMst.DiscountAmt * -1,
+		ChinaFISaleAmt:             preSaleMst.ChinaFISaleAmt * -1,
+		ActualSaleAmt:              preSaleMst.ActualSaleAmt * -1,
+		FeeAmt:                     preSaleMst.FeeAmt * -1,
+		DepartStoreReceiptNo:       preSaleMst.DepartStoreReceiptNo,
+		EstimateSaleAmtForConsumer: preSaleMst.EstimateSaleAmtForConsumer * -1,
+		ShopEmpEstimateSaleAmt:     preSaleMst.ShopEmpEstimateSaleAmt * -1,
+		ComplexShopSeqNo:           complexShopSeqNo,
+		FirstApprovalStatus:        Approval_Status,
+		FirstApprovalUserID:        colleaguetUserID,
+		SecondApprovalStatus:       Approval_Status,
+		SecondApprovalUserID:       colleaguetUserID,
+		DiscountAmtAsCost:          0,
+
+		PolicyNo:  policyNo,
+		SaleSeqNo: strings.TrimLeft(saleNo, "R"),
+	}
+	var dtSeq int64 = 0
+	for _, preSaleDtl := range preSaleDtls {
+		dtSeq += 1
+		saleDtl := ReturnSaleDtl{
+			ReturnSaleNo:      saleNo,
+			DtSeq:             dtSeq,
+			SeqNo:             seqNo,
+			Dates:             saleDate,
+			InUserID:          userInfo.UserName,
+			PosNo:             MSLV1_REFUND_POS,
+			PriceDecisionDate: saleDate,
+			PreSaleNo:         preSaleNo,
+			PreSaleDtSeq:      sql.NullInt64{preSaleDtl.DtSeq, true},
+
+			ShopCode:                          preSaleDtl.ShopCode,
+			BrandCode:                         preSaleDtl.BrandCode,
+			ProdCode:                          preSaleDtl.ProdCode,
+			EANCode:                           preSaleDtl.EANCode,
+			NormalSaleTypeCode:                preSaleDtl.NormalSaleTypeCode,
+			PrimaryCustEventNo:                preSaleDtl.PrimaryCustEventNo,
+			PrimaryEventTypeCode:              preSaleDtl.PrimaryEventTypeCode,
+			PrimaryEventSettleTypeCode:        preSaleDtl.PrimaryEventSettleTypeCode,
+			SecondaryCustEventNo:              preSaleDtl.SecondaryCustEventNo,
+			SecondaryEventTypeCode:            preSaleDtl.SecondaryEventTypeCode,
+			SecondaryEventSettleTypeCode:      preSaleDtl.SecondaryEventSettleTypeCode,
+			SaleEventNo:                       preSaleDtl.SaleEventNo,
+			SaleEventTypeCode:                 preSaleDtl.SaleEventTypeCode,
+			PriceTypeCode:                     preSaleDtl.PriceTypeCode,
+			SupGroupCode:                      preSaleDtl.SupGroupCode,
+			SaipType:                          preSaleDtl.SaipType,
+			UseMileageSettleType:              preSaleDtl.UseMileageSettleType,
+			SaleEventNormalSaleRecognitionChk: preSaleDtl.SaleEventNormalSaleRecognitionChk,
+
+			NormalPrice:                     preSaleDtl.NormalPrice,
+			Price:                           preSaleDtl.Price,
+			SaleQty:                         preSaleDtl.SaleQty * -1,
+			SaleAmt:                         preSaleDtl.SaleAmt * -1,
+			EventAutoDiscountAmt:            preSaleDtl.EventAutoDiscountAmt * -1,
+			EventDecisionDiscountAmt:        preSaleDtl.EventDecisionDiscountAmt * -1,
+			SaleEventSaleBaseAmt:            preSaleDtl.SaleEventSaleBaseAmt,
+			SaleEventDiscountBaseAmt:        preSaleDtl.SaleEventDiscountBaseAmt,
+			SaleEventAutoDiscountAmt:        preSaleDtl.SaleEventAutoDiscountAmt * -1,
+			SaleEventManualDiscountAmt:      preSaleDtl.SaleEventManualDiscountAmt * -1,
+			SaleVentDecisionDiscountAmt:     preSaleDtl.SaleVentDecisionDiscountAmt * -1,
+			ChinaFISaleAmt:                  preSaleDtl.ChinaFISaleAmt * -1,
+			EstimateSaleAmt:                 preSaleDtl.EstimateSaleAmt * -1,
+			SellingAmt:                      preSaleDtl.SellingAmt * -1,
+			NormalFee:                       preSaleDtl.NormalFee * -1,
+			SaleEventFee:                    preSaleDtl.SaleEventFee * -1,
+			ActualSaleAmt:                   preSaleDtl.ActualSaleAmt * -1,
+			UseMileage:                      preSaleDtl.UseMileage * -1,
+			NormalFeeRate:                   preSaleDtl.NormalFeeRate,
+			SaleEventFeeRate:                preSaleDtl.SaleEventFeeRate,
+			DiscountAmt:                     preSaleDtl.DiscountAmt * -1,
+			DiscountAmtAsCost:               preSaleDtl.DiscountAmtAsCost * -1,
+			EstimateSaleAmtForConsumer:      preSaleDtl.EstimateSaleAmtForConsumer * -1,
+			SaleEventDiscountAmtForConsumer: preSaleDtl.SaleEventDiscountAmtForConsumer * -1,
+			ShopEmpEstimateSaleAmt:          preSaleDtl.ShopEmpEstimateSaleAmt * -1,
+			SaleEventInterShopSalePermitChk: false,
+			SaleReturnReasonCode:            sql.NullString{"", false},
+
+			ObtainMileage: 0,
+		}
+		saleDtls = append(saleDtls, saleDtl)
+	}
+	for _, preSalePayment := range preSalePayments {
+		salePayment := ReturnSalePayment{
+			ReturnSaleNo:       saleNo,
+			SeqNo:              preSalePayment.SeqNo,
+			PaymentCode:        preSalePayment.PaymentCode,
+			PaymentAmt:         preSalePayment.PaymentAmt * -1,
+			CreditCardFirmCode: preSalePayment.CreditCardFirmCode,
+			InUserID:           colleaguetUserID,
+		}
+		salePayments = append(salePayments, salePayment)
+	}
+	local, _ := time.ParseDuration("8h")
+	createTime := (time.Now()).Add(local)
+	saleMst.InDateTime = createTime
+	saleMst.FirstApprovalDateTime = createTime
+	saleMst.SecondApprovalDateTime = createTime
+	if _, err := session.Table("dbo.ReturnSaleMst").Insert(&saleMst); err != nil {
+		session.Rollback()
+		return err
+	}
+	for _, saleDtlFor := range saleDtls {
+		saleDtlFor.InDateTime = createTime
+		if _, err := session.Table("dbo.ReturnSaleDtl").Insert(&saleDtlFor); err != nil {
+			session.Rollback()
+			return err
+		}
+	}
+	for _, salePaymentFor := range salePayments {
+		salePaymentFor.InDateTime = createTime
+		if _, err := session.Table("dbo.ReturnSalePayment").Insert(&salePaymentFor); err != nil {
+			session.Rollback()
 			return err
 		}
 	}
