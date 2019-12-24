@@ -770,7 +770,7 @@ func (CslRefundInput) CslReturnSaleInput(ctx context.Context, cslRefundInput Csl
 		return err
 	}
 	for _, value := range policyMap {
-		policyNo, _ = strconv.ParseInt(string(value["value"]), 10, 64)
+		policyNo, _ = strconv.ParseInt(string(value["PolicyNo"]), 10, 64)
 	}
 	getPreSaleSql := "SELECT * from ReturnSaleMst WHERE SaleMode = 'R' AND SecondApprovalStatus IN ('A','N') AND PreSaleNo ='" + cslRefundInput.PreSaleNo + "'"
 	var refundedSaleMsts []ReturnSaleMst
