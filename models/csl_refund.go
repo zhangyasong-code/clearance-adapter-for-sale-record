@@ -799,40 +799,28 @@ func (CslRefundInput) CslReturnSaleInput(ctx context.Context, cslRefundInput Csl
 		return err
 	}
 	//----------------------------。
-	lastSeq, err := SaleMst{}.GetlastSeq(cslRefundInput.ShopCode, saleDate, MSLV1_REFUND_POS)
+	getSeqNoSql := "	SELECT  CASE WHEN MAX(SeqNo) IS NULL THEN 0 ELSE MAX(SeqNo) END AS MaxSeqNo FROM ReturnSaleMst WHERE BrandCode = '" + cslRefundInput.BrandCode + "'" +
+		" AND ShopCode = '" + cslRefundInput.ShopCode + "'" +
+		" AND Dates = '" + saleDate + "'"
+	var maxSeqNo []string
+	if err := session.SQL(getSeqNoSql).Find(&maxSeqNo); err != nil {
+		return err
+	}
+	fmt.Println(maxSeqNo)
+	if len(maxSeqNo) == 0 {
+		maxSeqNo[0] = "0"
+	}
+	fmt.Println(maxSeqNo[0])
+	maxSeqNoInt, err := strconv.ParseInt(maxSeqNo[0], 10, 64)
 	if err != nil {
 		return err
 	}
-	seq, str, err := SaleMst{}.GetSeqAndStartStr(lastSeq)
-	if err != nil {
-		return err
-	}
-	endSeq := seq
-	startStr := str
-	//Get SequenceNumber
-	sequenceNumber, nextSeq, str, err := SaleMst{}.GetSequenceNumber(endSeq, startStr)
-	if err != nil {
-		return err
-	}
-	endSeq = nextSeq
-	startStr = str
+	maxSeqNoIntNew := maxSeqNoInt + 1
+	maxSeqNoStringNew := strconv.FormatInt(maxSeqNoIntNew, 10)
+	seqNoString := "0000" + maxSeqNoStringNew
+	sequenceNumber := seqNoString[len(seqNoString)-4 : len(seqNoString)]
 	saleNo := "R" + cslRefundInput.ShopCode + saleDate[len(saleDate)-6:len(saleDate)] + MSLV1_REFUND_POS + sequenceNumber
 	saleSeqNo := cslRefundInput.ShopCode + saleDate[len(saleDate)-6:len(saleDate)] + sequenceNumber
-	//get SeqNo
-	strSeqNo := ""
-	startStrs := []string{"A", "B", "C", "D", "E", "F", "G"}
-	for _, startStr := range startStrs {
-		if strings.HasPrefix(sequenceNumber, startStr) {
-			strSeqNo = sequenceNumber[len(sequenceNumber)-3 : len(sequenceNumber)]
-			break
-		} else {
-			strSeqNo = sequenceNumber
-		}
-	}
-	seqNo, err := strconv.ParseInt(strSeqNo, 10, 64)
-	if err != nil {
-		return err
-	}
 	//获取业绩分配人
 	salesPerson, err := Employee{}.GetEmployee(cslRefundInput.SaleManId)
 	if err != nil {
@@ -870,7 +858,7 @@ func (CslRefundInput) CslReturnSaleInput(ctx context.Context, cslRefundInput Csl
 
 	saleMst = ReturnSaleMst{
 		ReturnSaleNo:               saleNo,
-		SeqNo:                      seqNo,
+		SeqNo:                      maxSeqNoIntNew,
 		PosNo:                      MSLV1_REFUND_POS,
 		Dates:                      saleDate,
 		InUserID:                   colleaguetUserID,
@@ -913,7 +901,7 @@ func (CslRefundInput) CslReturnSaleInput(ctx context.Context, cslRefundInput Csl
 		saleDtl := ReturnSaleDtl{
 			ReturnSaleNo:      saleNo,
 			DtSeq:             dtSeq,
-			SeqNo:             seqNo,
+			SeqNo:             maxSeqNoIntNew,
 			Dates:             saleDate,
 			InUserID:          userInfo.UserName,
 			PosNo:             MSLV1_REFUND_POS,
