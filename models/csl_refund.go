@@ -817,7 +817,7 @@ func (CslRefundInput) CslReturnSaleInput(ctx context.Context, cslRefundInput Csl
 	endSeq = nextSeq
 	startStr = str
 	saleNo := "R" + cslRefundInput.ShopCode + saleDate[len(saleDate)-6:len(saleDate)] + MSLV1_REFUND_POS + sequenceNumber
-
+	saleSeqNo := cslRefundInput.ShopCode + saleDate[len(saleDate)-6:len(saleDate)] + sequenceNumber
 	//get SeqNo
 	strSeqNo := ""
 	startStrs := []string{"A", "B", "C", "D", "E", "F", "G"}
@@ -905,7 +905,7 @@ func (CslRefundInput) CslReturnSaleInput(ctx context.Context, cslRefundInput Csl
 		DiscountAmtAsCost:          0,
 
 		PolicyNo:  policyNo,
-		SaleSeqNo: strings.TrimLeft(saleNo, "R"),
+		SaleSeqNo: saleSeqNo,
 	}
 	var dtSeq int64 = 0
 	for _, preSaleDtl := range preSaleDtls {
