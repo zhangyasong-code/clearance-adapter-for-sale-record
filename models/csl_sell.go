@@ -188,7 +188,7 @@ func (CslSaleDtlStruct) GetCslSaleDtl(saleNo string) (interface{}, error) {
 			cslSaleMstStruct.DiscountAmt = number.ToFixed(discountAmt, nil)
 			cslSaleMstStruct.UseMileage = number.ToFixed(useMileage, nil)
 		}
-		cslSaleMstStruct.SaleNo = string(value["SaleNo"])
+		cslSaleMstStruct.SaleNo = strings.Trim(string(value["SaleNo"]), " ")
 		cslSaleMstStruct.BranchCode = string(value["BranchCode"])
 		cslSaleMstStruct.ShopName = string(value["ShopName"])
 		cslSaleMstStruct.Dates = string(value["Dates"])
@@ -278,7 +278,7 @@ func (CslSaleDtlStruct) GetCslSaleDtl(saleNo string) (interface{}, error) {
 		discountAmt, _ := strconv.ParseFloat(string(value["DiscountAmt"]), 64)
 		sellingAmt, _ := strconv.ParseFloat(string(value["SellingAmt"]), 64)
 		saleQty, _ := strconv.ParseInt(string(value["SaleQty"]), 10, 64)
-		cslSaleDtlStruct.SaleNo = string(value["SaleNo"])
+		cslSaleDtlStruct.SaleNo = strings.Trim(string(value["SaleNo"]), " ")
 		cslSaleDtlStruct.SaleQty = saleQty * isInt64
 		cslSaleDtlStruct.Price = number.ToFixed(price, nil) * isFloat64
 		cslSaleDtlStruct.SaleAmt = number.ToFixed(saleAmt, nil) * isFloat64
@@ -328,7 +328,7 @@ func (CslSaleDtlStruct) GetCslSaleDtl(saleNo string) (interface{}, error) {
 				saleMstQty, _ = strconv.ParseInt(string(saleIsReturned["SaleMstQty"]), 10, 64)
 				isReturnedPreSaleDtSeq, _ := strconv.ParseInt(string(saleIsReturned["PreSaleDtSeq"]), 10, 64)
 				if isReturnedPreSaleDtSeq == targetReturnSale.DtSeq &&
-					string(saleIsReturned["PreSaleNo"]) == targetReturnSale.SaleNo {
+					string(saleIsReturned["PreSaleNo"]) == strings.Trim(targetReturnSale.SaleNo, " ") {
 					returnedQty, _ := strconv.ParseInt(string(saleIsReturned["SaleQty"]), 10, 64)
 					returnedSellingAmt, _ := strconv.ParseFloat(string(saleIsReturned["SellingAmt"]), 64)
 					returnedQtyAll += returnedQty
