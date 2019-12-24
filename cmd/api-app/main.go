@@ -97,6 +97,13 @@ func main() {
 	factory.SetShopEmployeeEngine(shopEmployeeDatabase)
 	defer shopEmployeeDatabase.Close()
 
+	mslv2ReadonlyDatabase, err := initDB(config.Mslv2ReadonlyDatabase.Driver, config.Mslv2ReadonlyDatabase.Connection)
+	if err != nil {
+		panic(err)
+	}
+	factory.SetMslv2ReadonlyEngine(mslv2ReadonlyDatabase)
+	defer mslv2ReadonlyDatabase.Close()
+
 	app := cli.NewApp()
 	app.Name = "clearance-adapter-for-sale-record"
 	app.Commands = []cli.Command{

@@ -21,6 +21,7 @@ var (
 	productEngine       *xorm.Engine
 	colleagueAuthEngine *xorm.Engine
 	shopEmployeeEngine  *xorm.Engine
+	mslv2ReadonlyEngine *xorm.Engine
 	once                sync.Once
 )
 
@@ -86,4 +87,12 @@ func GetShopEmployeeEngine() *xorm.Engine {
 
 func SetShopEmployeeEngine(engine *xorm.Engine) {
 	shopEmployeeEngine = engine
+}
+
+func SetMslv2ReadonlyEngine(engine *xorm.Engine) {
+	mslv2ReadonlyEngine = engine
+}
+
+func GetMslv2ReadonlyEngine() *xorm.Engine {
+	return mslv2ReadonlyEngine
 }
