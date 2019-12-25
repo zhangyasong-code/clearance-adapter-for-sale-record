@@ -5,14 +5,14 @@ WORKDIR /go/src/clearance/clearance-adapter-for-sale-record
 COPY . .
 # create kafka certfile dir
 RUN mkdir -p certfile
-RUN cd ./cmd/api-app
+
 RUN go get github.com/pangpanglabs/goetl
 # disable cgo
 ENV CGO_ENABLED=0
 # build steps
-RUN echo ">>> 1: go version" && go version
-RUN echo ">>> 2: go get" && go get -v -d
-RUN echo ">>> 3: go build -o clearance-adapter-for-sale-record-api" && go build -o clearance-adapter-for-sale-record-api
+RUN cd ./cmd/api-app && echo ">>> 1: go version" && go version \
+    && echo ">>> 2: go get" && go get -v -d \
+    && echo ">>> 3: go build" && go build -o clearance-adapter-for-sale-record-api
 
 # make application docker image use alpine
 FROM pangpanglabs/alpine-ssl
