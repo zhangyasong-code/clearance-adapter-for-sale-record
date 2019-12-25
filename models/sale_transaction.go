@@ -412,6 +412,28 @@ func (requestInput RequestInput) Validate() error {
 	return nil
 }
 
+func (SaleRecordIdFailMapping) GetSaleFailDataLog(ctx context.Context, requestInput RequestInput) (int64, []SaleRecordIdFailMapping, error) {
+	var failDatas []SaleRecordIdFailMapping
+	query := func() xorm.Interface {
+		query := factory.GetCfsrEngine().Where("1 = 1").And("is_create = ?", false)
+		if requestInput.StoreId != 0 {
+			query.And("store_id = ?", requestInput.StoreId)
+		}
+		if requestInput.TransactionId != 0 {
+			query.And("transaction_id = ?", requestInput.TransactionId)
+		}
+		if requestInput.SaleTransactionId != 0 {
+			query.And("sale_transaction_id = ?", requestInput.SaleTransactionId)
+		}
+		return query
+	}
+	totalCount, err := query().Desc("id").Limit(requestInput.MaxResultCount, requestInput.SkipCount).FindAndCount(&failDatas)
+	if err != nil {
+		return 0, nil, err
+	}
+	return totalCount, failDatas, nil
+}
+
 func (SaleRecordIdFailMapping) GetAll(ctx context.Context, requestInput RequestInput) (int64, []SaleRecordIdFailMapping, error) {
 	if requestInput.StoreId == 0 {
 		return 0, nil, nil
