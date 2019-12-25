@@ -180,6 +180,9 @@ func (CslTSaleMst) GetCslTSaleBySaleTransactions(ctx context.Context, requestInp
 		if requestInput.SaleNo != "" {
 			q.And("sale_no =?", requestInput.SaleNo)
 		}
+		if requestInput.StoreId != 0 {
+			q.And("store_id =?", requestInput.StoreId)
+		}
 		return q
 	}
 	query := queryBuilder()
