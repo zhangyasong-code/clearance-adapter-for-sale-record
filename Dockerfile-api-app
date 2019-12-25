@@ -16,12 +16,12 @@ RUN cd ./cmd/api-app && echo ">>> 1: go version" && go version \
 
 # make application docker image use alpine
 FROM pangpanglabs/alpine-ssl
-WORKDIR /go/bin
+WORKDIR /go/src/clearance/clearance-adapter-for-sale-record/cmd/api-app/
 # copy config files to image
-COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/*.yml ./
+COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/*.yml ./../../
 # copy kafka cert files to image
-COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/certfile ./cmd/api-app/certfile
+COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/certfile ./certfile
 # copy execute file to image
-COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/cmd/api-app/clearance-adapter-for-sale-record-api ./cmd/api-app/
+COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/cmd/api-app/clearance-adapter-for-sale-record-api .
 EXPOSE 8000
-CMD ["./cmd/api-app/clearance-adapter-for-sale-record-api","api"]
+CMD ["./clearance-adapter-for-sale-record-api","api"]
