@@ -16,7 +16,7 @@ RUN echo ">>> 3: go build -o clearance-adapter-for-sale-record-api" && go build 
 FROM pangpanglabs/alpine-ssl
 COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/*.yml /go/src/clearance/clearance-adapter-for-sale-record/
 # copy kafka cert files to image
-COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/certfile/ /go/src/clearance/clearance-adapter-for-sale-record/
+COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/certfile/ /go/src/clearance/clearance-adapter-for-sale-record/certfile/
 # COPY --from=builder /swagger-ui/ ./swagger-ui/
 # copy execute file to image
 WORKDIR /go/src/clearance/clearance-adapter-for-sale-record/cmd/api-app
