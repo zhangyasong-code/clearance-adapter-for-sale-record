@@ -20,8 +20,8 @@ WORKDIR /go/bin
 # copy config files to image
 COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/*.yml ./
 # copy kafka cert files to image
-COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/certfile ./certfile
+COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/certfile ./cmd/api-app/certfile
 # copy execute file to image
-COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/cmd/api-app/clearance-adapter-for-sale-record-api ./
+COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/cmd/api-app/clearance-adapter-for-sale-record-api ./cmd/api-app/
 EXPOSE 8000
-CMD ["./clearance-adapter-for-sale-record-api","api"]
+CMD ["./cmd/api-app/clearance-adapter-for-sale-record-api","api"]
