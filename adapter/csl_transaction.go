@@ -30,6 +30,7 @@ const (
 	NotSynChronized  = "R" // R 未同步
 	SaipType         = "00"
 	InUserID         = "MSLV2"
+	Exchange         = "C"
 )
 
 // Clearance到CSL
@@ -204,6 +205,10 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				continue
 			}
 			preSaleNo = sql.NullString{successDtls[0].SaleNo, true}
+		}
+		// Exchange case
+		if strings.ToUpper(saleTransaction.TransactionType) == "EXCHANGE" {
+			saleMode = Exchange
 		}
 		custBrandCode = ""
 		custGradeCode = sql.NullString{"", false}

@@ -82,6 +82,7 @@ func (etl SrToClearanceETL) Transform(ctx context.Context, source interface{}) (
 			ObtainMileage:          assortedSaleRecord.ObtainMileage,
 			OuterOrderNo:           assortedSaleRecord.OuterOrderNo,
 			TransactionChannelType: assortedSaleRecord.TransactionChannelType,
+			TransactionType:        assortedSaleRecord.TransactionType,
 			TotalDiscountPrice:     assortedSaleRecord.TotalDiscountPrice,
 			BaseTrimCode:           assortedSaleRecord.BaseTrimCode,
 			FreightPrice:           assortedSaleRecord.FreightPrice,
