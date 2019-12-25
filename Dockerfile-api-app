@@ -18,10 +18,10 @@ RUN echo ">>> 3: go build -o clearance-adapter-for-sale-record-api" && go build 
 FROM pangpanglabs/alpine-ssl
 WORKDIR /go/bin
 # copy config files to image
-COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/*.yml .
+COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/*.yml ./
 # copy kafka cert files to image
 COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/certfile ./certfile
 # copy execute file to image
-COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/cmd/api-app/clearance-adapter-for-sale-record-api .
+COPY --from=builder /go/src/clearance/clearance-adapter-for-sale-record/cmd/api-app/clearance-adapter-for-sale-record-api ./
 EXPOSE 8000
 CMD ["./clearance-adapter-for-sale-record-api","api"]
