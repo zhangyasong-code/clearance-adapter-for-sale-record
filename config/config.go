@@ -61,6 +61,10 @@ type C struct {
 		Driver     string
 		Connection string
 	}
+	Mslv2ReadonlyDatabase struct {
+		Driver     string
+		Connection string
+	}
 	BehaviorLog struct {
 		Kafka echomiddleware.KafkaConfig
 	}

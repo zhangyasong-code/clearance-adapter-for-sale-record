@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"clearance/clearance-adapter-for-sale-record/factory"
@@ -411,25 +412,20 @@ func (requestInput RequestInput) Validate() error {
 }
 
 func (SaleRecordIdFailMapping) GetAll(ctx context.Context, requestInput RequestInput) (int64, []SaleRecordIdFailMapping, error) {
-	var failDatas []SaleRecordIdFailMapping
-	query := func() xorm.Interface {
-		query := factory.GetCfsrEngine().Where("1 = 1").And("is_create = ?", false)
-		if requestInput.StoreId != 0 {
-			query.And("store_id = ?", requestInput.StoreId)
-		}
-		if requestInput.TransactionId != 0 {
-			query.And("transaction_id = ?", requestInput.TransactionId)
-		}
-		if requestInput.SaleTransactionId != 0 {
-			query.And("sale_transaction_id = ?", requestInput.SaleTransactionId)
-		}
-		return query
+	if requestInput.StoreId == 0 {
+		return 0, nil, nil
 	}
-	totalCount, err := query().Desc("id").Limit(requestInput.MaxResultCount, requestInput.SkipCount).FindAndCount(&failDatas)
-	if err != nil {
+	var failDatas []SaleRecordIdFailMapping
+	sql := "Select order_id, refund_id, 0 as transaction_id, store_id, error from (" +
+		"SELECT order_id, refund_id, 0 as transaction_id, store_id, error FROM pangpang_brand_nhub.sale_record_success where is_success = false union " +
+		"SELECT order_id, refund_id, transaction_id, store_id , error FROM pangpang_brand_nhub.post_process_success where is_success = false union " +
+		"SELECT order_id, refund_id, transaction_id, store_id, error FROM mslv2_clearance.sale_record_id_fail_mapping where is_create = false " +
+		") ErrorList " + "where store_id = " + strconv.Itoa(requestInput.StoreId)
+
+	if err := factory.GetMslv2ReadonlyEngine().SQL(sql).Find(&failDatas); err != nil {
 		return 0, nil, err
 	}
-	return totalCount, failDatas, nil
+	return 0, failDatas, nil
 }
 
 func (SaleRecordIdSuccessMapping) GetAllSaleSuccess(ctx context.Context, requestInput RequestInput) (int64, []SaleRecordIdSuccessMapping, error) {

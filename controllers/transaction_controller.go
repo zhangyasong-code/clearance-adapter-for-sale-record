@@ -241,13 +241,14 @@ func (TransactionController) RunSaleETLAndCslETL(c echo.Context) error {
 
 func (TransactionController) GetFailDataLog(c echo.Context) error {
 	storeId, _ := strconv.Atoi(c.QueryParam("storeId"))
-	maxResultCount, _ := strconv.Atoi(c.QueryParam("maxResultCount"))
-	if maxResultCount == 0 {
-		maxResultCount = 10
+	if storeId == 0 {
+		return c.JSON(http.StatusBadRequest, api.Result{
+			Error: api.Error{
+				Message: "StoreId can not be 0!",
+			},
+		})
 	}
-	skipCount, _ := strconv.Atoi(c.QueryParam("skipCount"))
-	transactionId, _ := strconv.ParseInt(c.QueryParam("transactionId"), 10, 64)
-	totalCount, items, err := models.SaleRecordIdFailMapping{}.GetAll(c.Request().Context(), models.RequestInput{TransactionId: transactionId, MaxResultCount: maxResultCount, SkipCount: skipCount, StoreId: storeId})
+	totalCount, items, err := models.SaleRecordIdFailMapping{}.GetAll(c.Request().Context(), models.RequestInput{StoreId: storeId})
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, api.Result{
 			Error: api.Error{
