@@ -33,6 +33,7 @@ type SaleTransaction struct {
 	ObtainMileage          float64                  `json:"obtainMileage" xorm:"DECIMAL(18,2) default 0" validate:"gte=0"`
 	OuterOrderNo           string                   `json:"outerOrderNo" xorm:"index VARCHAR(30) notnull" validate:"required"`
 	TransactionChannelType string                   `json:"transactionChannelType" xorm:"index VARCHAR(30) notnull"`
+	TransactionType        string                   `json:"transactionType" xorm:"index VARCHAR(30) notnull"`
 	BaseTrimCode           string                   `json:"baseTrimCode" xorm:"index VARCHAR(30)"`
 	FreightPrice           float64                  `json:"freightPrice" xorm:"DECIMAL(18,2) default 0" `
 	SalesmanShopCode       string                   `json:"salesmanShopCode" xorm:"index VARCHAR(30)"`
