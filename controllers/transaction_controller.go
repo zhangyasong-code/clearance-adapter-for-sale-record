@@ -125,16 +125,18 @@ func (TransactionController) GetCslTSaleTransactions(c echo.Context) error {
 }
 
 func (TransactionController) GetSaleTransactions(c echo.Context) error {
-	transactionId, _ := strconv.ParseInt(c.QueryParam("transactionId"), 10, 64)
-	orderId, _ := strconv.ParseInt(c.QueryParam("orderId"), 10, 64)
-	RefundId, _ := strconv.ParseInt(c.QueryParam("RefundId"), 10, 64)
-	maxResultCount, _ := strconv.Atoi(c.QueryParam("maxResultCount"))
-	if maxResultCount == 0 {
-		maxResultCount = 10
+	var data models.RequestInput
+	if err := c.Bind(&data); err != nil {
+		return c.JSON(http.StatusBadRequest, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
 	}
-	skipCount, _ := strconv.Atoi(c.QueryParam("skipCount"))
-	transactionChannelType := c.QueryParam("transactionChannelType")
-	totalCount, items, err := models.SaleTransaction{}.GetSaleTransactions(c.Request().Context(), transactionId, orderId, RefundId, "", transactionChannelType, maxResultCount, skipCount)
+	if data.MaxResultCount == 0 {
+		data.MaxResultCount = 10
+	}
+	totalCount, items, err := models.SaleTransaction{}.GetSaleTransactions(c.Request().Context(), data)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, api.Result{
 			Error: api.Error{
@@ -293,23 +295,16 @@ func (TransactionController) GetFailDataLog(c echo.Context) error {
 
 func (TransactionController) GetAllSaleSuccess(c echo.Context) error {
 	var data models.RequestInput
-	maxResultCount, _ := strconv.Atoi(c.QueryParam("maxResultCount"))
-	if maxResultCount == 0 {
-		maxResultCount = 10
+	if err := c.Bind(&data); err != nil {
+		return c.JSON(http.StatusBadRequest, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
 	}
-	skipCount, _ := strconv.Atoi(c.QueryParam("skipCount"))
-	saleNo := c.QueryParam("saleNo")
-	orderId, _ := strconv.ParseInt(c.QueryParam("orderId"), 10, 64)
-	refundId, _ := strconv.ParseInt(c.QueryParam("refundId"), 10, 64)
-	saleTransactionId, _ := strconv.ParseInt(c.QueryParam("saleTransactionId"), 10, 64)
-	transactionId, _ := strconv.ParseInt(c.QueryParam("transactionId"), 10, 64)
-	data.SaleNo = saleNo
-	data.OrderId = orderId
-	data.RefundId = refundId
-	data.SaleTransactionId = saleTransactionId
-	data.TransactionId = transactionId
-	data.SkipCount = skipCount
-	data.MaxResultCount = maxResultCount
+	if data.MaxResultCount == 0 {
+		data.MaxResultCount = 10
+	}
 	totalCount, items, err := models.SaleRecordIdSuccessMapping{}.GetAllSaleSuccess(c.Request().Context(), data)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, api.Result{

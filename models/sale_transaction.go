@@ -146,7 +146,7 @@ type RequestInput struct {
 	Dates                  string   `json:"dates" query:"dates"`
 	SaleMode               string   `json:"saleMode" query:"saleMode"`
 	PosNo                  string   `json:"posNo" query:"posNo"`
-	TransactionChannelType string   `json:"transactionChannelType"`
+	TransactionChannelType string   `json:"transactionChannelType" query:"transactionChannelType"`
 }
 
 type CheckSaleNo struct {
@@ -465,10 +465,10 @@ func (SaleRecordIdSuccessMapping) GetAllSaleSuccess(ctx context.Context, request
 			query.And("sale_transaction_id = ?", requestInput.SaleTransactionId)
 		}
 		if requestInput.OrderId != 0 {
-			query.And("order_id = ?", requestInput.SaleTransactionId)
+			query.And("order_id = ?", requestInput.OrderId)
 		}
 		if requestInput.RefundId != 0 {
-			query.And("refund_id = ?", requestInput.SaleTransactionId)
+			query.And("refund_id = ?", requestInput.RefundId)
 		}
 		return query
 	}
@@ -552,31 +552,34 @@ func (SaleRecordIdSuccessMapping) GetBySaleNo(salNo string, saleTransactionId in
 	return successes, nil
 }
 
-func (SaleTransaction) GetSaleTransactions(ctx context.Context, transactionId, orderId, RefundId int64, shopCode, transactionChannelType string, maxResultCount, skipCount int) (int64, []SaleTransaction, error) {
+func (SaleTransaction) GetSaleTransactions(ctx context.Context, requestInput RequestInput) (int64, []SaleTransaction, error) {
 
 	queryBuilder := func() xorm.Interface {
 		q := factory.GetCfsrEngine().Where("1=1")
-		if transactionId > 0 {
-			q.And("transaction_id =?", transactionId)
+		if requestInput.TransactionId > 0 {
+			q.And("transaction_id =?", requestInput.TransactionId)
 		}
-		if orderId > 0 {
-			q.And("order_id =?", orderId)
+		if requestInput.OrderId > 0 {
+			q.And("order_id =?", requestInput.OrderId)
 		}
-		if RefundId > 0 {
-			q.And("refund_id =?", RefundId)
+		if requestInput.RefundId > 0 {
+			q.And("refund_id =?", requestInput.RefundId)
 		}
-		if shopCode != "" {
-			q.And("shop_code =?", shopCode)
+		if requestInput.ShopCode != "" {
+			q.And("shop_code =?", requestInput.ShopCode)
 		}
-		if transactionChannelType != "" {
-			q.And("transaction_channel_type = ?", transactionChannelType)
+		if requestInput.TransactionChannelType != "" {
+			q.And("transaction_channel_type = ?", requestInput.TransactionChannelType)
+		}
+		if requestInput.StoreId != 0 {
+			q.And("store_id =?", requestInput.StoreId)
 		}
 		return q
 	}
 	query := queryBuilder()
 
-	if maxResultCount > 0 {
-		query.Limit(maxResultCount, skipCount)
+	if requestInput.MaxResultCount > 0 {
+		query.Limit(requestInput.MaxResultCount, requestInput.SkipCount)
 	}
 
 	query.Desc("id")
@@ -676,6 +679,9 @@ func (CslSaleMst) GetCslSaleBySaleTransactions(ctx context.Context, requestInput
 		}
 		if requestInput.SaleNo != "" {
 			q.And("sale_no =?", requestInput.SaleNo)
+		}
+		if requestInput.StoreId != 0 {
+			q.And("store_id =?", requestInput.StoreId)
 		}
 		return q
 	}
