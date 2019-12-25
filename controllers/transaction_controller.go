@@ -22,7 +22,8 @@ func (c TransactionController) Init(g *echo.Group) {
 	g.POST("/sale", c.RunSaleETL)
 	g.POST("/csl", c.RunCslETL)
 	g.POST("/sale-csl", c.RunSaleETLAndCslETL)
-	g.GET("/fail-log", c.GetFailDataLog)
+	g.GET("/fail-log", c.GetSaleFailDataLog)
+	g.GET("/sale-fail-log", c.GetFailDataLog)
 	g.GET("/saleTransactions", c.GetSaleTransactions)
 	g.GET("/csl-saleTransactions", c.GetCslSaleTransactions)
 	g.GET("/csl-t-saleTransactions", c.GetCslTSaleTransactions)
@@ -236,6 +237,31 @@ func (TransactionController) RunSaleETLAndCslETL(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, api.Result{
 		Success: true,
+	})
+}
+
+func (TransactionController) GetSaleFailDataLog(c echo.Context) error {
+	storeId, _ := strconv.Atoi(c.QueryParam("storeId"))
+	maxResultCount, _ := strconv.Atoi(c.QueryParam("maxResultCount"))
+	if maxResultCount == 0 {
+		maxResultCount = 10
+	}
+	skipCount, _ := strconv.Atoi(c.QueryParam("skipCount"))
+	transactionId, _ := strconv.ParseInt(c.QueryParam("transactionId"), 10, 64)
+	totalCount, items, err := models.SaleRecordIdFailMapping{}.GetSaleFailDataLog(c.Request().Context(), models.RequestInput{TransactionId: transactionId, MaxResultCount: maxResultCount, SkipCount: skipCount, StoreId: storeId})
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
+	}
+	return c.JSON(http.StatusOK, api.Result{
+		Success: true,
+		Result: api.ArrayResult{
+			TotalCount: totalCount,
+			Items:      items,
+		},
 	})
 }
 
