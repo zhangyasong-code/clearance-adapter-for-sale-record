@@ -133,8 +133,16 @@ func (TransactionController) GetSaleTransactions(c echo.Context) error {
 			},
 		})
 	}
+
 	if data.MaxResultCount == 0 {
 		data.MaxResultCount = 10
+	}
+	if err := DateTimeValidate(data.StartAtTime, data.EndAtTime); err != nil {
+		return c.JSON(http.StatusBadRequest, api.Result{
+			Error: api.Error{
+				Message: err.Error(),
+			},
+		})
 	}
 	totalCount, items, err := models.SaleTransaction{}.GetSaleTransactions(c.Request().Context(), data)
 	if err != nil {

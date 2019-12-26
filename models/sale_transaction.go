@@ -129,24 +129,26 @@ type SaleRecordIdFailMapping struct {
 }
 
 type RequestInput struct {
-	BrandCode              string   `json:"brandCode" query:"brandCode"`
-	ChannelType            string   `json:"channelType" query:"channelType"`
-	OrderId                int64    `json:"orderId" query:"orderId"`
-	RefundId               int64    `json:"refundId" query:"refundId"`
-	StartAt                string   `json:"startAt" query:"startAt"`
-	EndAt                  string   `json:"endAt" query:"endAt"`
-	MaxResultCount         int      `json:"maxResultCount" query:"maxResultCount"`
-	SkipCount              int      `json:"skipCount" query:"skipCount"`
-	StoreId                int      `json:"storeId" query:"storeId"`
-	TransactionId          int64    `json:"transactionId" query:"transactionId"`
-	SaleTransactionId      int64    `json:"saleTransactionId" query:"saleTransactionId"`
-	SaleNo                 string   `json:"saleNo" query:"saleNo"`
-	SaleNos                []string `json:"saleNos"`
-	ShopCode               string   `json:"shopCode" query:"shopCode"`
-	Dates                  string   `json:"dates" query:"dates"`
-	SaleMode               string   `json:"saleMode" query:"saleMode"`
-	PosNo                  string   `json:"posNo" query:"posNo"`
-	TransactionChannelType string   `json:"transactionChannelType" query:"transactionChannelType"`
+	BrandCode              string    `json:"brandCode" query:"brandCode"`
+	ChannelType            string    `json:"channelType" query:"channelType"`
+	OrderId                int64     `json:"orderId" query:"orderId"`
+	RefundId               int64     `json:"refundId" query:"refundId"`
+	StartAt                string    `json:"startAt" query:"startAt"`
+	EndAt                  string    `json:"endAt" query:"endAt"`
+	StartAtTime            time.Time `json:"startAtTime" query:"startAtTime"`
+	EndAtTime              time.Time `json:"endAtTime" query:"endAtTime"`
+	MaxResultCount         int       `json:"maxResultCount" query:"maxResultCount"`
+	SkipCount              int       `json:"skipCount" query:"skipCount"`
+	StoreId                int       `json:"storeId" query:"storeId"`
+	TransactionId          int64     `json:"transactionId" query:"transactionId"`
+	SaleTransactionId      int64     `json:"saleTransactionId" query:"saleTransactionId"`
+	SaleNo                 string    `json:"saleNo" query:"saleNo"`
+	SaleNos                []string  `json:"saleNos"`
+	ShopCode               string    `json:"shopCode" query:"shopCode"`
+	Dates                  string    `json:"dates" query:"dates"`
+	SaleMode               string    `json:"saleMode" query:"saleMode"`
+	PosNo                  string    `json:"posNo" query:"posNo"`
+	TransactionChannelType string    `json:"transactionChannelType" query:"transactionChannelType"`
 }
 
 type CheckSaleNo struct {
@@ -567,6 +569,9 @@ func (SaleTransaction) GetSaleTransactions(ctx context.Context, requestInput Req
 		}
 		if requestInput.ShopCode != "" {
 			q.And("shop_code =?", requestInput.ShopCode)
+		}
+		if !requestInput.StartAtTime.IsZero() && !requestInput.EndAtTime.IsZero() {
+			q.And("sale_date >= ?", requestInput.StartAtTime).And("sale_date <= ?", requestInput.EndAtTime)
 		}
 		if requestInput.TransactionChannelType != "" {
 			q.And("transaction_channel_type = ?", requestInput.TransactionChannelType)
