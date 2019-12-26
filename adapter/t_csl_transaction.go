@@ -483,6 +483,10 @@ func (etl ClearanceToCslTSaleETL) Transform(ctx context.Context, source interfac
 				tSaleMst.EstimateSaleAmtForConsumer += tSaleDtl.EstimateSaleAmtForConsumer
 			}
 		}
+		tSaleMst.DiscountAmt = GetToFixedPrice(tSaleMst.DiscountAmt, baseTrimCode)
+		tSaleMst.EstimateSaleAmt = GetToFixedPrice(tSaleMst.EstimateSaleAmt, baseTrimCode)
+		tSaleMst.EstimateSaleAmtForConsumer = GetToFixedPrice(tSaleMst.EstimateSaleAmtForConsumer, baseTrimCode)
+
 		saleTransactionPayments, err := models.SaleTransactionPayment{}.GetSaleTransactionPayment(saleTransaction.Id)
 		if err != nil {
 			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
