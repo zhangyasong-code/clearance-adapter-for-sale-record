@@ -84,7 +84,6 @@ func (etl ClearanceToCslTSaleETL) Transform(ctx context.Context, source interfac
 		inUserID, itemIds, baseTrimCode, saleNo, departStoreReceiptNo string
 	var preSaleDtSeq sql.NullInt64
 	var preSaleNo, tMall_ID, offlineShopCode sql.NullString
-	var freight sql.NullFloat64
 	var discountAmt, estimateSaleAmt, saleAmt, normalPrice, paymentAmt float64
 
 	saleTAndSaleTDtls, ok := source.(models.SaleTAndSaleTDtls)
@@ -210,10 +209,6 @@ func (etl ClearanceToCslTSaleETL) Transform(ctx context.Context, source interfac
 		if saleTransaction.RefundId != 0 {
 			saleAmt = saleAmt * -1
 		}
-		freight = sql.NullFloat64{0, false}
-		if saleTransaction.FreightPrice != 0 {
-			freight = sql.NullFloat64{saleTransaction.FreightPrice, true}
-		}
 		tMall_ID = sql.NullString{"", false}
 		if saleTransaction.OuterOrderNo != "" {
 			tMall_ID = sql.NullString{saleTransaction.OuterOrderNo, true}
@@ -232,7 +227,7 @@ func (etl ClearanceToCslTSaleETL) Transform(ctx context.Context, source interfac
 			DepartStoreReceiptNo:   departStoreReceiptNo,
 			TMall_ID:               tMall_ID,
 			SaleAmt:                saleAmt,
-			Freight:                freight,
+			Freight:                saleTransaction.FreightPrice,
 			TMall_UseMileage:       sql.NullFloat64{0, false},
 			TMall_ObtainMileage:    sql.NullFloat64{0, false},
 			PreSaleNo:              preSaleNo,
