@@ -79,7 +79,7 @@ func makeCslTSaleMstEntity(tSaleMst models.T_SaleMst) models.CslTSaleMst {
 		TMall_ID:                   tSaleMst.TMall_ID,
 		SaleQty:                    tSaleMst.SaleQty,
 		SaleAmt:                    tSaleMst.SaleAmt,
-		Freight:                    tSaleMst.Freight.Float64,
+		Freight:                    tSaleMst.Freight,
 		DiscountAmt:                tSaleMst.DiscountAmt,
 		EstimateSaleAmt:            tSaleMst.EstimateSaleAmt,
 		EstimateSaleAmtForConsumer: tSaleMst.EstimateSaleAmtForConsumer,

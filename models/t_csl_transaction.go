@@ -21,7 +21,7 @@ type T_SaleMst struct {
 	TMall_ID                   sql.NullString  `query:"tMall_ID" json:"tMall_ID"`
 	SaleQty                    int64           `query:"saleQty" json:"saleQty"`
 	SaleAmt                    float64         `query:"saleAmt" json:"saleAmt"`
-	Freight                    sql.NullFloat64 `query:"freight" json:"freight"`
+	Freight                    float64         `query:"freight" json:"freight"`
 	DiscountAmt                float64         `query:"discountAmt" json:"discountAmt"`
 	EstimateSaleAmt            float64         `query:"estimateSaleAmt" json:"estimateSaleAmt"`
 	EstimateSaleAmtForConsumer float64         `query:"estimateSaleAmtForConsumer" json:"estimateSaleAmtForConsumer"`
