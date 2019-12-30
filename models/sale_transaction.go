@@ -416,20 +416,27 @@ func (requestInput RequestInput) Validate() error {
 
 func (SaleRecordIdFailMapping) GetSaleFailDataLog(ctx context.Context, requestInput RequestInput) (int64, []SaleRecordIdFailMapping, error) {
 	var failDatas []SaleRecordIdFailMapping
-	query := func() xorm.Interface {
-		query := factory.GetCfsrEngine().Where("1 = 1").And("is_create = ?", false)
+	queryBuilder := func() xorm.Interface {
+		q := factory.GetCfsrEngine().Where("1 = 1").And("is_create = ?", false)
 		if requestInput.StoreId != 0 {
-			query.And("store_id = ?", requestInput.StoreId)
+			q.And("store_id = ?", requestInput.StoreId)
 		}
 		if requestInput.TransactionId != 0 {
-			query.And("transaction_id = ?", requestInput.TransactionId)
+			q.And("transaction_id = ?", requestInput.TransactionId)
 		}
 		if requestInput.SaleTransactionId != 0 {
-			query.And("sale_transaction_id = ?", requestInput.SaleTransactionId)
+			q.And("sale_transaction_id = ?", requestInput.SaleTransactionId)
 		}
-		return query
+		return q
 	}
-	totalCount, err := query().Desc("id").Limit(requestInput.MaxResultCount, requestInput.SkipCount).FindAndCount(&failDatas)
+	query := queryBuilder()
+
+	if requestInput.MaxResultCount > 0 {
+		query.Limit(requestInput.MaxResultCount, requestInput.SkipCount)
+	}
+	query.Desc("id")
+
+	totalCount, err := query.FindAndCount(&failDatas)
 	if err != nil {
 		return 0, nil, err
 	}

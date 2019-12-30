@@ -1249,7 +1249,7 @@ func saveAndUpdateLog(ctx context.Context, saleMstInput models.SaleMst, saleMsts
 
 	g.Go(func() error {
 		// update saleRecordIdFailMappings when send to csl success
-		_, saleRecordIdFailMappings, err := models.SaleRecordIdFailMapping{}.GetAll(ctx, models.RequestInput{SaleTransactionId: saleMstInput.SaleTransactionId})
+		_, saleRecordIdFailMappings, err := models.SaleRecordIdFailMapping{}.GetSaleFailDataLog(ctx, models.RequestInput{SaleTransactionId: saleMstInput.SaleTransactionId})
 		if err != nil {
 			return err
 		}
