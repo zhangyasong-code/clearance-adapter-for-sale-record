@@ -185,7 +185,9 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			saleMode = Exchange
 			//Sale order need refund saleNo
 			if saleTransaction.RefundId == 0 {
-				successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(0, saleTransaction.OrderId, 0, saleTransaction.TransactionChannelType)
+				//when TransactionType="EXCHANGE".change orderId = Refund RefunId
+				refundId := saleTransaction.OrderId
+				successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(0, 0, refundId, 0, saleTransaction.TransactionChannelType)
 				if err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 						SaleTransactionId:      saleTransaction.Id,
@@ -212,7 +214,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			} else {
 				saleMode = Refund
 				// complexShopSeqNo = strconv.FormatInt(saleTransaction.RefundId, 10)
-				successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(0, saleTransaction.OrderId, 0, saleTransaction.TransactionChannelType)
+				successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(0, saleTransaction.OrderId, 0, 0, saleTransaction.TransactionChannelType)
 				if err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 						SaleTransactionId:      saleTransaction.Id,
@@ -685,7 +687,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				}
 
 				if saleTransaction.RefundId != 0 {
-					successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(0, saleTransaction.OrderId, saleTransactionDtl.OrderItemId, saleTransaction.TransactionChannelType)
+					successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(0, saleTransaction.OrderId, 0, saleTransactionDtl.OrderItemId, saleTransaction.TransactionChannelType)
 					if err != nil {
 						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 							SaleTransactionId:      saleTransaction.Id,
