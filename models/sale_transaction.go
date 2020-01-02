@@ -377,7 +377,7 @@ func (srfm *SaleRecordIdFailMapping) Save() error {
 	return nil
 }
 
-func (SaleRecordIdSuccessMapping) GetSaleSuccessData(transactionId int64, orderId int64, itemId int64, transactionChannelType string) ([]SaleRecordIdSuccessMapping, error) {
+func (SaleRecordIdSuccessMapping) GetSaleSuccessData(transactionId int64, orderId, refundId int64, itemId int64, transactionChannelType string) ([]SaleRecordIdSuccessMapping, error) {
 	var success []SaleRecordIdSuccessMapping
 	queryBuilder := func() xorm.Interface {
 		q := factory.GetCfsrEngine().Where("1 = 1")
@@ -392,6 +392,9 @@ func (SaleRecordIdSuccessMapping) GetSaleSuccessData(transactionId int64, orderI
 		}
 		if transactionChannelType != "" {
 			q.And("transaction_channel_type = ?", transactionChannelType)
+		}
+		if refundId != 0 {
+			q.And("refund_id = ?", refundId)
 		}
 		return q
 	}
