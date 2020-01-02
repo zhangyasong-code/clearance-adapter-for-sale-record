@@ -448,10 +448,10 @@ func (SaleRecordIdFailMapping) GetAll(ctx context.Context, requestInput RequestI
 		return 0, nil, nil
 	}
 	var failDatas []SaleRecordIdFailMapping
-	sql := "Select order_id, refund_id, 0 as transaction_id, store_id, error, created_at from (" +
-		"SELECT order_id, refund_id, 0 as transaction_id, store_id, error,created_at FROM pangpang_brand_nhub.sale_record_success where is_success = false union " +
-		"SELECT order_id, refund_id, transaction_id, store_id , error,created_at FROM pangpang_brand_nhub.post_process_success where is_success = false union " +
-		"SELECT order_id, refund_id, transaction_id, store_id, error,created_at FROM mslv2_clearance.sale_record_id_fail_mapping where is_create = false " +
+	sql := "Select order_id, refund_id, 0 as transaction_id, store_id, error, details, created_at from (" +
+		"SELECT order_id, refund_id, 0 as transaction_id, store_id, error, details, created_at FROM pangpang_brand_nhub.sale_record_success where is_success = false union " +
+		"SELECT order_id, refund_id, transaction_id, store_id , error, details, created_at FROM pangpang_brand_nhub.post_process_success where is_success = false union " +
+		"SELECT order_id, refund_id, transaction_id, store_id, error, details, created_at FROM mslv2_clearance.sale_record_id_fail_mapping where is_create = false " +
 		") ErrorList " + "where store_id = " + strconv.Itoa(requestInput.StoreId)
 
 	if err := factory.GetMslv2ReadonlyEngine().SQL(sql).Find(&failDatas); err != nil {
