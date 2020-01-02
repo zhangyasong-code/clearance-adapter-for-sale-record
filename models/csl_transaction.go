@@ -141,6 +141,7 @@ type SaleMst struct {
 	RefundId                    int64             `json:"-" xorm:"-"`
 	SaleTransactionId           int64             `json:"-" xorm:"-"`
 	TransactionChannelType      string            `json:"-" xorm:"-"`
+	TransactionType             string            `json:"-" xorm:"-"`
 	SaleDtls                    []SaleDtl         `json:"saleDtls" xorm:"-"`
 	SalePayments                []SalePayment     `json:"salePayments" xorm:"-"`
 	StaffSaleRecords            []StaffSaleRecord `json:"staffSaleRecords" xorm:"-"`

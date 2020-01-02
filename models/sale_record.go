@@ -4,6 +4,7 @@ import (
 	"clearance/clearance-adapter-for-sale-record/config"
 	"clearance/clearance-adapter-for-sale-record/factory"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -223,6 +224,11 @@ type SaleRecordDtlSalesmanAmount struct {
 	OrderItemId        int64   `json:"orderItemId"`
 	RefundItemId       int64   `json:"refundItemId"`
 	SalesmanSaleAmount float64 `json:"salesmanSaleAmount"`
+}
+
+type RequestExchangeBody struct {
+	OrderId      int64  `json:"orderId"`
+	OrderItemIds string `json:"orderItemIds"`
 }
 
 func (SaleTransactionPayment) GetSaleTransactionPayment(saleTransactionId int64) ([]SaleTransactionPayment, error) {
@@ -481,4 +487,29 @@ func GetToken(ctx context.Context, tenantId int64) (string, error) {
 		return resultToken.Result.Token, nil
 	}
 	return "", errors.New("Get token error!")
+}
+
+func CheckIfTheExchange(ctx context.Context, orderId int64, orderItemIds string) error {
+	type ExchangeResponse struct {
+		Success bool     `json:"success"`
+		Error   struct{} `json:"error"`
+	}
+	response := ExchangeResponse{}
+	body := RequestExchangeBody{
+		OrderId:      orderId,
+		OrderItemIds: orderItemIds,
+	}
+	str, _ := json.Marshal(body)
+	url := fmt.Sprintf("%s/v1/exchange/refund", config.Config().Services.ExchangeApi)
+	logrus.WithField("Url:", url).Info("CheckIfTheExchange")
+	if _, err := httpreq.New(http.MethodPost, url, body).
+		WithBehaviorLogContext(behaviorlog.FromCtx(ctx)).
+		Call(&response); err != nil {
+		logrus.WithField("Body:", string(str)).Info("CheckIfTheExchange error")
+		return err
+	}
+	if !response.Success {
+		return errors.New("CheckIfTheExchange error!")
+	}
+	return nil
 }
