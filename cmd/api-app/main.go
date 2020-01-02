@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"nomni/utils/auth"
 	"os"
 	"sort"
 	"strings"
@@ -234,6 +235,7 @@ func main() {
 				e.Use(middleware.Recover())
 				e.Use(middleware.CORS())
 				e.Use(echomiddleware.BehaviorLogger(config.ServiceName, config.BehaviorLog.Kafka))
+				e.Use(auth.UserClaimMiddleware("/ping", "/docs"))
 
 				if !strings.HasSuffix(config.AppEnv, "production") {
 					behaviorlog.SetLogLevel(logrus.InfoLevel)

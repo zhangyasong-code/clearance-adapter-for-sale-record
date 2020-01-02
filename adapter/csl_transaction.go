@@ -371,6 +371,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			RefundId:                    saleTransaction.RefundId,
 			SaleTransactionId:           saleTransaction.Id,
 			TransactionChannelType:      saleTransaction.TransactionChannelType,
+			TransactionType:             saleTransaction.TransactionType,
 		}
 		appliedSaleRecordCartOffers, err := models.AppliedSaleRecordCartOffer{}.GetAppliedSaleRecordCartOffers(saleTransaction.TransactionId)
 		if err != nil {
@@ -1228,8 +1229,10 @@ func saveAndUpdateLog(ctx context.Context, saleMstInput models.SaleMst, saleMsts
 		//insert success table
 		for _, saleMst := range saleMstsAndSaleDtls.SaleMsts {
 			if saleMst.SaleNo == saleMstInput.SaleNo {
+				orderItemIds := ""
 				for _, salDtl := range saleMstsAndSaleDtls.SaleDtls {
 					if salDtl.SaleNo == saleMst.SaleNo {
+						orderItemIds += strconv.FormatInt(salDtl.OrderItemId, 10) + ","
 						for _, salePayment := range saleMstsAndSaleDtls.SalePayments {
 							if salePayment.SaleNo == salDtl.SaleNo {
 								saleRecordIdSuccessMapping := &models.SaleRecordIdSuccessMapping{
@@ -1249,6 +1252,14 @@ func saveAndUpdateLog(ctx context.Context, saleMstInput models.SaleMst, saleMsts
 								}
 							}
 						}
+					}
+				}
+				if strings.ToUpper(saleMst.TransactionType) != "EXCHANGE" && saleMst.RefundId != 0 {
+					if orderItemIds != "" {
+						orderItemIds = strings.TrimSuffix(orderItemIds, ",")
+					}
+					if err := models.CheckIfTheExchange(ctx, saleMst.OrderId, orderItemIds); err != nil {
+						return err
 					}
 				}
 			}
