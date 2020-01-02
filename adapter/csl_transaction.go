@@ -374,6 +374,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			SaleTransactionId:           saleTransaction.Id,
 			TransactionChannelType:      saleTransaction.TransactionChannelType,
 			TransactionType:             saleTransaction.TransactionType,
+			SalesmanId:                  saleTransaction.SalesmanId,
 		}
 		appliedSaleRecordCartOffers, err := models.AppliedSaleRecordCartOffer{}.GetAppliedSaleRecordCartOffers(saleTransaction.TransactionId)
 		if err != nil {
@@ -1260,7 +1261,7 @@ func saveAndUpdateLog(ctx context.Context, saleMstInput models.SaleMst, saleMsts
 					if orderItemIds != "" {
 						orderItemIds = strings.TrimSuffix(orderItemIds, ",")
 					}
-					if err := models.CheckIfTheExchange(ctx, saleMst.OrderId, orderItemIds); err != nil {
+					if err := models.CheckIfTheExchange(ctx, saleMst.OrderId, saleMst.SalesmanId, orderItemIds); err != nil {
 						return err
 					}
 				}
