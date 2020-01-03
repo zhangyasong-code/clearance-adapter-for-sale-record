@@ -187,7 +187,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			if saleTransaction.RefundId == 0 {
 				//when TransactionType="EXCHANGE".change orderId = Refund RefunId
 				refundId := saleTransaction.OrderId
-				successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(0, 0, refundId, 0, saleTransaction.TransactionChannelType)
+				successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(0, 0, refundId, 0, 0, saleTransaction.TransactionChannelType)
 				if err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 						SaleTransactionId:      saleTransaction.Id,
@@ -214,7 +214,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			} else {
 				saleMode = Refund
 				// complexShopSeqNo = strconv.FormatInt(saleTransaction.RefundId, 10)
-				successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(0, saleTransaction.OrderId, 0, 0, saleTransaction.TransactionChannelType)
+				successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(0, saleTransaction.OrderId, 0, 0, 0, saleTransaction.TransactionChannelType)
 				if err != nil {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
 						SaleTransactionId:      saleTransaction.Id,
@@ -686,28 +686,55 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					}
 					return nil, err
 				}
-
-				if saleTransaction.RefundId != 0 {
-					successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(0, saleTransaction.OrderId, 0, saleTransactionDtl.OrderItemId, saleTransaction.TransactionChannelType)
-					if err != nil {
-						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-							SaleTransactionId:      saleTransaction.Id,
-							TransactionChannelType: saleTransaction.TransactionChannelType,
-							OrderId:                saleTransaction.OrderId,
-							RefundId:               saleTransaction.RefundId,
-							StoreId:                saleTransaction.StoreId,
-							TransactionId:          saleTransactionDtl.TransactionId,
-							TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
-							CreatedBy:              "API",
-							Error:                  err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10) + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10),
-							Details:                "退货处理必须有之前的销售数据！",
+				if strings.ToUpper(saleTransaction.TransactionType) == "EXCHANGE" {
+					//Sale order need refund saleNo
+					if saleTransaction.RefundId == 0 {
+						//when TransactionType="EXCHANGE".change orderId = Refund RefunId
+						refundId := saleTransaction.OrderId
+						refundItemId := saleTransactionDtl.OrderItemId
+						successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(0, 0, refundId, 0, refundItemId, saleTransaction.TransactionChannelType)
+						if err != nil {
+							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+								SaleTransactionId:      saleTransaction.Id,
+								TransactionChannelType: saleTransaction.TransactionChannelType,
+								OrderId:                saleTransaction.OrderId,
+								RefundId:               saleTransaction.RefundId,
+								StoreId:                saleTransaction.StoreId,
+								TransactionId:          saleTransaction.TransactionId,
+								CreatedBy:              "API",
+								Error:                  err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10),
+								Details:                "换货处理必须有之前的退货数据！",
+							}
+							if err := SaleRecordIdFailMapping.Save(); err != nil {
+								return nil, err
+							}
+							continue
 						}
-						if err := SaleRecordIdFailMapping.Save(); err != nil {
+						preSaleDtSeq = sql.NullInt64{successDtls[0].DtlSeq, true}
+					}
+				} else {
+					if saleTransaction.RefundId != 0 {
+						successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(0, saleTransaction.OrderId, 0, saleTransactionDtl.OrderItemId, 0, saleTransaction.TransactionChannelType)
+						if err != nil {
+							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
+								SaleTransactionId:      saleTransaction.Id,
+								TransactionChannelType: saleTransaction.TransactionChannelType,
+								OrderId:                saleTransaction.OrderId,
+								RefundId:               saleTransaction.RefundId,
+								StoreId:                saleTransaction.StoreId,
+								TransactionId:          saleTransactionDtl.TransactionId,
+								TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
+								CreatedBy:              "API",
+								Error:                  err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10) + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10),
+								Details:                "退货处理必须有之前的销售数据！",
+							}
+							if err := SaleRecordIdFailMapping.Save(); err != nil {
+								return nil, err
+							}
 							return nil, err
 						}
-						return nil, err
+						preSaleDtSeq = sql.NullInt64{successDtls[0].DtlSeq, true}
 					}
-					preSaleDtSeq = sql.NullInt64{successDtls[0].DtlSeq, true}
 				}
 
 				if normalSaleTypeCode != "1" {
