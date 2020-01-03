@@ -391,7 +391,7 @@ func (SaleRecordIdSuccessMapping) GetSaleSuccessData(transactionId, orderId, ref
 			q.And("order_item_id = ?", itemId)
 		}
 		if refundItemId != 0 {
-			q.And("refund_item_id = ?")
+			q.And("refund_item_id = ?", refundItemId)
 		}
 		if transactionChannelType != "" {
 			q.And("transaction_channel_type = ?", transactionChannelType)
