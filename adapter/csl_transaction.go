@@ -1058,13 +1058,13 @@ func (etl ClearanceToCslETL) ReadyToLoad(ctx context.Context, source interface{}
 						TransactionId:          saleMst.TransactionId,
 						TransactionDtlId:       saleDtl.TransactionDtlId,
 						CreatedBy:              "API",
-						Error:                  "卖场扣率不能小于等于0！" + " NormalFeeRate:" + strconv.FormatFloat(saleDtl.NormalFeeRate, 'E', -1, 64),
-						Details:                "卖场扣率不能小于等于0！",
+						Error:                  "正常扣率不能为空！" + " NormalFeeRate:" + strconv.FormatFloat(saleDtl.NormalFeeRate, 'E', -1, 64),
+						Details:                "正常扣率不能为空！",
 					}
 					if err := SaleRecordIdFailMapping.Save(); err != nil {
 						return err
 					}
-					return errors.New("卖场扣率不能小于等于0！")
+					return errors.New("正常扣率不能为空！")
 				}
 			}
 		}
@@ -1158,10 +1158,12 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 		}
 
 		//insert saleDtl
+		orderItemIds := ""
 		for _, saleDtl := range saleMstsAndSaleDtls.SaleDtls {
 			if saleDtl.SaleNo == saleMst.SaleNo {
 				saleDtl.InDateTime = createTime
 				saleDtl.ModiDateTime = createTime
+				orderItemIds += strconv.FormatInt(saleDtl.OrderItemId, 10) + ","
 				if _, err := session.Table("dbo.SaleDtl").Insert(&saleDtl); err != nil {
 					str, _ := json.Marshal(saleDtl)
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
@@ -1214,6 +1216,17 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 			}
 		}
 
+		//CheckIfTheExchange when refund.
+		if strings.ToUpper(saleMst.TransactionType) != "EXCHANGE" && saleMst.RefundId != 0 {
+			if orderItemIds != "" {
+				orderItemIds = strings.TrimSuffix(orderItemIds, ",")
+			}
+			if err := models.CheckIfTheExchange(ctx, saleMst.OrderId, saleMst.SalesmanId, orderItemIds); err != nil {
+				session.Rollback()
+				return err
+			}
+		}
+
 		if err := saveAndUpdateLog(ctx, saleMst, saleMstsAndSaleDtls); err != nil {
 			return err
 		}
@@ -1232,12 +1245,10 @@ func saveAndUpdateLog(ctx context.Context, saleMstInput models.SaleMst, saleMsts
 		//insert success table
 		for _, saleMst := range saleMstsAndSaleDtls.SaleMsts {
 			if saleMst.SaleNo == saleMstInput.SaleNo {
-				orderItemIds := ""
-				for _, salDtl := range saleMstsAndSaleDtls.SaleDtls {
-					if salDtl.SaleNo == saleMst.SaleNo {
-						orderItemIds += strconv.FormatInt(salDtl.OrderItemId, 10) + ","
+				for _, saleDtl := range saleMstsAndSaleDtls.SaleDtls {
+					if saleDtl.SaleNo == saleMst.SaleNo {
 						for _, salePayment := range saleMstsAndSaleDtls.SalePayments {
-							if salePayment.SaleNo == salDtl.SaleNo {
+							if salePayment.SaleNo == saleDtl.SaleNo {
 								saleRecordIdSuccessMapping := &models.SaleRecordIdSuccessMapping{
 									SaleTransactionId:      saleMst.SaleTransactionId,
 									TransactionChannelType: saleMst.TransactionChannelType,
@@ -1246,23 +1257,15 @@ func saveAndUpdateLog(ctx context.Context, saleMstInput models.SaleMst, saleMsts
 									TransactionId:          saleMst.TransactionId,
 									OrderId:                saleMst.OrderId,
 									RefundId:               saleMst.RefundId,
-									OrderItemId:            salDtl.OrderItemId,
-									RefundItemId:           salDtl.RefundItemId,
-									DtlSeq:                 salDtl.DtSeq,
+									OrderItemId:            saleDtl.OrderItemId,
+									RefundItemId:           saleDtl.RefundItemId,
+									DtlSeq:                 saleDtl.DtSeq,
 								}
 								if err := saleRecordIdSuccessMapping.CheckAndSave(); err != nil {
 									return err
 								}
 							}
 						}
-					}
-				}
-				if strings.ToUpper(saleMst.TransactionType) != "EXCHANGE" && saleMst.RefundId != 0 {
-					if orderItemIds != "" {
-						orderItemIds = strings.TrimSuffix(orderItemIds, ",")
-					}
-					if err := models.CheckIfTheExchange(ctx, saleMst.OrderId, saleMst.SalesmanId, orderItemIds); err != nil {
-						return err
 					}
 				}
 			}
