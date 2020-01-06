@@ -84,7 +84,7 @@ func (etl ClearanceToCslTSaleETL) Transform(ctx context.Context, source interfac
 		inUserID, itemIds, baseTrimCode, saleNo, departStoreReceiptNo string
 	var preSaleDtSeq sql.NullInt64
 	var preSaleNo, tMall_ID, offlineShopCode sql.NullString
-	var discountAmt, estimateSaleAmt, saleAmt, normalPrice, paymentAmt float64
+	var discountAmt, estimateSaleAmt, saleAmt, normalPrice, paymentAmt, price float64
 
 	saleTAndSaleTDtls, ok := source.(models.SaleTAndSaleTDtls)
 	if !ok {
@@ -155,7 +155,9 @@ func (etl ClearanceToCslTSaleETL) Transform(ctx context.Context, source interfac
 		saleMode = ""
 
 		preSaleNo = sql.NullString{"", false}
-		if saleTransaction.RefundId == 0 {
+
+		// If the original sales order does not exist, the one passed to CSL will be changed to negative sales
+		if (saleTransaction.OrderId != 0 && saleTransaction.RefundId == 0) || (saleTransaction.OrderId == 0 && saleTransaction.RefundId != 0) {
 			saleMode = Sale
 		} else {
 			saleMode = Refund
@@ -426,12 +428,14 @@ func (etl ClearanceToCslTSaleETL) Transform(ctx context.Context, source interfac
 				normalPrice = saleTransactionDtl.ListPrice
 				saleQty = saleTransactionDtl.Quantity
 				saleAmt = saleTransactionDtl.TotalListPrice
+				price = saleTransactionDtl.SalePrice
 
 				if saleTransactionDtl.RefundItemId != 0 {
 					saleQty = saleQty * -1
 					saleAmt = saleAmt * -1
 					estimateSaleAmt = estimateSaleAmt * -1
 					discountAmt = discountAmt * -1
+					price = price * -1
 				}
 				tSaleDtl := models.T_SaleDtl{
 					SaleNo:                     saleNo,
@@ -444,7 +448,7 @@ func (etl ClearanceToCslTSaleETL) Transform(ctx context.Context, source interfac
 					ProdCode:                   sku.Code,
 					EANCode:                    eANCode,
 					NormalPrice:                normalPrice,
-					Price:                      saleTransactionDtl.SalePrice,
+					Price:                      price,
 					SaleQty:                    saleQty,
 					SaleAmt:                    saleAmt,
 					DiscountAmt:                discountAmt,
