@@ -3,8 +3,12 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	"nomni/utils/api"
 	"strings"
 	"time"
+
+	"github.com/labstack/echo"
+	"github.com/pangpanglabs/goutils/behaviorlog"
 )
 
 func splitTolist(s string) []string {
@@ -38,4 +42,16 @@ func DateTimeValidate(startTime time.Time, endTime time.Time) error {
 		return errors.New(fmt.Sprintf("查询期间不能大于%d天", term))
 	}
 	return nil
+}
+
+func renderFail(c echo.Context, status int, err error) error {
+	if err != nil {
+		behaviorlog.FromCtx(c.Request().Context()).WithError(err)
+	}
+	return c.JSON(status, api.Result{
+		Success: false,
+		Error: api.Error{
+			Message: err.Error(),
+		},
+	})
 }
