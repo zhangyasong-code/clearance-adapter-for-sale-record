@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 
 	"clearance/clearance-adapter-for-sale-record/models"
@@ -19,31 +20,19 @@ func (c CslTransactionController) Init(g *echo.Group) {
 func (CslTransactionController) GetCslSaleTransactions(c echo.Context) error {
 	var data models.RequestInput
 	if err := c.Bind(&data); err != nil {
-		return c.JSON(http.StatusBadRequest, api.Result{
-			Error: api.Error{
-				Message: err.Error(),
-			},
-		})
+		return renderFail(c, http.StatusBadRequest, err)
 	}
 	data.SaleNos = splitTolist(c.QueryParam("saleNos"))
 	if data.SaleNo != "" {
 		data.SaleNos = append(data.SaleNos, data.SaleNo)
 	}
 	if len(data.SaleNos) == 0 && (data.ShopCode == "" || data.Dates == "" || data.PosNo == "") {
-		return c.JSON(http.StatusBadRequest, api.Result{
-			Error: api.Error{
-				Message: "Must be input ShopCode,Dates,PosNo !",
-			},
-		})
+		return renderFail(c, http.StatusBadRequest, errors.New("Must be input ShopCode,Dates,PosNo !"))
 	}
 
 	totalCount, items, err := models.SaleMst{}.GetCslSales(c.Request().Context(), data)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, api.Result{
-			Error: api.Error{
-				Message: err.Error(),
-			},
-		})
+		return renderFail(c, http.StatusInternalServerError, err)
 	}
 
 	return c.JSON(http.StatusOK, api.Result{
@@ -58,31 +47,19 @@ func (CslTransactionController) GetCslSaleTransactions(c echo.Context) error {
 func (CslTransactionController) GetCslTSaleTransactions(c echo.Context) error {
 	var data models.RequestInput
 	if err := c.Bind(&data); err != nil {
-		return c.JSON(http.StatusBadRequest, api.Result{
-			Error: api.Error{
-				Message: err.Error(),
-			},
-		})
+		return renderFail(c, http.StatusBadRequest, err)
 	}
 	data.SaleNos = splitTolist(c.QueryParam("saleNos"))
 	if data.SaleNo != "" {
 		data.SaleNos = append(data.SaleNos, data.SaleNo)
 	}
 	if len(data.SaleNos) == 0 && (data.ShopCode == "" || data.Dates == "") {
-		return c.JSON(http.StatusBadRequest, api.Result{
-			Error: api.Error{
-				Message: "Must be input ShopCode,Dates !",
-			},
-		})
+		return renderFail(c, http.StatusBadRequest, errors.New("Must be input ShopCode,Dates !"))
 	}
 
 	totalCount, items, err := models.T_SaleMst{}.GetCslTSales(c.Request().Context(), data)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, api.Result{
-			Error: api.Error{
-				Message: err.Error(),
-			},
-		})
+		return renderFail(c, http.StatusInternalServerError, err)
 	}
 
 	return c.JSON(http.StatusOK, api.Result{
