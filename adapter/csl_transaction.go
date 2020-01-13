@@ -13,8 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/sync/errgroup"
-
 	"github.com/go-xorm/xorm"
 	"github.com/pangpanglabs/goetl"
 	"xorm.io/core"
@@ -97,10 +95,10 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 
 // Transform ...
 func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
-	var dtSeq, colleaguesId, saleQty, seqNo int64
+	var dtSeq, colleaguesId, saleQty int64
 	var saleEventNormalSaleRecognitionChk bool
 	var saleMode, eANCode, normalSaleTypeCode, useMileageSettleType, offerNo, couponNo,
-		inUserID, itemIds, baseTrimCode, saleNo, custBrandCode, inUserName string
+		inUserID, itemIds, baseTrimCode, custBrandCode, inUserName string
 	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo, preSaleDtSeq sql.NullInt64
 	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode,
 		secondaryEventSettleTypeCode, preSaleNo, creditCardFirmCode, custNo,
@@ -122,58 +120,17 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		baseTrimCode = "A"
 		localSaleDate := (saleTransaction.UpdatedAt).Add(local)
 		saleDate := localSaleDate.Format("20060102")
-		saleNo = ""
-		seqNo = 0
 		if saleTransaction.ShopCode == "" || saleDate == "" {
 			return nil, errors.New("ShopCode or saleDate is null")
 		}
-		checkSaleNo, err := models.CheckSaleNo{}.GetCheckSaleNoBySaleTransactionid(saleTransaction.Id)
+		checkSaleNo, seqNo, err := models.GetCheckSaleNoWithSeqNo(saleTransaction, saleDate, MSLV2_POS)
 		if err != nil {
 			return nil, err
 		}
-		saleNo = checkSaleNo.SaleNo
-		if saleNo == "" {
-			lastSaleNo, err := models.CheckSaleNo{}.GetLastSaleNo(saleTransaction.ShopCode, saleDate, MSLV2_POS)
-			if err != nil {
-				return nil, err
-			}
-			seq, str, err := models.SaleMst{}.GetSeqAndStartStr(lastSaleNo)
-			if err != nil {
-				return nil, err
-			}
-			//Get SequenceNumber
-			sequenceNumber, _, _, err := models.SaleMst{}.GetSequenceNumber(seq, str)
-			if err != nil {
-				return nil, err
-			}
-			//get SeqNo
-			seqNumber, err := models.SaleMst{}.GetSeqNo(sequenceNumber)
-			if err != nil {
-				return nil, err
-			}
-			seqNo = seqNumber
-			saleNo = saleTransaction.ShopCode + saleDate[len(saleDate)-6:len(saleDate)] + MSLV2_POS + sequenceNumber
-			checkSaleNo := &models.CheckSaleNo{
-				TransactionId:          saleTransaction.TransactionId,
-				SaleTransactionId:      saleTransaction.Id,
-				TransactionChannelType: saleTransaction.TransactionChannelType,
-				OrderId:                saleTransaction.OrderId,
-				RefundId:               saleTransaction.RefundId,
-				ShopCode:               saleTransaction.ShopCode,
-				Dates:                  saleDate,
-				SaleNo:                 saleNo,
-				PosNo:                  MSLV2_POS,
-				Processing:             true,
-				Whthersend:             false,
-			}
-			if err = checkSaleNo.Save(); err != nil {
-				return nil, err
-			}
-		} else {
-			if checkSaleNo.Processing == true || checkSaleNo.Whthersend == true {
-				continue
-			}
+		if checkSaleNo.Processing == true || checkSaleNo.Whthersend == true {
+			continue
 		}
+		saleNo := checkSaleNo.SaleNo
 
 		//Sale S 销售,  Refund R 退货, EXCHANGE C 交换
 		saleMode = ""
@@ -1045,25 +1002,6 @@ func (etl ClearanceToCslETL) ReadyToLoad(ctx context.Context, source interface{}
 		}
 		for _, saleDtl := range saleMstsAndSaleDtls.SaleDtls {
 			if saleMst.SaleNo == saleDtl.SaleNo {
-
-				//Check Stock
-
-				// err := models.SaleMst{}.CheckStock(saleDtl.BrandCode, saleDtl.ShopCode, saleDtl.ProdCode, saleDtl.StyleCode)
-				// if err != nil {
-				// 	SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-				// 		StoreId:          saleMst.StoreId,
-				// 		TransactionId:    saleMst.TransactionId,
-				// 		TransactionDtlId: saleDtl.TransactionDtlId,
-				// 		CreatedBy:        "API",
-				// 		Error:            err.Error() + " BrandCode:" + saleDtl.BrandCode + " ShopCode:" + saleDtl.ShopCode + " SKUCode:" + saleDtl.ProdCode + " ProductCode:" + saleDtl.StyleCode,
-				// 		Details:          err.Error(),
-				// 	}
-				// 	if err := SaleRecordIdFailMapping.Save(); err != nil {
-				// 		return err
-				// 	}
-				// 	return err
-				// }
-
 				//Check FeeRate
 				if saleDtl.NormalFeeRate <= 0 {
 					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
@@ -1244,95 +1182,12 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 			}
 		}
 
-		if err := saveAndUpdateLog(ctx, saleMst, saleMstsAndSaleDtls); err != nil {
+		if err := models.SaveAndUpdateLog(ctx, saleMst, saleMstsAndSaleDtls); err != nil {
 			return err
 		}
 	}
 	//commit session
 	if err := session.Commit(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func saveAndUpdateLog(ctx context.Context, saleMstInput models.SaleMst, saleMstsAndSaleDtls models.SaleMstsAndSaleDtls) error {
-	g := errgroup.Group{}
-
-	g.Go(func() error {
-		//insert success table
-		for _, saleMst := range saleMstsAndSaleDtls.SaleMsts {
-			if saleMst.SaleNo == saleMstInput.SaleNo {
-				for _, saleDtl := range saleMstsAndSaleDtls.SaleDtls {
-					if saleDtl.SaleNo == saleMst.SaleNo {
-						for _, salePayment := range saleMstsAndSaleDtls.SalePayments {
-							if salePayment.SaleNo == saleDtl.SaleNo {
-								saleRecordIdSuccessMapping := &models.SaleRecordIdSuccessMapping{
-									SaleTransactionId:      saleMst.SaleTransactionId,
-									TransactionChannelType: saleMst.TransactionChannelType,
-									SaleNo:                 saleMst.SaleNo,
-									CreatedBy:              "API",
-									TransactionId:          saleMst.TransactionId,
-									OrderId:                saleMst.OrderId,
-									RefundId:               saleMst.RefundId,
-									OrderItemId:            saleDtl.OrderItemId,
-									RefundItemId:           saleDtl.RefundItemId,
-									DtlSeq:                 saleDtl.DtSeq,
-								}
-								if err := saleRecordIdSuccessMapping.CheckAndSave(); err != nil {
-									return err
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		return nil
-	})
-
-	g.Go(func() error {
-		//To update "WhetherSend" field in clearance db
-		saleTransaction, err := models.SaleTransaction{}.Get(saleMstInput.SaleTransactionId, saleMstInput.TransactionId)
-		if err != nil {
-			return err
-		}
-		saleTransaction.WhetherSend = true
-		saleTransaction.InDateTime = saleMstInput.InDateTime
-		if err := saleTransaction.Update(); err != nil {
-			return err
-		}
-		return nil
-	})
-
-	g.Go(func() error {
-		// update saleRecordIdFailMappings when send to csl success
-		_, saleRecordIdFailMappings, err := models.SaleRecordIdFailMapping{}.GetSaleFailDataLog(ctx, models.RequestInput{SaleTransactionId: saleMstInput.SaleTransactionId})
-		if err != nil {
-			return err
-		}
-		for _, saleRecordIdFailMapping := range saleRecordIdFailMappings {
-			saleRecordIdFailMapping.IsCreate = true
-			if err := saleRecordIdFailMapping.Update(); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-
-	g.Go(func() error {
-		checkSaleNo, err := models.CheckSaleNo{}.GetCheckSaleNoBySaleTransactionid(saleMstInput.SaleTransactionId)
-		if err != nil {
-			return err
-		}
-		checkSaleNo.Processing = false
-		checkSaleNo.Whthersend = true
-		if err := checkSaleNo.Update(); err != nil {
-			return err
-		}
-		return nil
-	})
-
-	if err := g.Wait(); err != nil {
 		return err
 	}
 	return nil
