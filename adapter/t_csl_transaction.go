@@ -79,9 +79,9 @@ func (etl ClearanceToCslTSaleETL) Extract(ctx context.Context) (interface{}, err
 
 // Transform ...
 func (etl ClearanceToCslTSaleETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
-	var dtSeq, saleQty, seqNo, colleaguesId int64
+	var dtSeq, saleQty, colleaguesId int64
 	var saleMode, eANCode, normalSaleTypeCode, offerNo, couponNo,
-		inUserID, itemIds, baseTrimCode, saleNo, departStoreReceiptNo string
+		inUserID, itemIds, baseTrimCode, departStoreReceiptNo string
 	var preSaleDtSeq sql.NullInt64
 	var preSaleNo, tMall_ID, offlineShopCode sql.NullString
 	var discountAmt, estimateSaleAmt, saleAmt, normalPrice, paymentAmt, price float64
@@ -98,59 +98,18 @@ func (etl ClearanceToCslTSaleETL) Transform(ctx context.Context, source interfac
 		baseTrimCode = "A"
 		localSaleDate := (saleTransaction.UpdatedAt).Add(local)
 		saleDate := localSaleDate.Format("20060102")
-		saleNo = ""
-		seqNo = 0
 		if saleTransaction.ShopCode == "" || saleDate == "" {
 			return nil, errors.New("ShopCode or saleDate is null")
 		}
-		checkSaleNo, err := models.CheckSaleNo{}.GetCheckSaleNoBySaleTransactionid(saleTransaction.Id)
+		checkSaleNo, seqNo, err := models.GetCheckSaleNoWithSeqNo(saleTransaction, saleDate, MSLV2_POS)
 		if err != nil {
 			return nil, err
 		}
-		saleNo = checkSaleNo.SaleNo
-		if saleNo == "" {
-			lastSaleNo, err := models.CheckSaleNo{}.GetLastSaleNo(saleTransaction.ShopCode, saleDate, MSLV2_EMALL)
-			if err != nil {
-				return nil, err
-			}
-			seq, str, err := models.SaleMst{}.GetSeqAndStartStr(lastSaleNo)
-			if err != nil {
-				return nil, err
-			}
-			//Get SequenceNumber
-			sequenceNumber, _, _, err := models.SaleMst{}.GetSequenceNumber(seq, str)
-			if err != nil {
-				return nil, err
-			}
-			//get SeqNo
-			seqNumber, err := models.SaleMst{}.GetSeqNo(sequenceNumber)
-			if err != nil {
-				return nil, err
-			}
-			seqNo = seqNumber
-			saleNo = saleTransaction.ShopCode + saleDate[len(saleDate)-6:len(saleDate)] + MSLV2_EMALL + sequenceNumber
-			checkSaleNo := &models.CheckSaleNo{
-				TransactionId:          saleTransaction.TransactionId,
-				SaleTransactionId:      saleTransaction.Id,
-				TransactionChannelType: saleTransaction.TransactionChannelType,
-				OrderId:                saleTransaction.OrderId,
-				RefundId:               saleTransaction.RefundId,
-				ShopCode:               saleTransaction.ShopCode,
-				Dates:                  saleDate,
-				SaleNo:                 saleNo,
-				PosNo:                  MSLV2_EMALL,
-				Processing:             true,
-				Whthersend:             false,
-			}
-			if err = checkSaleNo.Save(); err != nil {
-				return nil, err
-			}
-		} else {
-			if checkSaleNo.Processing == true || checkSaleNo.Whthersend == true {
-				continue
-			}
+		if checkSaleNo.Processing == true || checkSaleNo.Whthersend == true {
+			continue
 		}
 
+		saleNo := checkSaleNo.SaleNo
 		//Sale S 销售  Refund R 退货
 		saleMode = ""
 
