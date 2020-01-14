@@ -149,6 +149,7 @@ type RequestInput struct {
 	SaleMode               string    `json:"saleMode" query:"saleMode"`
 	PosNo                  string    `json:"posNo" query:"posNo"`
 	TransactionChannelType string    `json:"transactionChannelType" query:"transactionChannelType"`
+	TransactionTypes       []string  `json:"transactionTypes"`
 }
 
 type CheckSaleNo struct {
@@ -592,6 +593,9 @@ func (SaleTransaction) GetSaleTransactions(ctx context.Context, requestInput Req
 		}
 		if requestInput.StoreId != 0 {
 			q.And("store_id =?", requestInput.StoreId)
+		}
+		if len(requestInput.TransactionTypes) != 0 {
+			q.In("transaction_type", requestInput.TransactionTypes)
 		}
 		return q
 	}
