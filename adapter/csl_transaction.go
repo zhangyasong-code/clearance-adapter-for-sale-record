@@ -97,12 +97,11 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
 	var dtSeq, colleaguesId, saleQty int64
 	var saleEventNormalSaleRecognitionChk bool
-	var saleMode, eANCode, normalSaleTypeCode, useMileageSettleType, offerNo, couponNo,
-		inUserID, itemIds, baseTrimCode, custBrandCode, inUserName string
+	var eANCode, normalSaleTypeCode, useMileageSettleType, offerNo, couponNo,
+		inUserID, itemIds, baseTrimCode, inUserName string
 	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo, preSaleDtSeq sql.NullInt64
 	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode,
-		secondaryEventSettleTypeCode, preSaleNo, creditCardFirmCode, custNo,
-		custGradeCode, complexShopSeqNo sql.NullString
+		secondaryEventSettleTypeCode, creditCardFirmCode sql.NullString
 	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
 		discountAmt, actualSaleAmt, saleEventFee, normalFee, normalFeeRate, saleEventFeeRate, eventAutoDiscountAmt,
 		eventDecisionDiscountAmt, chinaFISaleAmt, estimateSaleAmt, useMileage, sellingAmt, discountAmtAsCost, saleAmt, normalPrice, shopEmpEstimateSaleAmt, paymentAmt, obtainMileage float64
@@ -133,83 +132,14 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		saleNo := checkSaleNo.SaleNo
 
 		//Sale S 销售,  Refund R 退货, EXCHANGE C 交换
-		saleMode = ""
-		complexShopSeqNo = sql.NullString{"", false}
-		preSaleNo = sql.NullString{"", false}
-
-		//SuccessOrderId and SuccessRefundId are parameters used when querying successful data
-		successOrderId := saleTransaction.OrderId
-		successRefundId := int64(0)
-		details := ""
-		boolPreSaleNoCheck := false
-		if saleTransaction.RefundId == 0 {
-			saleMode = Sale
-		} else {
-			saleMode = Refund
-			details = "退货处理必须有之前的销售数据！"
-			boolPreSaleNoCheck = true
+		saleMode := models.GetSaleMode(saleTransaction)
+		preSaleNo, err := models.GetPreSaleNo(saleTransaction)
+		if err != nil {
+			return nil, err
 		}
-		if strings.ToUpper(saleTransaction.TransactionType) == "EXCHANGE" {
-			saleMode = Exchange
-			boolPreSaleNoCheck = false
-			if saleTransaction.RefundId == 0 {
-				//SuccessRefundId = saleTransaction.OrderId and successOrderId = 0 when TransactionType is EXCHANGE and sales after return
-				successOrderId = 0
-				successRefundId = saleTransaction.OrderId
-				details = "换货处理必须有之前的退货数据！"
-				boolPreSaleNoCheck = true
-			}
-		}
-		if boolPreSaleNoCheck {
-			successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(0, successOrderId, successRefundId, 0, 0, saleTransaction.TransactionChannelType)
-			if err != nil {
-				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-					SaleTransactionId:      saleTransaction.Id,
-					TransactionChannelType: saleTransaction.TransactionChannelType,
-					OrderId:                saleTransaction.OrderId,
-					RefundId:               saleTransaction.RefundId,
-					StoreId:                saleTransaction.StoreId,
-					TransactionId:          saleTransaction.TransactionId,
-					CreatedBy:              "API",
-					Error:                  err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10) + " RefundId:" + strconv.FormatInt(saleTransaction.RefundId, 10),
-					Details:                details,
-				}
-				if err := SaleRecordIdFailMapping.Save(); err != nil {
-					return nil, err
-				}
-				continue
-			}
-			preSaleNo = sql.NullString{successDtls[0].SaleNo, true}
-		}
-
-		custBrandCode = ""
-		custGradeCode = sql.NullString{"", false}
-		custNo = sql.NullString{"", false}
-		if saleTransaction.CustomerId != 0 {
-			custNo = sql.NullString{strconv.FormatInt(saleTransaction.CustomerId, 10), true}
-			//get mileage
-			mileage, err := models.PostMileage{}.GetMileage(saleTransaction.CustomerId, saleTransaction.TransactionId)
-			if err != nil {
-				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-					SaleTransactionId:      saleTransaction.Id,
-					TransactionChannelType: saleTransaction.TransactionChannelType,
-					OrderId:                saleTransaction.OrderId,
-					RefundId:               saleTransaction.RefundId,
-					StoreId:                saleTransaction.StoreId,
-					TransactionId:          saleTransaction.TransactionId,
-					CreatedBy:              "API",
-					Error:                  err.Error() + " TransactionId:" + strconv.FormatInt(saleTransaction.TransactionId, 10),
-					Details:                "查询PostMileage失败！",
-				}
-				if err := SaleRecordIdFailMapping.Save(); err != nil {
-					return nil, err
-				}
-				continue
-			}
-			custBrandCode = mileage.BrandCode
-			if mileage.GradeId != 0 {
-				custGradeCode = sql.NullString{strconv.FormatInt(mileage.GradeId, 10), true}
-			}
+		custNo, custGradeCode, custBrandCode, err := models.GetCustNoAndGradeCodeAndBrandCode(saleTransaction)
+		if err != nil {
+			return nil, err
 		}
 		if strings.ToUpper(saleTransaction.TransactionChannelType) == "POS" && saleTransaction.TransactionCreatedId != 0 {
 			colleaguesId = saleTransaction.TransactionCreatedId
@@ -309,7 +239,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			SendState:                   "",
 			SendFlag:                    NotSynChronized,
 			DiscountAmtAsCost:           0,
-			ComplexShopSeqNo:            complexShopSeqNo,
+			ComplexShopSeqNo:            sql.NullString{"", false},
 			SaleOfficeCode:              MSLv2_0,
 			Freight:                     sql.NullFloat64{0, false},
 			TMall_UseMileage:            sql.NullFloat64{0, false},

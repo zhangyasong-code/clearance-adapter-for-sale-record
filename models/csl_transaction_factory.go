@@ -2,8 +2,15 @@ package models
 
 import (
 	"context"
+	"database/sql"
+	"strconv"
+	"strings"
 
 	"golang.org/x/sync/errgroup"
+)
+
+const (
+	Exchange = "C"
 )
 
 //	保存插入成功log并更新插入错误log
@@ -161,4 +168,92 @@ func makeCheckSaleNoEntity(checkSaleNo *CheckSaleNo) CheckSaleNo {
 		Processing:             checkSaleNo.Processing,
 		Whthersend:             checkSaleNo.Whthersend,
 	}
+}
+
+func GetSaleMode(saleTransaction SaleTransaction) (saleMode string) {
+	if saleTransaction.RefundId == 0 {
+		saleMode = Sale
+	} else {
+		saleMode = Refund
+	}
+	if strings.ToUpper(saleTransaction.TransactionType) == "EXCHANGE" {
+		saleMode = Exchange
+	}
+	return saleMode
+}
+
+func GetPreSaleNo(saleTransaction SaleTransaction) (sql.NullString, error) {
+	//SuccessOrderId and SuccessRefundId are parameters used when querying successful data
+	successOrderId := saleTransaction.OrderId
+	successRefundId := int64(0)
+	details := ""
+	boolPreSaleNoCheck := false
+	if saleTransaction.RefundId != 0 {
+		details = "退货处理必须有之前的销售数据！"
+		boolPreSaleNoCheck = true
+	}
+	if strings.ToUpper(saleTransaction.TransactionType) == "EXCHANGE" {
+		boolPreSaleNoCheck = false
+		if saleTransaction.RefundId == 0 {
+			//SuccessRefundId = saleTransaction.OrderId and successOrderId = 0 when TransactionType is EXCHANGE and sales after return
+			successOrderId = 0
+			successRefundId = saleTransaction.OrderId
+			details = "换货处理必须有之前的退货数据！"
+			boolPreSaleNoCheck = true
+		}
+	}
+	if boolPreSaleNoCheck {
+		successDtls, err := SaleRecordIdSuccessMapping{}.GetSaleSuccessData(0, successOrderId, successRefundId, 0, 0, saleTransaction.TransactionChannelType)
+		if err != nil {
+			SaleRecordIdFailMapping := &SaleRecordIdFailMapping{
+				SaleTransactionId:      saleTransaction.Id,
+				TransactionChannelType: saleTransaction.TransactionChannelType,
+				OrderId:                saleTransaction.OrderId,
+				RefundId:               saleTransaction.RefundId,
+				StoreId:                saleTransaction.StoreId,
+				TransactionId:          saleTransaction.TransactionId,
+				CreatedBy:              "API",
+				Error:                  err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10) + " RefundId:" + strconv.FormatInt(saleTransaction.RefundId, 10),
+				Details:                details,
+			}
+			if err := SaleRecordIdFailMapping.Save(); err != nil {
+				return sql.NullString{"", false}, err
+			}
+		}
+		return sql.NullString{successDtls[0].SaleNo, true}, nil
+	}
+	return sql.NullString{"", false}, nil
+}
+
+func GetCustNoAndGradeCodeAndBrandCode(saleTransaction SaleTransaction) (sql.NullString, sql.NullString, string, error) {
+	custNo := sql.NullString{"", false}
+	custGradeCode := sql.NullString{"", false}
+	custBrandCode := ""
+	if saleTransaction.CustomerId != 0 {
+		custNo = sql.NullString{strconv.FormatInt(saleTransaction.CustomerId, 10), true}
+		//get mileage
+		mileage, err := PostMileage{}.GetMileage(saleTransaction.CustomerId, saleTransaction.TransactionId)
+		if err != nil {
+			SaleRecordIdFailMapping := &SaleRecordIdFailMapping{
+				SaleTransactionId:      saleTransaction.Id,
+				TransactionChannelType: saleTransaction.TransactionChannelType,
+				OrderId:                saleTransaction.OrderId,
+				RefundId:               saleTransaction.RefundId,
+				StoreId:                saleTransaction.StoreId,
+				TransactionId:          saleTransaction.TransactionId,
+				CreatedBy:              "API",
+				Error:                  err.Error() + " TransactionId:" + strconv.FormatInt(saleTransaction.TransactionId, 10),
+				Details:                "查询PostMileage失败！",
+			}
+			if err := SaleRecordIdFailMapping.Save(); err != nil {
+				return sql.NullString{"", false}, sql.NullString{"", false}, "", err
+			}
+		}
+		custBrandCode = mileage.BrandCode
+		if mileage.GradeId != 0 {
+			custGradeCode = sql.NullString{strconv.FormatInt(mileage.GradeId, 10), true}
+		}
+		return custNo, custGradeCode, custBrandCode, nil
+	}
+	return custNo, custGradeCode, custBrandCode, nil
 }
