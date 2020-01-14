@@ -97,9 +97,8 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
 	var dtSeq, saleQty int64
 	var saleEventNormalSaleRecognitionChk bool
-	var eANCode, normalSaleTypeCode, useMileageSettleType, offerNo, couponNo,
-		itemIds, baseTrimCode string
-	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo, preSaleDtSeq sql.NullInt64
+	var eANCode, normalSaleTypeCode, useMileageSettleType, baseTrimCode string
+	var primaryCustEventNo, eventNo, secondaryCustEventNo, preSaleDtSeq sql.NullInt64
 	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode,
 		secondaryEventSettleTypeCode, creditCardFirmCode sql.NullString
 	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
@@ -202,13 +201,11 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				dtSeq += 1
 				saleMst.BrandCode = saleTransactionDtl.BrandCode
 				staffSaleRecord.BrandCode = saleTransactionDtl.BrandCode
-				custMileagePolicy, err := models.CustMileagePolicy{}.GetCustMileagePolicy(saleTransactionDtl.BrandCode)
+				custMileagePolicyNo, err := models.GetCustMileagePolicyNo(saleTransactionDtl.BrandCode)
 				if err != nil {
 					return nil, err
 				}
-				if custMileagePolicy.CustMileagePolicyNo != 0 {
-					custMileagePolicyNo = sql.NullInt64{custMileagePolicy.CustMileagePolicyNo, true}
-				}
+				saleMst.CustMileagePolicyNo = custMileagePolicyNo
 				eventNo = sql.NullInt64{0, false}
 				primaryCustEventNo = sql.NullInt64{0, false}
 				primaryEventTypeCode = sql.NullString{"", false}
@@ -225,8 +222,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				primaryEventSettleTypeCode = sql.NullString{"", false}
 				secondaryEventSettleTypeCode = sql.NullString{"", false}
 				useMileageSettleType = "1"
-				offerNo = ""
-				couponNo = ""
 				saleEventFee = 0
 				normalFee = 0
 				normalFeeRate = 0
@@ -242,21 +237,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				saleAmt = 0
 				saleEventNormalSaleRecognitionChk = false
 
-				for _, appliedSaleRecordCartOffer := range appliedSaleRecordCartOffers {
-					itemIds = ""
-					if appliedSaleRecordCartOffer.TargetItemIds != "" {
-						itemIds = appliedSaleRecordCartOffer.TargetItemIds
-					} else {
-						itemIds = appliedSaleRecordCartOffer.ItemIds
-					}
-					result := strings.Index(itemIds+",", strconv.FormatInt(saleTransactionDtl.OrderItemId, 10)+",")
-					if result != -1 {
-						couponNo = appliedSaleRecordCartOffer.CouponNo
-						offerNo = appliedSaleRecordCartOffer.OfferNo
-						break
-					}
-				}
-
+				couponNo, offerNo := models.GetCouponNoAndOfferNo(appliedSaleRecordCartOffers, saleTransactionDtl.OrderItemId)
 				if offerNo != "" && couponNo == "" {
 					promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(offerNo)
 					if promotionEvent == nil || promotionEvent.EventNo == "" {
@@ -675,7 +656,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			}
 		}
 		//set value for saleMst "UseMileage", "SellingAmt","ChinaFISaleAmt","ActualSaleAmt"
-		saleMst.CustMileagePolicyNo = custMileagePolicyNo
 		saleMst.UseMileage = 0
 		saleMst.SellingAmt = 0
 		saleMst.DiscountAmt = 0

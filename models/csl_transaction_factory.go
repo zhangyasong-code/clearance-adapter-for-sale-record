@@ -349,3 +349,30 @@ func GetStaffSaleRecord(saleTransaction SaleTransaction, saleDate string, saleMs
 	}
 	return StaffSaleRecord{}
 }
+
+func GetCustMileagePolicyNo(brandCode string) (sql.NullInt64, error) {
+	custMileagePolicy, err := CustMileagePolicy{}.GetCustMileagePolicy(brandCode)
+	if err != nil {
+		return sql.NullInt64{0, false}, err
+	}
+	if custMileagePolicy.CustMileagePolicyNo != 0 {
+		return sql.NullInt64{custMileagePolicy.CustMileagePolicyNo, true}, nil
+	}
+	return sql.NullInt64{0, false}, nil
+}
+
+func GetCouponNoAndOfferNo(appliedSaleRecordCartOffers []AppliedSaleRecordCartOffer, orderItemId int64) (string, string) {
+	for _, appliedSaleRecordCartOffer := range appliedSaleRecordCartOffers {
+		itemIds := ""
+		if appliedSaleRecordCartOffer.TargetItemIds != "" {
+			itemIds = appliedSaleRecordCartOffer.TargetItemIds
+		} else {
+			itemIds = appliedSaleRecordCartOffer.ItemIds
+		}
+		result := strings.Index(itemIds+",", strconv.FormatInt(orderItemId, 10)+",")
+		if result != -1 {
+			return appliedSaleRecordCartOffer.CouponNo, appliedSaleRecordCartOffer.OfferNo
+		}
+	}
+	return "", ""
+}
