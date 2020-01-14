@@ -105,6 +105,7 @@ func (TransactionController) GetSaleTransactions(c echo.Context) error {
 	if data.MaxResultCount == 0 {
 		data.MaxResultCount = 10
 	}
+	data.TransactionTypes = splitTolist(c.QueryParam("transactionTypes"))
 	if err := DateTimeValidate(data.StartAtTime, data.EndAtTime); err != nil {
 		return renderFail(c, http.StatusBadRequest, err)
 	}
