@@ -95,10 +95,10 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 
 // Transform ...
 func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
-	var dtSeq, colleaguesId, saleQty int64
+	var dtSeq, saleQty int64
 	var saleEventNormalSaleRecognitionChk bool
 	var eANCode, normalSaleTypeCode, useMileageSettleType, offerNo, couponNo,
-		inUserID, itemIds, baseTrimCode, inUserName string
+		itemIds, baseTrimCode string
 	var custMileagePolicyNo, primaryCustEventNo, eventNo, secondaryCustEventNo, preSaleDtSeq sql.NullInt64
 	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode,
 		secondaryEventSettleTypeCode, creditCardFirmCode sql.NullString
@@ -114,11 +114,9 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 	saleDtls := make([]models.SaleDtl, 0)
 	salePayments := make([]models.SalePayment, 0)
 	staffSaleRecords := make([]models.StaffSaleRecord, 0)
-	local, _ := time.ParseDuration("8h")
 	for _, saleTransaction := range saleTAndSaleTDtls.SaleTransactions {
 		baseTrimCode = "A"
-		localSaleDate := (saleTransaction.UpdatedAt).Add(local)
-		saleDate := localSaleDate.Format("20060102")
+		saleDate := models.GetSaleDate(saleTransaction.UpdatedAt)
 		if saleTransaction.ShopCode == "" || saleDate == "" {
 			return nil, errors.New("ShopCode or saleDate is null")
 		}
@@ -141,73 +139,13 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if err != nil {
 			return nil, err
 		}
-		if strings.ToUpper(saleTransaction.TransactionChannelType) == "POS" && saleTransaction.TransactionCreatedId != 0 {
-			colleaguesId = saleTransaction.TransactionCreatedId
-		}
-		colleagues, err := models.Colleagues{}.GetColleaguesAuth(colleaguesId, "")
+		inUserID, err := models.GetInUserID(saleTransaction)
 		if err != nil {
-			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-				SaleTransactionId:      saleTransaction.Id,
-				TransactionChannelType: saleTransaction.TransactionChannelType,
-				OrderId:                saleTransaction.OrderId,
-				RefundId:               saleTransaction.RefundId,
-				StoreId:                saleTransaction.StoreId,
-				TransactionId:          saleTransaction.TransactionId,
-				CreatedBy:              "API",
-				Error:                  err.Error() + " TransactionCreatedId:" + strconv.FormatInt(saleTransaction.TransactionCreatedId, 10),
-				Details:                "Colleague信息不存在！",
-			}
-			if err := SaleRecordIdFailMapping.Save(); err != nil {
-				return nil, err
-			}
-			continue
+			return nil, err
 		}
-		if colleagues.UserName != "" {
-			inUserID = colleagues.UserName
-		} else {
-			inUserID = InUserID
-		}
-
-		inUserName = ""
-		if saleTransaction.SalesmanId != 0 {
-			salesPerson, err := models.Employee{}.GetEmployee(saleTransaction.SalesmanId)
-			if err != nil {
-				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-					SaleTransactionId:      saleTransaction.Id,
-					TransactionChannelType: saleTransaction.TransactionChannelType,
-					OrderId:                saleTransaction.OrderId,
-					RefundId:               saleTransaction.RefundId,
-					StoreId:                saleTransaction.StoreId,
-					TransactionId:          saleTransaction.TransactionId,
-					CreatedBy:              "API",
-					Error:                  err.Error() + " SalesmanId:" + strconv.FormatInt(saleTransaction.SalesmanId, 10),
-					Details:                "销售员信息不存在！",
-				}
-				if err := SaleRecordIdFailMapping.Save(); err != nil {
-					return nil, err
-				}
-				continue
-			}
-			// colleague, err := models.Colleagues{}.GetColleaguesAuth(0, salesPerson.EmpId)
-			userInfo, err := models.UserInfo{}.GetUserInfo(salesPerson.EmpId)
-			if err != nil {
-				SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-					SaleTransactionId:      saleTransaction.Id,
-					TransactionChannelType: saleTransaction.TransactionChannelType,
-					OrderId:                saleTransaction.OrderId,
-					RefundId:               saleTransaction.RefundId,
-					StoreId:                saleTransaction.StoreId,
-					TransactionId:          saleTransaction.TransactionId,
-					CreatedBy:              "API",
-					Error:                  err.Error() + " EmpId:" + salesPerson.EmpId,
-					Details:                "UserInfo信息不存在！",
-				}
-				if err := SaleRecordIdFailMapping.Save(); err != nil {
-					return nil, err
-				}
-				continue
-			}
-			inUserName = userInfo.UserName
+		inUserName, err := models.GetInUserName(saleTransaction)
+		if err != nil {
+			return nil, err
 		}
 		obtainMileage = saleTransaction.ObtainMileage
 		saleAmt = saleTransaction.TotalListPrice
@@ -257,20 +195,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if err != nil {
 			return nil, err
 		}
-
-		// 是否上传内购到CSL Parameters : empId
-		staffSaleRecord := models.StaffSaleRecord{}
-		if saleTransaction.EmpId != "" {
-			staffSaleRecord = models.StaffSaleRecord{
-				Dates:             saleDate,
-				HREmpNo:           saleTransaction.EmpId,
-				SaleNo:            saleMst.SaleNo,
-				ShopCode:          saleMst.ShopCode,
-				InUserID:          saleMst.InUserID,
-				SaleTransactionId: saleTransaction.Id,
-				TransactionId:     saleTransaction.TransactionId,
-			}
-		}
+		staffSaleRecord := models.GetStaffSaleRecord(saleTransaction, saleDate, saleMst)
 		dtSeq = 0
 		for _, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {
 			if saleTransactionDtl.TransactionId == saleTransaction.TransactionId && saleTransactionDtl.SaleTransactionId == saleTransaction.Id {
