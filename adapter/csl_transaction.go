@@ -97,13 +97,13 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
 	var dtSeq, saleQty int64
 	var saleEventNormalSaleRecognitionChk bool
-	var eANCode, normalSaleTypeCode, useMileageSettleType, baseTrimCode string
-	var primaryCustEventNo, eventNo, secondaryCustEventNo, preSaleDtSeq sql.NullInt64
+	var normalSaleTypeCode, useMileageSettleType, baseTrimCode string
+	var primaryCustEventNo, eventNo, secondaryCustEventNo sql.NullInt64
 	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode,
-		secondaryEventSettleTypeCode, creditCardFirmCode sql.NullString
+		secondaryEventSettleTypeCode sql.NullString
 	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
 		discountAmt, actualSaleAmt, saleEventFee, normalFee, normalFeeRate, saleEventFeeRate, eventAutoDiscountAmt,
-		eventDecisionDiscountAmt, chinaFISaleAmt, estimateSaleAmt, useMileage, sellingAmt, discountAmtAsCost, saleAmt, normalPrice, shopEmpEstimateSaleAmt, paymentAmt, obtainMileage float64
+		eventDecisionDiscountAmt, chinaFISaleAmt, estimateSaleAmt, useMileage, sellingAmt, discountAmtAsCost, saleAmt, normalPrice, obtainMileage float64
 
 	saleTAndSaleTDtls, ok := source.(models.SaleTAndSaleTDtls)
 	if !ok {
@@ -350,44 +350,10 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					primaryEventTypeCode = sql.NullString{"C", true}
 					primaryEventSettleTypeCode = sql.NullString{"1", true}
 				}
-				sku, err := models.Product{}.GetSkuBySkuId(saleTransactionDtl.SkuId)
+				eANCode, skuCode, err := models.GetEANCodeAndSkuCode(saleTransaction, saleTransactionDtl)
 				if err != nil {
-					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-						SaleTransactionId:      saleTransaction.Id,
-						TransactionChannelType: saleTransaction.TransactionChannelType,
-						OrderId:                saleTransaction.OrderId,
-						RefundId:               saleTransaction.RefundId,
-						StoreId:                saleTransaction.StoreId,
-						TransactionId:          saleTransactionDtl.TransactionId,
-						TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
-						CreatedBy:              "API",
-						Error:                  err.Error() + " SkuId:" + strconv.FormatInt(saleTransactionDtl.SkuId, 10),
-						Details:                "商品不存在！",
-					}
-					if err := SaleRecordIdFailMapping.Save(); err != nil {
-						return nil, err
-					}
 					return nil, err
 				}
-
-				if len(sku.Identifiers) == 0 || sku.Identifiers[0].Uid == "" {
-					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-						SaleTransactionId:      saleTransaction.Id,
-						TransactionChannelType: saleTransaction.TransactionChannelType,
-						OrderId:                saleTransaction.OrderId,
-						RefundId:               saleTransaction.RefundId,
-						StoreId:                saleTransaction.StoreId,
-						TransactionId:          saleTransaction.TransactionId,
-						CreatedBy:              "API",
-						Error:                  "Sku.Identifiers not exist.  SkuID : " + strconv.FormatInt(saleTransactionDtl.SkuId, 10),
-						Details:                "商品UID不存在！",
-					}
-					if err := SaleRecordIdFailMapping.Save(); err != nil {
-						return nil, err
-					}
-					return nil, errors.New("Sku.Identifiers not exist")
-				}
-				eANCode = sku.Identifiers[0].Uid
 
 				if normalSaleTypeCode == "2" {
 					eventAutoDiscountAmt = GetToFixedPrice(saleTransactionDtl.TotalDistributedCartOfferPrice+saleTransactionDtl.TotalDistributedItemOfferPrice, baseTrimCode)
@@ -469,57 +435,10 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					}
 					return nil, err
 				}
-				if strings.ToUpper(saleTransaction.TransactionType) == "EXCHANGE" {
-					//Sale order need refund saleNo
-					if saleTransaction.RefundId == 0 {
-						//when TransactionType="EXCHANGE".change orderId = Refund RefunId
-						refundId := saleTransaction.OrderId
-						refundItemId := saleTransactionDtl.OrderItemId
-						successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(0, 0, refundId, 0, refundItemId, saleTransaction.TransactionChannelType)
-						if err != nil {
-							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-								SaleTransactionId:      saleTransaction.Id,
-								TransactionChannelType: saleTransaction.TransactionChannelType,
-								OrderId:                saleTransaction.OrderId,
-								RefundId:               saleTransaction.RefundId,
-								StoreId:                saleTransaction.StoreId,
-								TransactionId:          saleTransaction.TransactionId,
-								CreatedBy:              "API",
-								Error:                  err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10),
-								Details:                "换货处理必须有之前的退货数据！",
-							}
-							if err := SaleRecordIdFailMapping.Save(); err != nil {
-								return nil, err
-							}
-							continue
-						}
-						preSaleDtSeq = sql.NullInt64{successDtls[0].DtlSeq, true}
-					}
-				} else {
-					if saleTransaction.RefundId != 0 {
-						successDtls, err := models.SaleRecordIdSuccessMapping{}.GetSaleSuccessData(0, saleTransaction.OrderId, 0, saleTransactionDtl.OrderItemId, 0, saleTransaction.TransactionChannelType)
-						if err != nil {
-							SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-								SaleTransactionId:      saleTransaction.Id,
-								TransactionChannelType: saleTransaction.TransactionChannelType,
-								OrderId:                saleTransaction.OrderId,
-								RefundId:               saleTransaction.RefundId,
-								StoreId:                saleTransaction.StoreId,
-								TransactionId:          saleTransactionDtl.TransactionId,
-								TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
-								CreatedBy:              "API",
-								Error:                  err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10) + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10),
-								Details:                "退货处理必须有之前的销售数据！",
-							}
-							if err := SaleRecordIdFailMapping.Save(); err != nil {
-								return nil, err
-							}
-							return nil, err
-						}
-						preSaleDtSeq = sql.NullInt64{successDtls[0].DtlSeq, true}
-					}
+				preSaleDtSeq, err := models.GetPreSaleDtSeq(saleTransaction, saleTransactionDtl)
+				if err != nil {
+					return nil, err
 				}
-
 				if normalSaleTypeCode != "1" {
 					useMileage = math.Abs(saleTransactionDtl.MileagePrice)
 				}
@@ -541,26 +460,10 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				saleQty = saleTransactionDtl.Quantity
 				saleAmt = saleTransactionDtl.TotalListPrice
 
-				dtlSalesmanAmount, err := models.SaleRecordDtlSalesmanAmount{}.GetSaleRecordDtlSalesmanAmount(saleTransactionDtl.OrderItemId, saleTransactionDtl.RefundItemId)
+				shopEmpEstimateSaleAmt, err := models.GetShopEmpEstimateSaleAmt(saleTransaction, saleTransactionDtl, baseTrimCode)
 				if err != nil {
-					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-						SaleTransactionId:      saleTransaction.Id,
-						TransactionChannelType: saleTransaction.TransactionChannelType,
-						OrderId:                saleTransaction.OrderId,
-						RefundId:               saleTransaction.RefundId,
-						StoreId:                saleTransaction.StoreId,
-						TransactionId:          saleTransactionDtl.TransactionId,
-						TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
-						CreatedBy:              "API",
-						Error:                  err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10) + " RefundItemId:" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10),
-						Details:                "营业员销售业绩不存在！",
-					}
-					if err := SaleRecordIdFailMapping.Save(); err != nil {
-						return nil, err
-					}
 					return nil, err
 				}
-				shopEmpEstimateSaleAmt = GetToFixedPrice(dtlSalesmanAmount.SalesmanSaleAmount, baseTrimCode)
 
 				if saleTransactionDtl.RefundItemId != 0 {
 					saleQty = saleQty * -1
@@ -600,7 +503,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					SaleEventNo:                       eventNo,
 					SaleEventTypeCode:                 eventTypeCode,
 					SaleReturnReasonCode:              sql.NullString{"", false},
-					ProdCode:                          sku.Code,
+					ProdCode:                          skuCode,
 					EANCode:                           eANCode,
 					PriceTypeCode:                     priceTypeCode,
 					SupGroupCode:                      supGroupCode,
@@ -690,55 +593,11 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		//set value for saleMst "EstimateSaleAmtForConsumer","ShopEmpEstimateSaleAmt"
 		saleMst.EstimateSaleAmtForConsumer = saleMst.EstimateSaleAmt
 		saleMst.ActualSellingAmt = saleMst.SellingAmt
-		SaleTransactionPayments, err := models.SaleTransactionPayment{}.GetSaleTransactionPayment(saleTransaction.Id)
+		generatedSalePayments, err := models.GetGeneratedSalePayments(saleTransaction, inUserID, baseTrimCode, saleMst)
 		if err != nil {
-			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-				SaleTransactionId:      saleTransaction.Id,
-				TransactionChannelType: saleTransaction.TransactionChannelType,
-				OrderId:                saleTransaction.OrderId,
-				RefundId:               saleTransaction.RefundId,
-				StoreId:                saleTransaction.StoreId,
-				TransactionId:          saleTransaction.TransactionId,
-				CreatedBy:              "API",
-				Error:                  err.Error() + " TransactionId:" + strconv.FormatInt(saleTransaction.TransactionId, 10),
-				Details:                "支付信息不存在！",
-			}
-			if err := SaleRecordIdFailMapping.Save(); err != nil {
-				return nil, err
-			}
 			return nil, err
 		}
-		for _, stp := range SaleTransactionPayments {
-			if stp.PayMethod == "MILEAGE" {
-				continue
-			}
-			paymentCode, payCreditCardFirmCode, err := getPaymentCodeAndPayCreditCardFirmCode(stp.PayMethod)
-			if err != nil {
-				return nil, err
-			}
-			creditCardFirmCode = sql.NullString{"", false}
-			if payCreditCardFirmCode != "" {
-				creditCardFirmCode = sql.NullString{payCreditCardFirmCode, true}
-			}
-			paymentAmt = GetToFixedPrice(stp.PayAmt, baseTrimCode)
-			if saleTransaction.RefundId != 0 {
-				paymentAmt = GetToFixedPrice(stp.PayAmt, baseTrimCode) * -1
-			}
-			salePayment := models.SalePayment{
-				SaleNo:             saleNo,
-				SeqNo:              stp.SeqNo,
-				PaymentCode:        paymentCode,
-				PaymentAmt:         paymentAmt,
-				InUserID:           inUserID,
-				ModiUserID:         inUserID,
-				SendFlag:           "R",
-				CreditCardFirmCode: creditCardFirmCode,
-				TransactionId:      saleMst.TransactionId,
-				SaleTransactionId:  saleMst.SaleTransactionId,
-			}
-			salePayments = append(salePayments, salePayment)
-		}
-
+		salePayments = generatedSalePayments
 		check := false
 		for _, saleDtl := range saleDtls {
 			if saleNo == saleDtl.SaleNo {

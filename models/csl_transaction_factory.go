@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"strconv"
 	"strings"
 	"time"
@@ -358,6 +359,101 @@ func GetCustMileagePolicyNo(brandCode string) (sql.NullInt64, error) {
 	if custMileagePolicy.CustMileagePolicyNo != 0 {
 		return sql.NullInt64{custMileagePolicy.CustMileagePolicyNo, true}, nil
 	}
+	return sql.NullInt64{0, false}, err
+}
+
+func GetEANCodeAndSkuCode(saleTransaction SaleTransaction, saleTransactionDtl SaleTransactionDtl) (string, string, error) {
+	sku, err := Product{}.GetSkuBySkuId(saleTransactionDtl.SkuId)
+	if err != nil {
+		SaleRecordIdFailMapping := &SaleRecordIdFailMapping{
+			SaleTransactionId:      saleTransaction.Id,
+			TransactionChannelType: saleTransaction.TransactionChannelType,
+			OrderId:                saleTransaction.OrderId,
+			RefundId:               saleTransaction.RefundId,
+			StoreId:                saleTransaction.StoreId,
+			TransactionId:          saleTransactionDtl.TransactionId,
+			TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
+			CreatedBy:              "API",
+			Error:                  err.Error() + " SkuId:" + strconv.FormatInt(saleTransactionDtl.SkuId, 10),
+			Details:                "商品不存在！",
+		}
+		if err := SaleRecordIdFailMapping.Save(); err != nil {
+			return "", "", err
+		}
+		return "", "", err
+	}
+
+	if len(sku.Identifiers) == 0 || sku.Identifiers[0].Uid == "" {
+		SaleRecordIdFailMapping := &SaleRecordIdFailMapping{
+			SaleTransactionId:      saleTransaction.Id,
+			TransactionChannelType: saleTransaction.TransactionChannelType,
+			OrderId:                saleTransaction.OrderId,
+			RefundId:               saleTransaction.RefundId,
+			StoreId:                saleTransaction.StoreId,
+			TransactionId:          saleTransaction.TransactionId,
+			CreatedBy:              "API",
+			Error:                  "Sku.Identifiers not exist.  SkuID : " + strconv.FormatInt(saleTransactionDtl.SkuId, 10),
+			Details:                "商品UID不存在！",
+		}
+		if err := SaleRecordIdFailMapping.Save(); err != nil {
+			return "", "", err
+		}
+		return "", "", errors.New("Sku.Identifiers not exist")
+	}
+	return sku.Identifiers[0].Uid, sku.Code, nil
+}
+
+func GetPreSaleDtSeq(saleTransaction SaleTransaction, saleTransactionDtl SaleTransactionDtl) (sql.NullInt64, error) {
+	if strings.ToUpper(saleTransaction.TransactionType) == "EXCHANGE" {
+		//Sale order need refund saleNo
+		if saleTransaction.RefundId == 0 {
+			//when TransactionType="EXCHANGE".change orderId = Refund RefunId
+			refundId := saleTransaction.OrderId
+			refundItemId := saleTransactionDtl.OrderItemId
+			successDtls, err := SaleRecordIdSuccessMapping{}.GetSaleSuccessData(0, 0, refundId, 0, refundItemId, saleTransaction.TransactionChannelType)
+			if err != nil {
+				SaleRecordIdFailMapping := &SaleRecordIdFailMapping{
+					SaleTransactionId:      saleTransaction.Id,
+					TransactionChannelType: saleTransaction.TransactionChannelType,
+					OrderId:                saleTransaction.OrderId,
+					RefundId:               saleTransaction.RefundId,
+					StoreId:                saleTransaction.StoreId,
+					TransactionId:          saleTransaction.TransactionId,
+					CreatedBy:              "API",
+					Error:                  err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10),
+					Details:                "换货处理必须有之前的退货数据！",
+				}
+				if err := SaleRecordIdFailMapping.Save(); err != nil {
+					return sql.NullInt64{0, false}, err
+				}
+				return sql.NullInt64{0, false}, err
+			}
+			return sql.NullInt64{successDtls[0].DtlSeq, true}, nil
+		}
+	} else {
+		if saleTransaction.RefundId != 0 {
+			successDtls, err := SaleRecordIdSuccessMapping{}.GetSaleSuccessData(0, saleTransaction.OrderId, 0, saleTransactionDtl.OrderItemId, 0, saleTransaction.TransactionChannelType)
+			if err != nil {
+				SaleRecordIdFailMapping := &SaleRecordIdFailMapping{
+					SaleTransactionId:      saleTransaction.Id,
+					TransactionChannelType: saleTransaction.TransactionChannelType,
+					OrderId:                saleTransaction.OrderId,
+					RefundId:               saleTransaction.RefundId,
+					StoreId:                saleTransaction.StoreId,
+					TransactionId:          saleTransactionDtl.TransactionId,
+					TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
+					CreatedBy:              "API",
+					Error:                  err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10) + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10),
+					Details:                "退货处理必须有之前的销售数据！",
+				}
+				if err := SaleRecordIdFailMapping.Save(); err != nil {
+					return sql.NullInt64{0, false}, err
+				}
+				return sql.NullInt64{0, false}, err
+			}
+			return sql.NullInt64{successDtls[0].DtlSeq, true}, nil
+		}
+	}
 	return sql.NullInt64{0, false}, nil
 }
 
@@ -375,4 +471,80 @@ func GetCouponNoAndOfferNo(appliedSaleRecordCartOffers []AppliedSaleRecordCartOf
 		}
 	}
 	return "", ""
+}
+
+func GetShopEmpEstimateSaleAmt(saleTransaction SaleTransaction, saleTransactionDtl SaleTransactionDtl, baseTrimCode string) (float64, error) {
+	dtlSalesmanAmount, err := SaleRecordDtlSalesmanAmount{}.GetSaleRecordDtlSalesmanAmount(saleTransactionDtl.OrderItemId, saleTransactionDtl.RefundItemId)
+	if err != nil {
+		SaleRecordIdFailMapping := &SaleRecordIdFailMapping{
+			SaleTransactionId:      saleTransaction.Id,
+			TransactionChannelType: saleTransaction.TransactionChannelType,
+			OrderId:                saleTransaction.OrderId,
+			RefundId:               saleTransaction.RefundId,
+			StoreId:                saleTransaction.StoreId,
+			TransactionId:          saleTransactionDtl.TransactionId,
+			TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
+			CreatedBy:              "API",
+			Error:                  err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10) + " RefundItemId:" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10),
+			Details:                "营业员销售业绩不存在！",
+		}
+		if err := SaleRecordIdFailMapping.Save(); err != nil {
+			return 0, err
+		}
+		return 0, err
+	}
+	return GetToFixedPrice(dtlSalesmanAmount.SalesmanSaleAmount, baseTrimCode), nil
+}
+
+func GetGeneratedSalePayments(saleTransaction SaleTransaction, inUserID, baseTrimCode string, saleMst SaleMst) ([]SalePayment, error) {
+	var salePayments []SalePayment
+	saleTransactionPayments, err := SaleTransactionPayment{}.GetSaleTransactionPayment(saleTransaction.Id)
+	if err != nil {
+		SaleRecordIdFailMapping := &SaleRecordIdFailMapping{
+			SaleTransactionId:      saleTransaction.Id,
+			TransactionChannelType: saleTransaction.TransactionChannelType,
+			OrderId:                saleTransaction.OrderId,
+			RefundId:               saleTransaction.RefundId,
+			StoreId:                saleTransaction.StoreId,
+			TransactionId:          saleTransaction.TransactionId,
+			CreatedBy:              "API",
+			Error:                  err.Error() + " TransactionId:" + strconv.FormatInt(saleTransaction.TransactionId, 10),
+			Details:                "支付信息不存在！",
+		}
+		if err := SaleRecordIdFailMapping.Save(); err != nil {
+			return nil, err
+		}
+		return nil, err
+	}
+	for _, stp := range saleTransactionPayments {
+		if stp.PayMethod == "MILEAGE" {
+			continue
+		}
+		paymentCode, payCreditCardFirmCode, err := getPaymentCodeAndPayCreditCardFirmCode(stp.PayMethod)
+		if err != nil {
+			return nil, err
+		}
+		creditCardFirmCode := sql.NullString{"", false}
+		if payCreditCardFirmCode != "" {
+			creditCardFirmCode = sql.NullString{payCreditCardFirmCode, true}
+		}
+		paymentAmt := GetToFixedPrice(stp.PayAmt, baseTrimCode)
+		if saleTransaction.RefundId != 0 {
+			paymentAmt = GetToFixedPrice(stp.PayAmt, baseTrimCode) * -1
+		}
+		salePayment := SalePayment{
+			SaleNo:             saleMst.SaleNo,
+			SeqNo:              stp.SeqNo,
+			PaymentCode:        paymentCode,
+			PaymentAmt:         paymentAmt,
+			InUserID:           inUserID,
+			ModiUserID:         inUserID,
+			SendFlag:           "R",
+			CreditCardFirmCode: creditCardFirmCode,
+			TransactionId:      saleMst.TransactionId,
+			SaleTransactionId:  saleMst.SaleTransactionId,
+		}
+		salePayments = append(salePayments, salePayment)
+	}
+	return salePayments, nil
 }
