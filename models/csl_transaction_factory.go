@@ -100,17 +100,17 @@ func SaveAndUpdateLog(ctx context.Context, saleMstInput SaleMst, saleMstsAndSale
 }
 
 //	查询CheckSaleNo和seqNo
-func GetCheckSaleNoWithSeqNo(saleTransaction SaleTransaction, saleDate, MSLV2_POS string) (CheckSaleNo, int64, error) {
+func GetCheckSaleNoWithSeqNo(saleTransaction SaleTransaction, saleDate, posNo string) (CheckSaleNo, int64, bool, error) {
 	queryCheckSaleNo, err := CheckSaleNo{}.GetCheckSaleNoBySaleTransactionid(saleTransaction.Id)
 	if err != nil {
-		return CheckSaleNo{}, 0, err
+		return CheckSaleNo{}, 0, false, err
+	}
+	seqNumber, sequenceNumber, err := getSeqNoAndSequenceNumber(saleTransaction.ShopCode, saleDate, posNo)
+	if err != nil {
+		return CheckSaleNo{}, 0, false, err
 	}
 	if queryCheckSaleNo.SaleNo == "" {
-		seqNumber, sequenceNumber, err := getSeqNoAndSequenceNumber(saleTransaction.ShopCode, saleDate, MSLV2_POS)
-		if err != nil {
-			return CheckSaleNo{}, 0, err
-		}
-		saleNo := saleTransaction.ShopCode + saleDate[len(saleDate)-6:len(saleDate)] + MSLV2_POS + sequenceNumber
+		saleNo := saleTransaction.ShopCode + saleDate[len(saleDate)-6:len(saleDate)] + posNo + sequenceNumber
 		checkSaleNo := &CheckSaleNo{
 			TransactionId:          saleTransaction.TransactionId,
 			SaleTransactionId:      saleTransaction.Id,
@@ -120,16 +120,16 @@ func GetCheckSaleNoWithSeqNo(saleTransaction SaleTransaction, saleDate, MSLV2_PO
 			ShopCode:               saleTransaction.ShopCode,
 			Dates:                  saleDate,
 			SaleNo:                 saleNo,
-			PosNo:                  MSLV2_POS,
+			PosNo:                  posNo,
 			Processing:             true,
 			Whthersend:             false,
 		}
 		if err = checkSaleNo.Save(); err != nil {
-			return CheckSaleNo{}, 0, err
+			return CheckSaleNo{}, 0, false, err
 		}
-		return makeCheckSaleNoEntity(checkSaleNo), seqNumber, nil
+		return makeCheckSaleNoEntity(checkSaleNo), seqNumber, true, nil
 	}
-	return queryCheckSaleNo, 0, nil
+	return queryCheckSaleNo, seqNumber, false, nil
 }
 
 //	获取seqNo和SequenceNumber
