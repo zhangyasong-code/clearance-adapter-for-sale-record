@@ -101,14 +101,16 @@ func (etl ClearanceToCslTSaleETL) Transform(ctx context.Context, source interfac
 		if saleTransaction.ShopCode == "" || saleDate == "" {
 			return nil, errors.New("ShopCode or saleDate is null")
 		}
-		checkSaleNo, seqNo, err := models.GetCheckSaleNoWithSeqNo(saleTransaction, saleDate, MSLV2_POS)
+		checkSaleNo, seqNo, isThatNewCheckSaleNo, err := models.GetCheckSaleNoWithSeqNo(saleTransaction, saleDate, MSLV2_EMALL)
 		if err != nil {
 			return nil, err
 		}
-		if checkSaleNo.Processing == true || checkSaleNo.Whthersend == true {
-			continue
+		//new checkSaleNo not need to check
+		if !isThatNewCheckSaleNo {
+			if checkSaleNo.Processing == true || checkSaleNo.Whthersend == true {
+				continue
+			}
 		}
-
 		saleNo := checkSaleNo.SaleNo
 		//Sale S 销售  Refund R 退货
 		saleMode = ""
