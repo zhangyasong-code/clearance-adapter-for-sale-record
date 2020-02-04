@@ -98,7 +98,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 	var dtSeq, saleQty int64
 	var saleEventNormalSaleRecognitionChk bool
 	var useMileageSettleType, baseTrimCode string
-	var primaryCustEventNo, eventNo, secondaryCustEventNo sql.NullInt64
+	var primaryCustEventNo, secondaryCustEventNo sql.NullInt64
 	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode,
 		secondaryEventSettleTypeCode sql.NullString
 	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
@@ -209,7 +209,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					return nil, err
 				}
 				saleMst.CustMileagePolicyNo = custMileagePolicyNo
-				eventNo = sql.NullInt64{0, false}
 				primaryCustEventNo = sql.NullInt64{0, false}
 				primaryEventTypeCode = sql.NullString{"", false}
 				secondaryCustEventNo = sql.NullInt64{0, false}
@@ -244,6 +243,10 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					return nil, err
 				}
 				normalSaleTypeCode, err := models.GetNormalSaleTypeCode(promotionEvent, couponNo)
+				if err != nil {
+					return nil, err
+				}
+				eventNo, err := models.GetEventNo(promotionEvent)
 				if err != nil {
 					return nil, err
 				}
@@ -290,9 +293,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 							saleEventAutoDiscountAmt = GetToFixedPrice(saleTransactionDtl.TotalDistributedCartOfferPrice+saleTransactionDtl.TotalDistributedItemOfferPrice, baseTrimCode)
 							saleEventManualDiscountAmt = saleEventAutoDiscountAmt
 							saleVentDecisionDiscountAmt = saleEventAutoDiscountAmt
-						}
-						if eventN != 0 {
-							eventNo = sql.NullInt64{eventN, true}
 						}
 						if promotionEvent.EventTypeCode != "03" {
 							saleEventSaleBaseAmt = promotionEvent.SaleBaseAmt
