@@ -548,3 +548,65 @@ func GetGeneratedSalePayments(saleTransaction SaleTransaction, inUserID, baseTri
 	}
 	return salePayments, nil
 }
+
+func getPromotionEventByOfferNo(offerNo string, saleTransaction SaleTransaction, saleTransactionDtl SaleTransactionDtl) (*PromotionEvent, error) {
+	promotionEvent, err := PromotionEvent{}.GetPromotionEvent(offerNo)
+	if promotionEvent == nil || promotionEvent.EventNo == "" {
+		err = errors.New("PromotionEvent的EventNo为空!")
+	}
+	if err != nil {
+		eventNo := ""
+		if promotionEvent != nil {
+			eventNo = promotionEvent.EventNo
+		}
+		SaleRecordIdFailMapping := &SaleRecordIdFailMapping{
+			SaleTransactionId:      saleTransaction.Id,
+			TransactionChannelType: saleTransaction.TransactionChannelType,
+			OrderId:                saleTransaction.OrderId,
+			RefundId:               saleTransaction.RefundId,
+			StoreId:                saleTransaction.StoreId,
+			TransactionId:          saleTransactionDtl.TransactionId,
+			TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
+			CreatedBy:              "API",
+			Error:                  err.Error() + " OfferNo:" + offerNo + " EventNo:" + eventNo,
+			Details:                "商品参加的活动不存在！",
+		}
+		if err := SaleRecordIdFailMapping.Save(); err != nil {
+			return nil, err
+		}
+		return nil, err
+	}
+	return promotionEvent, nil
+}
+
+func GetPromotionEventAndCouponNo(appliedSaleRecordCartOffers []AppliedSaleRecordCartOffer, saleTransaction SaleTransaction, saleTransactionDtl SaleTransactionDtl) (*PromotionEvent, string, error) {
+	couponNo, offerNo := GetCouponNoAndOfferNo(appliedSaleRecordCartOffers, saleTransactionDtl.OrderItemId)
+	if couponNo != "" {
+		return nil, couponNo, nil
+	}
+	if offerNo != "" {
+		//if offerNo exist,promotionEvent can not be nil.
+		promotionEvent, err := getPromotionEventByOfferNo(offerNo, saleTransaction, saleTransactionDtl)
+		if err != nil {
+			return nil, "", err
+		}
+		return promotionEvent, "", err
+	}
+	return nil, couponNo, nil
+}
+
+func GetNormalSaleTypeCode(promotionEvent *PromotionEvent, couponNo string) (string, error) {
+	if couponNo != "" {
+		return "2", nil
+	}
+	if promotionEvent != nil && couponNo == "" {
+		if promotionEvent.EventTypeCode == "01" || promotionEvent.EventTypeCode == "02" || promotionEvent.EventTypeCode == "03" {
+			return "1", nil
+		} else if promotionEvent.EventTypeCode == "B" || promotionEvent.EventTypeCode == "C" ||
+			promotionEvent.EventTypeCode == "G" || promotionEvent.EventTypeCode == "M" || promotionEvent.EventTypeCode == "P" ||
+			promotionEvent.EventTypeCode == "R" || promotionEvent.EventTypeCode == "V" {
+			return "2", nil
+		}
+	}
+	return "0", nil
+}

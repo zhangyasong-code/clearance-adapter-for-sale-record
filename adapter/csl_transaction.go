@@ -97,7 +97,7 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
 	var dtSeq, saleQty int64
 	var saleEventNormalSaleRecognitionChk bool
-	var normalSaleTypeCode, useMileageSettleType, baseTrimCode string
+	var useMileageSettleType, baseTrimCode string
 	var primaryCustEventNo, eventNo, secondaryCustEventNo sql.NullInt64
 	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode,
 		secondaryEventSettleTypeCode sql.NullString
@@ -217,7 +217,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				eventTypeCode = sql.NullString{"", false}
 				saleEventSaleBaseAmt = 0
 				saleEventDiscountBaseAmt = 0
-				normalSaleTypeCode = "0"
 				saleEventAutoDiscountAmt = 0
 				saleEventManualDiscountAmt = 0
 				saleVentDecisionDiscountAmt = 0
@@ -239,6 +238,15 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				saleQty = 0
 				saleAmt = 0
 				saleEventNormalSaleRecognitionChk = false
+
+				promotionEvent, couponNo, err := models.GetPromotionEventAndCouponNo(appliedSaleRecordCartOffers, saleTransaction, saleTransactionDtl)
+				if err != nil {
+					return nil, err
+				}
+				normalSaleTypeCode, err := models.GetNormalSaleTypeCode(promotionEvent, couponNo)
+				if err != nil {
+					return nil, err
+				}
 
 				couponNo, offerNo := models.GetCouponNoAndOfferNo(appliedSaleRecordCartOffers, saleTransactionDtl.OrderItemId)
 				if offerNo != "" && couponNo == "" {
@@ -273,7 +281,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						return nil, err
 					}
 					if promotionEvent.EventTypeCode == "01" || promotionEvent.EventTypeCode == "02" || promotionEvent.EventTypeCode == "03" {
-						normalSaleTypeCode = "1"
 						useMileageSettleType = "0"
 						eventTypeCode = sql.NullString{promotionEvent.EventTypeCode, true}
 						if promotionEvent.EventTypeCode == "01" {
@@ -294,7 +301,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					} else if promotionEvent.EventTypeCode == "B" || promotionEvent.EventTypeCode == "C" ||
 						promotionEvent.EventTypeCode == "G" || promotionEvent.EventTypeCode == "M" || promotionEvent.EventTypeCode == "P" ||
 						promotionEvent.EventTypeCode == "R" || promotionEvent.EventTypeCode == "V" {
-						normalSaleTypeCode = "2"
 						if eventN != 0 && (promotionEvent.EventTypeCode == "B" || promotionEvent.EventTypeCode == "C" || promotionEvent.EventTypeCode == "P" || promotionEvent.EventTypeCode == "V") {
 							primaryCustEventNo = sql.NullInt64{eventN, true}
 							primaryEventTypeCode = sql.NullString{promotionEvent.EventTypeCode, true}
@@ -328,7 +334,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					}
 				}
 				if couponNo != "" {
-					normalSaleTypeCode = "2"
 					//search eventN by brandCode
 					coupenEvent, err := models.PostCouponEvent{}.GetPostCoupenEvent(saleTransactionDtl.BrandCode)
 					if err != nil {
