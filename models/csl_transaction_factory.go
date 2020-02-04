@@ -610,3 +610,18 @@ func GetNormalSaleTypeCode(promotionEvent *PromotionEvent, couponNo string) (str
 	}
 	return "0", nil
 }
+
+func GetEventNo(promotionEvent *PromotionEvent) (sql.NullInt64, error) {
+	if promotionEvent != nil {
+		eventNumber, err := strconv.ParseInt(promotionEvent.EventNo, 10, 64)
+		if err != nil {
+			return sql.NullInt64{0, false}, err
+		}
+		if promotionEvent.EventTypeCode == "01" || promotionEvent.EventTypeCode == "02" || promotionEvent.EventTypeCode == "03" {
+			if eventNumber != 0 {
+				return sql.NullInt64{eventNumber, true}, nil
+			}
+		}
+	}
+	return sql.NullInt64{0, false}, nil
+}
