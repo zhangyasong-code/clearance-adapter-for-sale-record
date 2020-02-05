@@ -625,3 +625,20 @@ func GetEventNo(promotionEvent *PromotionEvent) (sql.NullInt64, error) {
 	}
 	return sql.NullInt64{0, false}, nil
 }
+
+//GetUseMileageSettleTypeAndEventTypeCode return  UseMileageSettleType and EventTypeCode, UseMileageSettleType default "1"
+func GetUseMileageSettleTypeAndEventTypeCode(promotionEvent *PromotionEvent) (string, sql.NullString) {
+	if promotionEvent != nil {
+		if promotionEvent.EventTypeCode == "01" || promotionEvent.EventTypeCode == "02" || promotionEvent.EventTypeCode == "03" {
+			return "0", sql.NullString{promotionEvent.EventTypeCode, true}
+		}
+	}
+	return "1", sql.NullString{"", false}
+}
+//GetSaleEventNormalSaleRecognitionChk default false
+func GetSaleEventNormalSaleRecognitionChk(promotionEvent *PromotionEvent) bool {
+	if promotionEvent != nil && promotionEvent.EventTypeCode == "01" {
+		return true
+	}
+	return false
+}
