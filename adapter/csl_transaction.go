@@ -96,10 +96,9 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 // Transform ...
 func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
 	var dtSeq, saleQty int64
-	var saleEventNormalSaleRecognitionChk bool
-	var useMileageSettleType, baseTrimCode string
+	var baseTrimCode string
 	var primaryCustEventNo, secondaryCustEventNo sql.NullInt64
-	var primaryEventTypeCode, secondaryEventTypeCode, eventTypeCode, primaryEventSettleTypeCode,
+	var primaryEventTypeCode, secondaryEventTypeCode, primaryEventSettleTypeCode,
 		secondaryEventSettleTypeCode sql.NullString
 	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
 		discountAmt, actualSaleAmt, saleEventFee, normalFee, normalFeeRate, saleEventFeeRate, eventAutoDiscountAmt,
@@ -213,7 +212,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				primaryEventTypeCode = sql.NullString{"", false}
 				secondaryCustEventNo = sql.NullInt64{0, false}
 				secondaryEventTypeCode = sql.NullString{"", false}
-				eventTypeCode = sql.NullString{"", false}
 				saleEventSaleBaseAmt = 0
 				saleEventDiscountBaseAmt = 0
 				saleEventAutoDiscountAmt = 0
@@ -222,7 +220,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				discountAmt = 0
 				primaryEventSettleTypeCode = sql.NullString{"", false}
 				secondaryEventSettleTypeCode = sql.NullString{"", false}
-				useMileageSettleType = "1"
 				saleEventFee = 0
 				normalFee = 0
 				normalFeeRate = 0
@@ -236,7 +233,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				discountAmtAsCost = 0
 				saleQty = 0
 				saleAmt = 0
-				saleEventNormalSaleRecognitionChk = false
 
 				promotionEvent, couponNo, err := models.GetPromotionEventAndCouponNo(appliedSaleRecordCartOffers, saleTransaction, saleTransactionDtl)
 				if err != nil {
@@ -250,6 +246,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				if err != nil {
 					return nil, err
 				}
+				useMileageSettleType, eventTypeCode := models.GetUseMileageSettleTypeAndEventTypeCode(promotionEvent)
+				saleEventNormalSaleRecognitionChk := models.GetSaleEventNormalSaleRecognitionChk(promotionEvent)
 
 				couponNo, offerNo := models.GetCouponNoAndOfferNo(appliedSaleRecordCartOffers, saleTransactionDtl.OrderItemId)
 				if offerNo != "" && couponNo == "" {
@@ -284,11 +282,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 						return nil, err
 					}
 					if promotionEvent.EventTypeCode == "01" || promotionEvent.EventTypeCode == "02" || promotionEvent.EventTypeCode == "03" {
-						useMileageSettleType = "0"
-						eventTypeCode = sql.NullString{promotionEvent.EventTypeCode, true}
-						if promotionEvent.EventTypeCode == "01" {
-							saleEventNormalSaleRecognitionChk = true
-						}
 						if promotionEvent.EventTypeCode != "01" {
 							saleEventAutoDiscountAmt = GetToFixedPrice(saleTransactionDtl.TotalDistributedCartOfferPrice+saleTransactionDtl.TotalDistributedItemOfferPrice, baseTrimCode)
 							saleEventManualDiscountAmt = saleEventAutoDiscountAmt
