@@ -97,11 +97,7 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
 	var dtSeq, saleQty int64
 	var baseTrimCode string
-	var primaryCustEventNo, secondaryCustEventNo sql.NullInt64
-	var primaryEventTypeCode, secondaryEventTypeCode, primaryEventSettleTypeCode,
-		secondaryEventSettleTypeCode sql.NullString
-	var saleEventSaleBaseAmt, saleEventDiscountBaseAmt, saleEventAutoDiscountAmt, saleEventManualDiscountAmt, saleVentDecisionDiscountAmt,
-		discountAmt, actualSaleAmt, saleEventFee, normalFee, normalFeeRate, saleEventFeeRate, eventAutoDiscountAmt,
+	var discountAmt, actualSaleAmt, saleEventFee, normalFee, normalFeeRate, saleEventFeeRate, eventAutoDiscountAmt,
 		eventDecisionDiscountAmt, chinaFISaleAmt, estimateSaleAmt, useMileage, sellingAmt, discountAmtAsCost, saleAmt, normalPrice, obtainMileage float64
 
 	saleTAndSaleTDtls, ok := source.(models.SaleTAndSaleTDtls)
@@ -208,18 +204,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					return nil, err
 				}
 				saleMst.CustMileagePolicyNo = custMileagePolicyNo
-				primaryCustEventNo = sql.NullInt64{0, false}
-				primaryEventTypeCode = sql.NullString{"", false}
-				secondaryCustEventNo = sql.NullInt64{0, false}
-				secondaryEventTypeCode = sql.NullString{"", false}
-				saleEventSaleBaseAmt = 0
-				saleEventDiscountBaseAmt = 0
-				saleEventAutoDiscountAmt = 0
-				saleEventManualDiscountAmt = 0
-				saleVentDecisionDiscountAmt = 0
 				discountAmt = 0
-				primaryEventSettleTypeCode = sql.NullString{"", false}
-				secondaryEventSettleTypeCode = sql.NullString{"", false}
 				saleEventFee = 0
 				normalFee = 0
 				normalFeeRate = 0
@@ -249,107 +234,22 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				useMileageSettleType, eventTypeCode := models.GetUseMileageSettleTypeAndEventTypeCode(promotionEvent)
 				saleEventNormalSaleRecognitionChk := models.GetSaleEventNormalSaleRecognitionChk(promotionEvent)
 
-				couponNo, offerNo := models.GetCouponNoAndOfferNo(appliedSaleRecordCartOffers, saleTransactionDtl.OrderItemId)
-				if offerNo != "" && couponNo == "" {
-					promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(offerNo)
-					if promotionEvent == nil || promotionEvent.EventNo == "" {
-						err = errors.New("PromotionEvent的EventNo为空!")
-					}
-					if err != nil {
-						eventNo := ""
-						if promotionEvent != nil {
-							eventNo = promotionEvent.EventNo
-						}
-						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-							SaleTransactionId:      saleTransaction.Id,
-							TransactionChannelType: saleTransaction.TransactionChannelType,
-							OrderId:                saleTransaction.OrderId,
-							RefundId:               saleTransaction.RefundId,
-							StoreId:                saleTransaction.StoreId,
-							TransactionId:          saleTransactionDtl.TransactionId,
-							TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
-							CreatedBy:              "API",
-							Error:                  err.Error() + " OfferNo:" + offerNo + " EventNo:" + eventNo,
-							Details:                "商品参加的活动不存在！",
-						}
-						if err := SaleRecordIdFailMapping.Save(); err != nil {
-							return nil, err
-						}
-						return nil, err
-					}
-					eventN, err := strconv.ParseInt(promotionEvent.EventNo, 10, 64)
-					if err != nil {
-						return nil, err
-					}
-					if promotionEvent.EventTypeCode == "01" || promotionEvent.EventTypeCode == "02" || promotionEvent.EventTypeCode == "03" {
-						if promotionEvent.EventTypeCode != "01" {
-							saleEventAutoDiscountAmt = GetToFixedPrice(saleTransactionDtl.TotalDistributedCartOfferPrice+saleTransactionDtl.TotalDistributedItemOfferPrice, baseTrimCode)
-							saleEventManualDiscountAmt = saleEventAutoDiscountAmt
-							saleVentDecisionDiscountAmt = saleEventAutoDiscountAmt
-						}
-						if promotionEvent.EventTypeCode != "03" {
-							saleEventSaleBaseAmt = promotionEvent.SaleBaseAmt
-							saleEventDiscountBaseAmt = promotionEvent.DiscountBaseAmt
-						}
-					} else if promotionEvent.EventTypeCode == "B" || promotionEvent.EventTypeCode == "C" ||
-						promotionEvent.EventTypeCode == "G" || promotionEvent.EventTypeCode == "M" || promotionEvent.EventTypeCode == "P" ||
-						promotionEvent.EventTypeCode == "R" || promotionEvent.EventTypeCode == "V" {
-						if eventN != 0 && (promotionEvent.EventTypeCode == "B" || promotionEvent.EventTypeCode == "C" || promotionEvent.EventTypeCode == "P" || promotionEvent.EventTypeCode == "V") {
-							primaryCustEventNo = sql.NullInt64{eventN, true}
-							primaryEventTypeCode = sql.NullString{promotionEvent.EventTypeCode, true}
-							primaryEventSettleTypeCode = sql.NullString{"1", true}
+				saleEventAutoDiscountAmt := models.GetSaleEventAutoDiscountAmt(promotionEvent, saleTransactionDtl, baseTrimCode)
+				saleEventManualDiscountAmt := saleEventAutoDiscountAmt
+				saleVentDecisionDiscountAmt := saleEventAutoDiscountAmt
+				saleEventSaleBaseAmt, saleEventDiscountBaseAmt := models.GetSaleEventSaleBaseAmt_SaleEventDiscountBaseAmt(promotionEvent)
 
-							//check Customer information
-							if !saleMst.CustNo.Valid && promotionEvent.EventTypeCode != "V" {
-								SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-									SaleTransactionId:      saleTransaction.Id,
-									TransactionChannelType: saleTransaction.TransactionChannelType,
-									OrderId:                saleTransaction.OrderId,
-									RefundId:               saleTransaction.RefundId,
-									StoreId:                saleTransaction.StoreId,
-									TransactionId:          saleTransactionDtl.TransactionId,
-									TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
-									CreatedBy:              "API",
-									Error:                  promotionEvent.EventTypeCode + "类型必须要有顾客信息!",
-									Details:                promotionEvent.EventTypeCode + "类型必须要有顾客信息!",
-								}
-								if err := SaleRecordIdFailMapping.Save(); err != nil {
-									return nil, err
-								}
-								return nil, errors.New("百货店VIP,打折劵Event,品牌折扣型,优秀顾客型,积分型 必须要有顾客信息!")
-							}
-						}
-						if eventN != 0 && (promotionEvent.EventTypeCode == "G" || promotionEvent.EventTypeCode == "M" || promotionEvent.EventTypeCode == "R") {
-							secondaryCustEventNo = sql.NullInt64{eventN, true}
-							secondaryEventTypeCode = sql.NullString{promotionEvent.EventTypeCode, true}
-							secondaryEventSettleTypeCode = sql.NullString{"1", true}
-						}
-					}
+				primaryCustEventNo, primaryEventTypeCode, primaryEventSettleTypeCode,
+					err := models.GetPrimaryCustEventNo_PrimaryEventTypeCode_PrimaryEventSettleTypeCode(promotionEvent, couponNo, saleTransaction, saleTransactionDtl)
+				if err != nil {
+					return nil, err
 				}
-				if couponNo != "" {
-					//search eventN by brandCode
-					coupenEvent, err := models.PostCouponEvent{}.GetPostCoupenEvent(saleTransactionDtl.BrandCode)
-					if err != nil {
-						SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-							SaleTransactionId:      saleTransaction.Id,
-							TransactionChannelType: saleTransaction.TransactionChannelType,
-							OrderId:                saleTransaction.OrderId,
-							RefundId:               saleTransaction.RefundId,
-							StoreId:                saleTransaction.StoreId,
-							TransactionId:          saleTransactionDtl.TransactionId,
-							TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
-							CreatedBy:              "API",
-							Error:                  err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode,
-							Details:                "优惠券信息不存在！",
-						}
-						if err := SaleRecordIdFailMapping.Save(); err != nil {
-							return nil, err
-						}
-						return nil, err
-					}
-					primaryCustEventNo = sql.NullInt64{coupenEvent.EventNo, true}
-					primaryEventTypeCode = sql.NullString{"C", true}
-					primaryEventSettleTypeCode = sql.NullString{"1", true}
+				if err := models.ValidCustomerCustNo(saleMst, promotionEvent, saleTransaction, saleTransactionDtl); err != nil {
+					return nil, err
+				}
+				secondaryCustEventNo, secondaryEventTypeCode, secondaryEventSettleTypeCode, err := models.GetSecondaryCustEventNo_SecondaryEventTypeCode_SecondaryEventSettleTypeCode(promotionEvent)
+				if err != nil {
+					return nil, err
 				}
 				eANCode, skuCode, err := models.GetEANCodeAndSkuCode(saleTransaction, saleTransactionDtl)
 				if err != nil {
@@ -482,7 +382,6 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					actualSaleAmt = actualSaleAmt * -1
 					useMileage = useMileage * -1
 					discountAmt = discountAmt * -1
-					saleVentDecisionDiscountAmt = saleVentDecisionDiscountAmt * -1
 					shopEmpEstimateSaleAmt = shopEmpEstimateSaleAmt * -1
 				}
 				saleDtl := models.SaleDtl{
