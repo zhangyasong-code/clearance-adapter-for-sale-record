@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"nomni/utils/auth"
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"clearance/clearance-adapter-for-sale-record/adapter"
 	"clearance/clearance-adapter-for-sale-record/config"
 	"clearance/clearance-adapter-for-sale-record/controllers"
 	"clearance/clearance-adapter-for-sale-record/factory"
@@ -18,9 +20,9 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/go-xorm/xorm"
 	"github.com/labstack/echo"
-
+	"github.com/labstack/echo/middleware"
 	//_ "github.com/mattn/go-sqlite3"
-
+	"github.com/pangpanglabs/goetl"
 	"github.com/pangpanglabs/goutils/behaviorlog"
 	"github.com/pangpanglabs/goutils/echomiddleware"
 	"github.com/sirupsen/logrus"
@@ -105,7 +107,7 @@ func main() {
 
 	app := cli.NewApp()
 	app.Name = "clearance-adapter-for-sale-record"
-	app.Commands = []*cli.Command{
+	app.Commands = []cli.Command{
 		{
 			Name:  "etl-1",
 			Usage: "etl-1",
@@ -212,7 +214,7 @@ func main() {
 		{
 			Name:  "api",
 			Usage: "run api",
-			Action: func(cliContext *cli.Context) error {
+			Action: func(cliContext *cli.Context) {
 				e := echo.New()
 
 				e.GET("/ping", func(c echo.Context) error {
@@ -243,7 +245,6 @@ func main() {
 				if err := e.Start(":8000"); err != nil {
 					log.Println("Shutdown:", err)
 				}
-				return nil
 			},
 		},
 	}
