@@ -42,18 +42,18 @@ type Brand struct {
 	Enable bool   `json:"enable"`
 }
 
-func (Product) GetProductById(id int64) (*Product, error) {
+func (Product) GetProductById(id int64) (Product, error) {
 	var product Product
 	exist, err := factory.GetProductEngine().ID(id).Get(&product)
 	if err != nil {
-		return nil, err
+		return Product{}, err
 	} else if !exist {
 		logrus.WithFields(logrus.Fields{
 			"id": id,
 		}).Error("Fail to GetProductById")
-		return nil, errors.New("Product is not exist")
+		return Product{}, errors.New("Product is not exist")
 	}
-	return &product, nil
+	return product, nil
 }
 
 func (Product) GetSkuBySkuId(skuId int64) (sku *Sku, err error) {
