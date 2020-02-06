@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -739,4 +740,46 @@ func GetSecondaryCustEventNo_SecondaryEventTypeCode_SecondaryEventSettleTypeCode
 		}
 	}
 	return sql.NullInt64{0, false}, sql.NullString{"", false}, sql.NullString{"", false}, nil
+}
+
+//GetEventAutoDiscountAmt_EventDecisionDiscountAmt: EventAutoDiscountAmt==EventDecisionDiscountAmt
+func GetEventAutoDiscountAmt_EventDecisionDiscountAmt(normalSaleTypeCode, baseTrimCode string, saleTransactionDtl SaleTransactionDtl) (float64, float64) {
+	if normalSaleTypeCode == "2" {
+		eventAutoDiscountAmt := GetToFixedPrice(saleTransactionDtl.TotalDistributedCartOfferPrice+saleTransactionDtl.TotalDistributedItemOfferPrice, baseTrimCode)
+		eventDecisionDiscountAmt := eventAutoDiscountAmt
+		return eventAutoDiscountAmt, eventDecisionDiscountAmt
+	}
+	return 0, 0
+}
+
+//GetProduct by ProductId
+func GetProduct(saleTransaction SaleTransaction, saleTransactionDtl SaleTransactionDtl) (Product, error) {
+	product, err := Product{}.GetProductById(saleTransactionDtl.ProductId)
+	if err != nil {
+		SaleRecordIdFailMapping := &SaleRecordIdFailMapping{
+			SaleTransactionId:      saleTransaction.Id,
+			TransactionChannelType: saleTransaction.TransactionChannelType,
+			OrderId:                saleTransaction.OrderId,
+			RefundId:               saleTransaction.RefundId,
+			StoreId:                saleTransaction.StoreId,
+			TransactionId:          saleTransactionDtl.TransactionId,
+			TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
+			CreatedBy:              "API",
+			Error:                  err.Error() + " ProductId:" + strconv.FormatInt(saleTransactionDtl.ProductId, 10),
+			Details:                "商品款式不存在!",
+		}
+		if err := SaleRecordIdFailMapping.Save(); err != nil {
+			return Product{}, err
+		}
+		return Product{}, err
+	}
+	return product, nil
+}
+
+//GetUseMileage return UseMileage
+func GetUseMileage(normalSaleTypeCode string, saleTransactionDtl SaleTransactionDtl) float64 {
+	if normalSaleTypeCode != "1" {
+		return math.Abs(saleTransactionDtl.MileagePrice)
+	}
+	return 0
 }

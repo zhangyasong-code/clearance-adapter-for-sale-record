@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -97,8 +96,7 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
 	var dtSeq, saleQty int64
 	var baseTrimCode string
-	var discountAmt, actualSaleAmt, saleEventFee, normalFee, normalFeeRate, saleEventFeeRate, eventAutoDiscountAmt,
-		eventDecisionDiscountAmt, chinaFISaleAmt, estimateSaleAmt, useMileage, sellingAmt, discountAmtAsCost, saleAmt, normalPrice, obtainMileage float64
+	var actualSaleAmt, saleEventFee, normalFee, normalFeeRate, saleEventFeeRate, discountAmtAsCost, saleAmt, normalPrice, obtainMileage float64
 
 	saleTAndSaleTDtls, ok := source.(models.SaleTAndSaleTDtls)
 	if !ok {
@@ -204,17 +202,10 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					return nil, err
 				}
 				saleMst.CustMileagePolicyNo = custMileagePolicyNo
-				discountAmt = 0
 				saleEventFee = 0
 				normalFee = 0
 				normalFeeRate = 0
 				saleEventFeeRate = 0
-				eventAutoDiscountAmt = 0
-				eventDecisionDiscountAmt = 0
-				chinaFISaleAmt = 0
-				estimateSaleAmt = 0
-				useMileage = 0
-				sellingAmt = 0
 				discountAmtAsCost = 0
 				saleQty = 0
 				saleAmt = 0
@@ -251,32 +242,13 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				if err != nil {
 					return nil, err
 				}
+				eventAutoDiscountAmt, eventDecisionDiscountAmt := models.GetEventAutoDiscountAmt_EventDecisionDiscountAmt(normalSaleTypeCode, baseTrimCode, saleTransactionDtl)
 				eANCode, skuCode, err := models.GetEANCodeAndSkuCode(saleTransaction, saleTransactionDtl)
 				if err != nil {
 					return nil, err
 				}
-
-				if normalSaleTypeCode == "2" {
-					eventAutoDiscountAmt = GetToFixedPrice(saleTransactionDtl.TotalDistributedCartOfferPrice+saleTransactionDtl.TotalDistributedItemOfferPrice, baseTrimCode)
-					eventDecisionDiscountAmt = eventAutoDiscountAmt
-				}
-				product, err := models.Product{}.GetProductById(saleTransactionDtl.ProductId)
+				product, err := models.GetProduct(saleTransaction, saleTransactionDtl)
 				if err != nil {
-					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-						SaleTransactionId:      saleTransaction.Id,
-						TransactionChannelType: saleTransaction.TransactionChannelType,
-						OrderId:                saleTransaction.OrderId,
-						RefundId:               saleTransaction.RefundId,
-						StoreId:                saleTransaction.StoreId,
-						TransactionId:          saleTransactionDtl.TransactionId,
-						TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
-						CreatedBy:              "API",
-						Error:                  err.Error() + " ProductId:" + strconv.FormatInt(saleTransactionDtl.ProductId, 10),
-						Details:                "商品款式不存在!",
-					}
-					if err := SaleRecordIdFailMapping.Save(); err != nil {
-						return nil, err
-					}
 					return nil, err
 				}
 				priceTypeCode, err := models.SaleMst{}.GetPriceTypeCode(saleTransactionDtl.BrandCode, product.Code)
@@ -340,13 +312,11 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				if err != nil {
 					return nil, err
 				}
-				if normalSaleTypeCode != "1" {
-					useMileage = math.Abs(saleTransactionDtl.MileagePrice)
-				}
-				discountAmt = GetToFixedPrice(eventAutoDiscountAmt+useMileage+saleVentDecisionDiscountAmt, baseTrimCode)
-				estimateSaleAmt = GetToFixedPrice(saleTransactionDtl.TotalListPrice-discountAmt, baseTrimCode)
-				sellingAmt = GetToFixedPrice(estimateSaleAmt-discountAmtAsCost, baseTrimCode)
-				chinaFISaleAmt = GetToFixedPrice(estimateSaleAmt+saleVentDecisionDiscountAmt, baseTrimCode)
+				useMileage := models.GetUseMileage(normalSaleTypeCode, saleTransactionDtl)
+				discountAmt := GetToFixedPrice(eventAutoDiscountAmt+useMileage+saleEventAutoDiscountAmt, baseTrimCode)
+				estimateSaleAmt := GetToFixedPrice(saleTransactionDtl.TotalListPrice-discountAmt, baseTrimCode)
+				sellingAmt := GetToFixedPrice(estimateSaleAmt-discountAmtAsCost, baseTrimCode)
+				chinaFISaleAmt := GetToFixedPrice(estimateSaleAmt+saleEventAutoDiscountAmt, baseTrimCode)
 				if normalSaleTypeCode == "1" {
 					saleEventFee = postSaleRecordFee.FeeAmount
 					saleEventFeeRate = postSaleRecordFee.AppliedFeeRate
