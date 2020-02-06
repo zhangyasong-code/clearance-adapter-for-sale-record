@@ -635,10 +635,108 @@ func GetUseMileageSettleTypeAndEventTypeCode(promotionEvent *PromotionEvent) (st
 	}
 	return "1", sql.NullString{"", false}
 }
+
 //GetSaleEventNormalSaleRecognitionChk default false
 func GetSaleEventNormalSaleRecognitionChk(promotionEvent *PromotionEvent) bool {
 	if promotionEvent != nil && promotionEvent.EventTypeCode == "01" {
 		return true
 	}
 	return false
+}
+
+//GetSaleEventAutoDiscountAmt return SaleEventAutoDiscountAmt
+func GetSaleEventAutoDiscountAmt(promotionEvent *PromotionEvent, saleTransactionDtl SaleTransactionDtl, baseTrimCode string) float64 {
+	if promotionEvent != nil {
+		if promotionEvent.EventTypeCode == "02" || promotionEvent.EventTypeCode == "03" {
+			return GetToFixedPrice(saleTransactionDtl.TotalDistributedCartOfferPrice+saleTransactionDtl.TotalDistributedItemOfferPrice, baseTrimCode)
+		}
+	}
+	return 0
+}
+
+//GetSaleEventSaleBaseAmt_SaleEventDiscountBaseAmt return SaleEventSaleBaseAmt and SaleEventDiscountBaseAmt
+func GetSaleEventSaleBaseAmt_SaleEventDiscountBaseAmt(promotionEvent *PromotionEvent) (float64, float64) {
+	if promotionEvent != nil {
+		if promotionEvent.EventTypeCode == "01" || promotionEvent.EventTypeCode == "02" {
+			return promotionEvent.SaleBaseAmt, promotionEvent.DiscountBaseAmt
+		}
+	}
+	return 0, 0
+}
+
+//GetPrimaryCustEventNo_PrimaryEventTypeCode_PrimaryEventSettleTypeCode return PrimaryCustEventNo and PrimaryEventTypeCode and PrimaryEventSettleTypeCodes
+func GetPrimaryCustEventNo_PrimaryEventTypeCode_PrimaryEventSettleTypeCode(promotionEvent *PromotionEvent, couponNo string, saleTransaction SaleTransaction, saleTransactionDtl SaleTransactionDtl) (sql.NullInt64, sql.NullString, sql.NullString, error) {
+	if couponNo == "" && promotionEvent != nil {
+		eventN, err := strconv.ParseInt(promotionEvent.EventNo, 10, 64)
+		if err != nil {
+			return sql.NullInt64{0, false}, sql.NullString{"", false}, sql.NullString{"", false}, err
+		}
+		if eventN != 0 && (promotionEvent.EventTypeCode == "B" || promotionEvent.EventTypeCode == "C" || promotionEvent.EventTypeCode == "P" || promotionEvent.EventTypeCode == "V") {
+			return sql.NullInt64{eventN, true}, sql.NullString{promotionEvent.EventTypeCode, true}, sql.NullString{"1", true}, nil
+		}
+	}
+	if couponNo != "" {
+		coupenEvent, err := PostCouponEvent{}.GetPostCoupenEvent(saleTransactionDtl.BrandCode)
+		if err != nil {
+			saleRecordIdFailMapping := &SaleRecordIdFailMapping{
+				SaleTransactionId:      saleTransaction.Id,
+				TransactionChannelType: saleTransaction.TransactionChannelType,
+				OrderId:                saleTransaction.OrderId,
+				RefundId:               saleTransaction.RefundId,
+				StoreId:                saleTransaction.StoreId,
+				TransactionId:          saleTransactionDtl.TransactionId,
+				TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
+				CreatedBy:              "API",
+				Error:                  err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode,
+				Details:                "优惠券信息不存在！",
+			}
+			if err := saleRecordIdFailMapping.Save(); err != nil {
+				return sql.NullInt64{0, false}, sql.NullString{"", false}, sql.NullString{"", false}, err
+			}
+			return sql.NullInt64{0, false}, sql.NullString{"", false}, sql.NullString{"", false}, err
+		}
+		return sql.NullInt64{coupenEvent.EventNo, true}, sql.NullString{"C", true}, sql.NullString{"1", true}, nil
+	}
+	return sql.NullInt64{0, false}, sql.NullString{"", false}, sql.NullString{"", false}, nil
+}
+
+// ValidCustomerCustNo Check Customer Information
+func ValidCustomerCustNo(saleMst SaleMst, promotionEvent *PromotionEvent, saleTransaction SaleTransaction, saleTransactionDtl SaleTransactionDtl) error {
+	if promotionEvent != nil {
+		if promotionEvent.EventTypeCode == "B" || promotionEvent.EventTypeCode == "C" || promotionEvent.EventTypeCode == "P" {
+			if !saleMst.CustNo.Valid {
+				saleRecordIdFailMapping := &SaleRecordIdFailMapping{
+					SaleTransactionId:      saleTransaction.Id,
+					TransactionChannelType: saleTransaction.TransactionChannelType,
+					OrderId:                saleTransaction.OrderId,
+					RefundId:               saleTransaction.RefundId,
+					StoreId:                saleTransaction.StoreId,
+					TransactionId:          saleTransactionDtl.TransactionId,
+					TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
+					CreatedBy:              "API",
+					Error:                  promotionEvent.EventTypeCode + "类型必须要有顾客信息!",
+					Details:                promotionEvent.EventTypeCode + "类型必须要有顾客信息!",
+				}
+				if err := saleRecordIdFailMapping.Save(); err != nil {
+					return err
+				}
+				return errors.New("百货店VIP,打折劵Event,品牌折扣型,优秀顾客型,积分型 必须要有顾客信息!")
+			}
+		}
+	}
+	return nil
+}
+
+//GetSecondaryCustEventNo_SecondaryEventTypeCode_SecondaryEventSettleTypeCode return SecondaryCustEventNo and SecondaryEventTypeCode and SecondaryEventSettleTypeCode
+func GetSecondaryCustEventNo_SecondaryEventTypeCode_SecondaryEventSettleTypeCode(promotionEvent *PromotionEvent) (sql.NullInt64, sql.NullString, sql.NullString, error) {
+	if promotionEvent != nil {
+		eventNumber, err := strconv.ParseInt(promotionEvent.EventNo, 10, 64)
+		if err != nil {
+			return sql.NullInt64{0, false}, sql.NullString{"", false}, sql.NullString{"", false}, err
+		}
+		if eventNumber != 0 && (promotionEvent.EventTypeCode == "G" || promotionEvent.EventTypeCode == "M" || promotionEvent.EventTypeCode == "R") {
+			return sql.NullInt64{eventNumber, true}, sql.NullString{promotionEvent.EventTypeCode, true}, sql.NullString{"1", true}, nil
+		}
+	}
+	return sql.NullInt64{0, false}, sql.NullString{"", false}, sql.NullString{"", false}, nil
 }
