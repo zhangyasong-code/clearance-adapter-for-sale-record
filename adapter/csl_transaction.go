@@ -94,10 +94,6 @@ func (etl ClearanceToCslETL) Extract(ctx context.Context) (interface{}, error) {
 
 // Transform ...
 func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) (interface{}, error) {
-	var dtSeq, saleQty int64
-	var baseTrimCode string
-	var actualSaleAmt, saleEventFee, normalFee, normalFeeRate, saleEventFeeRate, discountAmtAsCost, saleAmt, normalPrice, obtainMileage float64
-
 	saleTAndSaleTDtls, ok := source.(models.SaleTAndSaleTDtls)
 	if !ok {
 		return nil, errors.New("Convert Failed")
@@ -107,7 +103,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 	salePayments := make([]models.SalePayment, 0)
 	staffSaleRecords := make([]models.StaffSaleRecord, 0)
 	for _, saleTransaction := range saleTAndSaleTDtls.SaleTransactions {
-		baseTrimCode = "A"
+		baseTrimCode := "A"
 		saleDate := models.GetSaleDate(saleTransaction.UpdatedAt)
 		if saleTransaction.ShopCode == "" || saleDate == "" {
 			return nil, errors.New("ShopCode or saleDate is null")
@@ -142,8 +138,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if err != nil {
 			return nil, err
 		}
-		obtainMileage = saleTransaction.ObtainMileage
-		saleAmt = saleTransaction.TotalListPrice
+		obtainMileage := saleTransaction.ObtainMileage
+		saleAmt := saleTransaction.TotalListPrice
 		if saleTransaction.RefundId != 0 {
 			saleAmt = saleAmt * -1
 			obtainMileage = obtainMileage * -1
@@ -191,7 +187,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			return nil, err
 		}
 		staffSaleRecord := models.GetStaffSaleRecord(saleTransaction, saleDate, saleMst)
-		dtSeq = 0
+		dtSeq := int64(0)
 		for _, saleTransactionDtl := range saleTAndSaleTDtls.SaleTransactionDtls {
 			if saleTransactionDtl.TransactionId == saleTransaction.TransactionId && saleTransactionDtl.SaleTransactionId == saleTransaction.Id {
 				dtSeq += 1
@@ -202,12 +198,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					return nil, err
 				}
 				saleMst.CustMileagePolicyNo = custMileagePolicyNo
-				saleEventFee = 0
-				normalFee = 0
-				normalFeeRate = 0
-				saleEventFeeRate = 0
-				discountAmtAsCost = 0
-				saleQty = 0
+				discountAmtAsCost := float64(0)
 				saleAmt = 0
 
 				promotionEvent, couponNo, err := models.GetPromotionEventAndCouponNo(appliedSaleRecordCartOffers, saleTransaction, saleTransactionDtl)
@@ -289,23 +280,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 					}
 					return nil, err
 				}
-				postSaleRecordFee, err := models.PostSaleRecordFee{}.GetPostSaleRecordFee(saleTransactionDtl.OrderItemId, saleTransactionDtl.RefundItemId)
+				postSaleRecordFee, err := models.GetPostSaleRecordFee(saleTransaction, saleTransactionDtl)
 				if err != nil {
-					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-						SaleTransactionId:      saleTransaction.Id,
-						TransactionChannelType: saleTransaction.TransactionChannelType,
-						OrderId:                saleTransaction.OrderId,
-						RefundId:               saleTransaction.RefundId,
-						StoreId:                saleTransaction.StoreId,
-						TransactionId:          saleTransactionDtl.TransactionId,
-						TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
-						CreatedBy:              "API",
-						Error:                  err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10) + " RefundItemId:" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10),
-						Details:                "",
-					}
-					if err := SaleRecordIdFailMapping.Save(); err != nil {
-						return nil, err
-					}
 					return nil, err
 				}
 				preSaleDtSeq, err := models.GetPreSaleDtSeq(saleTransaction, saleTransactionDtl)
@@ -317,19 +293,18 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				estimateSaleAmt := GetToFixedPrice(saleTransactionDtl.TotalListPrice-discountAmt, baseTrimCode)
 				sellingAmt := GetToFixedPrice(estimateSaleAmt-discountAmtAsCost, baseTrimCode)
 				chinaFISaleAmt := GetToFixedPrice(estimateSaleAmt+saleEventAutoDiscountAmt, baseTrimCode)
-				if normalSaleTypeCode == "1" {
-					saleEventFee = postSaleRecordFee.FeeAmount
-					saleEventFeeRate = postSaleRecordFee.AppliedFeeRate
-					actualSaleAmt = GetToFixedPrice(sellingAmt-saleEventFee, baseTrimCode)
-				} else {
-					normalFee = postSaleRecordFee.FeeAmount
-					actualSaleAmt = GetToFixedPrice(sellingAmt-normalFee, baseTrimCode)
+				saleEventFee, saleEventFeeRate, err := models.GetSaleEventFee_SaleEventFeeRate(postSaleRecordFee, normalSaleTypeCode, baseTrimCode, sellingAmt)
+				if err != nil {
+					return nil, err
 				}
-				normalFeeRate = postSaleRecordFee.ItemFeeRate
-
-				normalPrice = saleTransactionDtl.ListPrice
-				saleQty = saleTransactionDtl.Quantity
-				saleAmt = saleTransactionDtl.TotalListPrice
+				normalFee, actualSaleAmt, err := models.GetNormalFee_ActualSaleAmt(postSaleRecordFee, normalSaleTypeCode, baseTrimCode, sellingAmt, saleEventFee)
+				if err != nil {
+					return nil, err
+				}
+				normalFeeRate := postSaleRecordFee.ItemFeeRate
+				normalPrice := saleTransactionDtl.ListPrice
+				saleQty := saleTransactionDtl.Quantity
+				saleAmt := saleTransactionDtl.TotalListPrice
 
 				shopEmpEstimateSaleAmt, err := models.GetShopEmpEstimateSaleAmt(saleTransaction, saleTransactionDtl, baseTrimCode)
 				if err != nil {

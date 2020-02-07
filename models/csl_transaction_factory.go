@@ -783,3 +783,48 @@ func GetUseMileage(normalSaleTypeCode string, saleTransactionDtl SaleTransaction
 	}
 	return 0
 }
+
+//GetPostSaleRecordFee return PostSaleRecordFee
+func GetPostSaleRecordFee(saleTransaction SaleTransaction, saleTransactionDtl SaleTransactionDtl) (PostSaleRecordFee, error) {
+	postSaleRecordFee, err := PostSaleRecordFee{}.GetPostSaleRecordFee(saleTransactionDtl.OrderItemId, saleTransactionDtl.RefundItemId)
+	if err != nil {
+		saleRecordIdFailMapping := &SaleRecordIdFailMapping{
+			SaleTransactionId:      saleTransaction.Id,
+			TransactionChannelType: saleTransaction.TransactionChannelType,
+			OrderId:                saleTransaction.OrderId,
+			RefundId:               saleTransaction.RefundId,
+			StoreId:                saleTransaction.StoreId,
+			TransactionId:          saleTransactionDtl.TransactionId,
+			TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
+			CreatedBy:              "API",
+			Error:                  err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10) + " RefundItemId:" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10),
+			Details:                "",
+		}
+		if err := saleRecordIdFailMapping.Save(); err != nil {
+			return PostSaleRecordFee{}, err
+		}
+		return PostSaleRecordFee{}, err
+	}
+	return postSaleRecordFee, nil
+}
+
+// GetSaleEventFee_SaleEventFeeRate return saleEventFee saleEventFeeRate
+func GetSaleEventFee_SaleEventFeeRate(postSaleRecordFee PostSaleRecordFee, normalSaleTypeCode, baseTrimCode string, sellingAmt float64) (float64, float64, error) {
+	if normalSaleTypeCode == "1" {
+		saleEventFee := postSaleRecordFee.FeeAmount
+		saleEventFeeRate := postSaleRecordFee.AppliedFeeRate
+		return saleEventFee, saleEventFeeRate, nil
+	}
+	return 0, 0, nil
+}
+
+//GetNormalFee_ActualSaleAmt return normalFee and actualSaleAmt
+func GetNormalFee_ActualSaleAmt(postSaleRecordFee PostSaleRecordFee, normalSaleTypeCode, baseTrimCode string, sellingAmt, saleEventFee float64) (float64, float64, error) {
+	if normalSaleTypeCode != "1" {
+		normalFee := postSaleRecordFee.FeeAmount
+		actualSaleAmt := GetToFixedPrice(sellingAmt-normalFee, baseTrimCode)
+		return normalFee, actualSaleAmt, nil
+	}
+	actualSaleAmt := GetToFixedPrice(sellingAmt-saleEventFee, baseTrimCode)
+	return 0, actualSaleAmt, nil
+}
