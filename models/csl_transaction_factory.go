@@ -828,3 +828,46 @@ func GetNormalFee_ActualSaleAmt(postSaleRecordFee PostSaleRecordFee, normalSaleT
 	actualSaleAmt := GetToFixedPrice(sellingAmt-saleEventFee, baseTrimCode)
 	return 0, actualSaleAmt, nil
 }
+
+//GetPriceTypeCode_SupGroupCode return PriceTypeCode SupGroupCode
+func GetPriceTypeCode_SupGroupCode(product Product, saleTransaction SaleTransaction, saleTransactionDtl SaleTransactionDtl) (string, string, error) {
+	priceTypeCode, err := SaleMst{}.GetPriceTypeCode(saleTransactionDtl.BrandCode, product.Code)
+	if err != nil {
+		SaleRecordIdFailMapping := &SaleRecordIdFailMapping{
+			SaleTransactionId:      saleTransaction.Id,
+			TransactionChannelType: saleTransaction.TransactionChannelType,
+			OrderId:                saleTransaction.OrderId,
+			RefundId:               saleTransaction.RefundId,
+			StoreId:                saleTransaction.StoreId,
+			TransactionId:          saleTransactionDtl.TransactionId,
+			TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
+			CreatedBy:              "API",
+			Error:                  err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode + " productCode:" + product.Code,
+			Details:                "价格类型编码不存在！",
+		}
+		if err := SaleRecordIdFailMapping.Save(); err != nil {
+			return "", "", err
+		}
+		return "", "", err
+	}
+	supGroupCode, err := SaleMst{}.GetSupGroupCode(saleTransactionDtl.BrandCode, product.Code)
+	if err != nil {
+		SaleRecordIdFailMapping := &SaleRecordIdFailMapping{
+			SaleTransactionId:      saleTransaction.Id,
+			TransactionChannelType: saleTransaction.TransactionChannelType,
+			OrderId:                saleTransaction.OrderId,
+			RefundId:               saleTransaction.RefundId,
+			StoreId:                saleTransaction.StoreId,
+			TransactionId:          saleTransactionDtl.TransactionId,
+			TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
+			CreatedBy:              "API",
+			Error:                  err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode + " productCode:" + product.Code,
+			Details:                "商品品类不存在",
+		}
+		if err := SaleRecordIdFailMapping.Save(); err != nil {
+			return "", "", err
+		}
+		return "", "", err
+	}
+	return priceTypeCode, supGroupCode, nil
+}
