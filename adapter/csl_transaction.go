@@ -242,42 +242,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				if err != nil {
 					return nil, err
 				}
-				priceTypeCode, err := models.SaleMst{}.GetPriceTypeCode(saleTransactionDtl.BrandCode, product.Code)
+				priceTypeCode, supGroupCode, err := models.GetPriceTypeCode_SupGroupCode(product, saleTransaction, saleTransactionDtl)
 				if err != nil {
-					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-						SaleTransactionId:      saleTransaction.Id,
-						TransactionChannelType: saleTransaction.TransactionChannelType,
-						OrderId:                saleTransaction.OrderId,
-						RefundId:               saleTransaction.RefundId,
-						StoreId:                saleTransaction.StoreId,
-						TransactionId:          saleTransactionDtl.TransactionId,
-						TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
-						CreatedBy:              "API",
-						Error:                  err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode + " productCode:" + product.Code,
-						Details:                "价格类型编码不存在！",
-					}
-					if err := SaleRecordIdFailMapping.Save(); err != nil {
-						return nil, err
-					}
-					return nil, err
-				}
-				supGroupCode, err := models.SaleMst{}.GetSupGroupCode(saleTransactionDtl.BrandCode, product.Code)
-				if err != nil {
-					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-						SaleTransactionId:      saleTransaction.Id,
-						TransactionChannelType: saleTransaction.TransactionChannelType,
-						OrderId:                saleTransaction.OrderId,
-						RefundId:               saleTransaction.RefundId,
-						StoreId:                saleTransaction.StoreId,
-						TransactionId:          saleTransactionDtl.TransactionId,
-						TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
-						CreatedBy:              "API",
-						Error:                  err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode + " productCode:" + product.Code,
-						Details:                "商品品类不存在",
-					}
-					if err := SaleRecordIdFailMapping.Save(); err != nil {
-						return nil, err
-					}
 					return nil, err
 				}
 				postSaleRecordFee, err := models.GetPostSaleRecordFee(saleTransaction, saleTransactionDtl)
