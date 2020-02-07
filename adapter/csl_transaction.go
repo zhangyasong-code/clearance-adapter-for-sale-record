@@ -7,7 +7,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -409,17 +408,8 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			return nil, err
 		}
 		salePayments = generatedSalePayments
-		check := false
-		for _, saleDtl := range saleDtls {
-			if saleNo == saleDtl.SaleNo {
-				for _, salePayment := range salePayments {
-					if saleNo == salePayment.SaleNo {
-						check = true
-					}
-				}
-			}
-		}
-		if check {
+		boolAppendValid := models.GetAppendValid(saleMst, saleDtls, salePayments)
+		if boolAppendValid {
 			staffSaleRecords = append(staffSaleRecords, staffSaleRecord)
 			saleMsts = append(saleMsts, saleMst)
 		} else {
@@ -461,72 +451,17 @@ func (etl ClearanceToCslETL) ReadyToLoad(ctx context.Context, source interface{}
 
 	for _, saleMst := range saleMstsAndSaleDtls.SaleMsts {
 		paymentAmt = 0
-
 		//Check Shop
-		err := models.SaleMst{}.CheckShop(saleMst.BrandCode, saleMst.ShopCode)
-		if err != nil {
-			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-				SaleTransactionId:      saleMst.SaleTransactionId,
-				TransactionChannelType: saleMst.TransactionChannelType,
-				OrderId:                saleMst.OrderId,
-				RefundId:               saleMst.RefundId,
-				StoreId:                saleMst.StoreId,
-				TransactionId:          saleMst.TransactionId,
-				CreatedBy:              "API",
-				Error:                  err.Error() + " BrandCode:" + saleMst.BrandCode + " ShopCode:" + saleMst.ShopCode,
-				Details:                "卖场信息不存在!",
-			}
-			if err := SaleRecordIdFailMapping.Save(); err != nil {
-				return err
-			}
+		if err := models.ValidShop(saleMst); err != nil {
 			return err
 		}
-
 		//Check PaymentAmt
-		for _, salePayment := range saleMstsAndSaleDtls.SalePayments {
-			if saleMst.SaleNo == salePayment.SaleNo {
-				paymentAmt += salePayment.PaymentAmt
-			}
+		if err := models.ValidPaymentAmt(saleMstsAndSaleDtls.SalePayments, saleMst, paymentAmt); err != nil {
+			return err
 		}
-		if saleMst.SellingAmt != paymentAmt {
-			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-				SaleTransactionId:      saleMst.SaleTransactionId,
-				TransactionChannelType: saleMst.TransactionChannelType,
-				OrderId:                saleMst.OrderId,
-				RefundId:               saleMst.RefundId,
-				StoreId:                saleMst.StoreId,
-				TransactionId:          saleMst.TransactionId,
-				CreatedBy:              "API",
-				Error:                  "支付金额:" + fmt.Sprintf("%g", paymentAmt) + "和SaleMst实际销售金额:" + fmt.Sprintf("%g", saleMst.SellingAmt) + "不一致！",
-				Details:                "支付金额:" + fmt.Sprintf("%g", paymentAmt) + "和SaleMst实际销售金额:" + fmt.Sprintf("%g", saleMst.SellingAmt) + "不一致！",
-			}
-			if err := SaleRecordIdFailMapping.Save(); err != nil {
-				return err
-			}
-			return errors.New("支付金额和SaleMst实际销售金额不一致！")
-		}
-		for _, saleDtl := range saleMstsAndSaleDtls.SaleDtls {
-			if saleMst.SaleNo == saleDtl.SaleNo {
-				//Check FeeRate
-				if saleDtl.NormalFeeRate <= 0 {
-					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-						SaleTransactionId:      saleMst.SaleTransactionId,
-						TransactionChannelType: saleMst.TransactionChannelType,
-						OrderId:                saleMst.OrderId,
-						RefundId:               saleMst.RefundId,
-						StoreId:                saleMst.StoreId,
-						TransactionId:          saleMst.TransactionId,
-						TransactionDtlId:       saleDtl.TransactionDtlId,
-						CreatedBy:              "API",
-						Error:                  "正常扣率不能为空！" + " NormalFeeRate:" + strconv.FormatFloat(saleDtl.NormalFeeRate, 'E', -1, 64),
-						Details:                "正常扣率不能为空！",
-					}
-					if err := SaleRecordIdFailMapping.Save(); err != nil {
-						return err
-					}
-					return errors.New("正常扣率不能为空！")
-				}
-			}
+		//Check NormalFeeRate
+		if err := models.ValidNormalFeeRate(saleMst, saleMstsAndSaleDtls.SaleDtls); err != nil {
+			return err
 		}
 	}
 	err := Clearance{}.TransformToClearance(saleMstsAndSaleDtls)
