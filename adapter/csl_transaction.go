@@ -407,7 +407,9 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 		if err != nil {
 			return nil, err
 		}
-		salePayments = generatedSalePayments
+		for _, generatedSalePayment := range generatedSalePayments {
+			salePayments = append(salePayments, generatedSalePayment)
+		}
 		boolAppendValid := models.GetAppendValid(saleMst, saleDtls, salePayments)
 		if boolAppendValid {
 			staffSaleRecords = append(staffSaleRecords, staffSaleRecord)
