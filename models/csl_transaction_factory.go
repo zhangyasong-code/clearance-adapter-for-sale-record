@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -870,4 +871,92 @@ func GetPriceTypeCode_SupGroupCode(product Product, saleTransaction SaleTransact
 		return "", "", err
 	}
 	return priceTypeCode, supGroupCode, nil
+}
+
+func GetAppendValid(saleMst SaleMst, saleDtls []SaleDtl, salePayments []SalePayment) bool {
+	checkBool := false
+	for _, saleDtl := range saleDtls {
+		if saleMst.SaleNo == saleDtl.SaleNo {
+			for _, salePayment := range salePayments {
+				if saleMst.SaleNo == salePayment.SaleNo {
+					checkBool = true
+				}
+			}
+		}
+	}
+	return checkBool
+}
+
+func ValidShop(saleMst SaleMst) error {
+	err := SaleMst{}.CheckShop(saleMst.BrandCode, saleMst.ShopCode)
+	if err != nil {
+		saleRecordIdFailMapping := &SaleRecordIdFailMapping{
+			SaleTransactionId:      saleMst.SaleTransactionId,
+			TransactionChannelType: saleMst.TransactionChannelType,
+			OrderId:                saleMst.OrderId,
+			RefundId:               saleMst.RefundId,
+			StoreId:                saleMst.StoreId,
+			TransactionId:          saleMst.TransactionId,
+			CreatedBy:              "API",
+			Error:                  err.Error() + " BrandCode:" + saleMst.BrandCode + " ShopCode:" + saleMst.ShopCode,
+			Details:                "卖场信息不存在!",
+		}
+		if err := saleRecordIdFailMapping.Save(); err != nil {
+			return err
+		}
+		return err
+	}
+	return nil
+}
+
+func ValidPaymentAmt(salePayments []SalePayment, saleMst SaleMst, paymentAmt float64) error {
+	for _, salePayment := range salePayments {
+		if saleMst.SaleNo == salePayment.SaleNo {
+			paymentAmt += salePayment.PaymentAmt
+		}
+	}
+	if saleMst.SellingAmt != paymentAmt {
+		saleRecordIdFailMapping := &SaleRecordIdFailMapping{
+			SaleTransactionId:      saleMst.SaleTransactionId,
+			TransactionChannelType: saleMst.TransactionChannelType,
+			OrderId:                saleMst.OrderId,
+			RefundId:               saleMst.RefundId,
+			StoreId:                saleMst.StoreId,
+			TransactionId:          saleMst.TransactionId,
+			CreatedBy:              "API",
+			Error:                  "支付金额:" + fmt.Sprintf("%g", paymentAmt) + "和SaleMst实际销售金额:" + fmt.Sprintf("%g", saleMst.SellingAmt) + "不一致！",
+			Details:                "支付金额:" + fmt.Sprintf("%g", paymentAmt) + "和SaleMst实际销售金额:" + fmt.Sprintf("%g", saleMst.SellingAmt) + "不一致！",
+		}
+		if err := saleRecordIdFailMapping.Save(); err != nil {
+			return err
+		}
+		return errors.New("支付金额和SaleMst实际销售金额不一致！")
+	}
+	return nil
+}
+
+func ValidNormalFeeRate(saleMst SaleMst, saleDtls []SaleDtl) error {
+	for _, saleDtl := range saleDtls {
+		if saleMst.SaleNo == saleDtl.SaleNo {
+			if saleDtl.NormalFeeRate <= 0 {
+				saleRecordIdFailMapping := &SaleRecordIdFailMapping{
+					SaleTransactionId:      saleMst.SaleTransactionId,
+					TransactionChannelType: saleMst.TransactionChannelType,
+					OrderId:                saleMst.OrderId,
+					RefundId:               saleMst.RefundId,
+					StoreId:                saleMst.StoreId,
+					TransactionId:          saleMst.TransactionId,
+					TransactionDtlId:       saleDtl.TransactionDtlId,
+					CreatedBy:              "API",
+					Error:                  "正常扣率不能为空！" + " NormalFeeRate:" + strconv.FormatFloat(saleDtl.NormalFeeRate, 'E', -1, 64),
+					Details:                "正常扣率不能为空！",
+				}
+				if err := saleRecordIdFailMapping.Save(); err != nil {
+					return err
+				}
+				return errors.New("正常扣率不能为空！")
+			}
+		}
+	}
+	return nil
 }
