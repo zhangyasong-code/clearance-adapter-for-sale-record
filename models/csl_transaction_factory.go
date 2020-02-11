@@ -960,3 +960,23 @@ func ValidNormalFeeRate(saleMst SaleMst, saleDtls []SaleDtl) error {
 	}
 	return nil
 }
+
+//SaveInsertErrorLog save insert error
+func SaveInsertErrorLog(saleMst SaleMst, stringData, stringError, details string) error {
+	saleRecordIdFailMapping := &SaleRecordIdFailMapping{
+		SaleTransactionId:      saleMst.SaleTransactionId,
+		TransactionChannelType: saleMst.TransactionChannelType,
+		OrderId:                saleMst.OrderId,
+		RefundId:               saleMst.RefundId,
+		StoreId:                saleMst.StoreId,
+		TransactionId:          saleMst.TransactionId,
+		CreatedBy:              "API",
+		Error:                  stringError,
+		Details:                details,
+		Data:                   stringData,
+	}
+	if err := saleRecordIdFailMapping.Save(); err != nil {
+		return err
+	}
+	return nil
+}
