@@ -508,19 +508,9 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 		saleMst.ModiDateTime = createTime
 		if _, err := session.Table("dbo.SaleMst").Insert(&saleMst); err != nil {
 			str, _ := json.Marshal(saleMst)
-			SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-				SaleTransactionId:      saleMst.SaleTransactionId,
-				TransactionChannelType: saleMst.TransactionChannelType,
-				OrderId:                saleMst.OrderId,
-				RefundId:               saleMst.RefundId,
-				StoreId:                saleMst.StoreId,
-				TransactionId:          saleMst.TransactionId,
-				CreatedBy:              "API",
-				Error:                  err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10),
-				Details:                "数据插入异常！",
-				Data:                   string(str),
-			}
-			if err := SaleRecordIdFailMapping.Save(); err != nil {
+			stringError := err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10)
+			details := "Mst数据插入失败！"
+			if err := models.SaveInsertErrorLog(saleMst, string(str), stringError, details); err != nil {
 				return err
 			}
 			session.Rollback()
@@ -533,19 +523,9 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 				staffSaleRecord.InDateTime = createTime
 				if _, err := session.Table("dbo.StaffSaleRecord").Insert(&staffSaleRecord); err != nil {
 					str, _ := json.Marshal(staffSaleRecord)
-					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-						SaleTransactionId:      saleMst.SaleTransactionId,
-						TransactionChannelType: saleMst.TransactionChannelType,
-						OrderId:                saleMst.OrderId,
-						RefundId:               saleMst.RefundId,
-						StoreId:                saleMst.StoreId,
-						TransactionId:          saleMst.TransactionId,
-						CreatedBy:              "API",
-						Error:                  err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10),
-						Details:                "数据插入异常!",
-						Data:                   string(str),
-					}
-					if err := SaleRecordIdFailMapping.Save(); err != nil {
+					stringError := err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10)
+					details := "内购销售数据插入失败！"
+					if err := models.SaveInsertErrorLog(saleMst, string(str), stringError, details); err != nil {
 						return err
 					}
 					session.Rollback()
@@ -563,20 +543,9 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 				orderItemIds += strconv.FormatInt(saleDtl.OrderItemId, 10) + ","
 				if _, err := session.Table("dbo.SaleDtl").Insert(&saleDtl); err != nil {
 					str, _ := json.Marshal(saleDtl)
-					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-						SaleTransactionId:      saleMst.SaleTransactionId,
-						TransactionChannelType: saleMst.TransactionChannelType,
-						OrderId:                saleMst.OrderId,
-						RefundId:               saleMst.RefundId,
-						StoreId:                saleMst.StoreId,
-						TransactionId:          saleMst.TransactionId,
-						TransactionDtlId:       saleDtl.TransactionDtlId,
-						CreatedBy:              "API",
-						Error:                  err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10),
-						Details:                "数据插入异常!",
-						Data:                   string(str),
-					}
-					if err := SaleRecordIdFailMapping.Save(); err != nil {
+					stringError := err.Error() + " TransactionId:" + strconv.FormatInt(saleMst.TransactionId, 10)
+					details := "Dtl插入失败！"
+					if err := models.SaveInsertErrorLog(saleMst, string(str), stringError, details); err != nil {
 						return err
 					}
 					session.Rollback()
@@ -592,19 +561,9 @@ func (etl ClearanceToCslETL) Load(ctx context.Context, source interface{}) error
 				salePayment.ModiDateTime = createTime
 				if _, err := session.Table("dbo.SalePayment").Insert(&salePayment); err != nil {
 					str, _ := json.Marshal(salePayment)
-					SaleRecordIdFailMapping := &models.SaleRecordIdFailMapping{
-						SaleTransactionId:      saleMst.SaleTransactionId,
-						TransactionChannelType: saleMst.TransactionChannelType,
-						OrderId:                saleMst.OrderId,
-						RefundId:               saleMst.RefundId,
-						StoreId:                saleMst.StoreId,
-						TransactionId:          saleMst.TransactionId,
-						CreatedBy:              "API",
-						Error:                  err.Error() + " SalePaymentTransactionId:" + strconv.FormatInt(salePayment.TransactionId, 10),
-						Details:                "数据插入异常！",
-						Data:                   string(str),
-					}
-					if err := SaleRecordIdFailMapping.Save(); err != nil {
+					stringError := err.Error() + " SalePaymentTransactionId:" + strconv.FormatInt(salePayment.TransactionId, 10)
+					details := "支付数据插入失败！"
+					if err := models.SaveInsertErrorLog(saleMst, string(str), stringError, details); err != nil {
 						return err
 					}
 					session.Rollback()
