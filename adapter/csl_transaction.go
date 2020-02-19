@@ -258,7 +258,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				estimateSaleAmt := GetToFixedPrice(saleTransactionDtl.TotalListPrice-discountAmt, baseTrimCode)
 				sellingAmt := GetToFixedPrice(estimateSaleAmt-discountAmtAsCost, baseTrimCode)
 				chinaFISaleAmt := GetToFixedPrice(estimateSaleAmt+saleEventAutoDiscountAmt, baseTrimCode)
-				saleEventFee, saleEventFeeRate, err := models.GetSaleEventFee_SaleEventFeeRate(postSaleRecordFee, normalSaleTypeCode, baseTrimCode, sellingAmt)
+				saleEventFee, saleEventFeeRate, err := models.GetSaleEventFee_SaleEventFeeRate(postSaleRecordFee, normalSaleTypeCode, baseTrimCode, sellingAmt, saleTransaction, saleTransactionDtl)
 				if err != nil {
 					return nil, err
 				}

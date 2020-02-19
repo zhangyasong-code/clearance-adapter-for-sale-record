@@ -810,10 +810,28 @@ func GetPostSaleRecordFee(saleTransaction SaleTransaction, saleTransactionDtl Sa
 }
 
 // GetSaleEventFee_SaleEventFeeRate return saleEventFee saleEventFeeRate
-func GetSaleEventFee_SaleEventFeeRate(postSaleRecordFee PostSaleRecordFee, normalSaleTypeCode, baseTrimCode string, sellingAmt float64) (float64, float64, error) {
+func GetSaleEventFee_SaleEventFeeRate(postSaleRecordFee PostSaleRecordFee, normalSaleTypeCode, baseTrimCode string, sellingAmt float64, saleTransaction SaleTransaction, saleTransactionDtl SaleTransactionDtl) (float64, float64, error) {
 	if normalSaleTypeCode == "1" {
 		saleEventFee := postSaleRecordFee.FeeAmount
-		saleEventFeeRate := postSaleRecordFee.AppliedFeeRate
+		saleEventFeeRate := postSaleRecordFee.EventFeeRate
+		if saleEventFeeRate == 0 {
+			SaleRecordIdFailMapping := &SaleRecordIdFailMapping{
+				SaleTransactionId:      saleTransaction.Id,
+				TransactionChannelType: saleTransaction.TransactionChannelType,
+				OrderId:                saleTransaction.OrderId,
+				RefundId:               saleTransaction.RefundId,
+				StoreId:                saleTransaction.StoreId,
+				TransactionId:          saleTransactionDtl.TransactionId,
+				TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
+				CreatedBy:              "API",
+				Error:                  "活动扣率不能为0！" + "TransactionId:" + strconv.FormatInt(postSaleRecordFee.TransactionId, 10) + " TransactionDtlId:" + strconv.FormatInt(postSaleRecordFee.TransactionDtlId, 10),
+				Details:                "活动扣率不能为0！",
+			}
+			if err := SaleRecordIdFailMapping.Save(); err != nil {
+				return 0, 0, err
+			}
+			return 0, 0, errors.New("活动扣率不能为0！")
+		}
 		return saleEventFee, saleEventFeeRate, nil
 	}
 	return 0, 0, nil
