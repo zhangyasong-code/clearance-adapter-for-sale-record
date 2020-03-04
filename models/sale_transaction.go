@@ -123,6 +123,7 @@ type SaleRecordIdFailMapping struct {
 	Details                string    `json:"details" xorm:"VARCHAR(100)"`
 	Data                   string    `json:"data" xorm:"TEXT"`
 	IsCreate               bool      `json:"isCreate" xorm:"index notnull default false"`
+	TransactionCreateDate  time.Time `json:"transactionCreateDate"`
 	CreatedAt              time.Time `json:"createdAt" xorm:"created"`
 	CreatedBy              string    `json:"createdBy" xorm:"index VARCHAR(30)"`
 	UpdatedAt              time.Time `json:"updatedAt" xorm:"updated"`
@@ -451,21 +452,38 @@ func (SaleRecordIdFailMapping) GetSaleFailDataLog(ctx context.Context, requestIn
 }
 
 func (SaleRecordIdFailMapping) GetAll(ctx context.Context, requestInput RequestInput) (int64, []SaleRecordIdFailMapping, error) {
-	if requestInput.StoreId == 0 {
+	if requestInput.StoreId == 0 && (requestInput.StartAt == "" || requestInput.EndAt == "") {
 		return 0, nil, nil
 	}
+	var timeStart, timeEnd string
+	var errt error
+	if requestInput.StartAt != "" {
+		if timeStart, errt = DateParseToUtc(requestInput.StartAt); errt != nil {
+			return 0, nil, errt
+		}
+	}
+	if requestInput.EndAt != "" {
+		if timeEnd, errt = DateParseToUtc(requestInput.EndAt); errt != nil {
+			return 0, nil, errt
+		}
+	}
 	var failDatas []SaleRecordIdFailMapping
-	sql := "Select order_id, refund_id, 0 as transaction_id, store_id, error, details, created_at from (" +
-		"SELECT order_id, refund_id, 0 as transaction_id, store_id, error, details, created_at FROM pangpang_brand_nhub.sale_record_success where is_success = false union " +
-		"SELECT order_id, refund_id, transaction_id, store_id , error, details, created_at FROM pangpang_brand_nhub.post_process_success where is_success = false and module_type != 'SendToClearance' union " +
-		"SELECT a.order_id, a.refund_id, a.transaction_id, a.store_id, a.error, a.details, a.created_at FROM mslv2_clearance.sale_record_id_fail_mapping a left join " +
+	sql := "Select order_id, refund_id, 0 as transaction_id, store_id, error, details, created_at, transaction_create_date from (" +
+		"SELECT order_id, refund_id, 0 as transaction_id, store_id, error, details, created_at, transaction_create_date FROM pangpang_brand_nhub.sale_record_success where is_success = false union " +
+		"SELECT order_id, refund_id, transaction_id, store_id , error, details, created_at, transaction_create_date FROM pangpang_brand_nhub.post_process_success where is_success = false and module_type != 'SendToClearance' union " +
+		"SELECT a.order_id, a.refund_id, a.transaction_id, a.store_id, a.error, a.details, a.created_at, a.transaction_create_date FROM mslv2_clearance.sale_record_id_fail_mapping a left join " +
 		"pangpang_brand_nhub.post_process_success b on a.transaction_id = b.transaction_id and b.is_success = false and b.module_type = 'SendToClearance' where a.is_create = false" +
-		") ErrorList " + "where store_id = " + strconv.Itoa(requestInput.StoreId)
-
+		") ErrorList where "
+	if requestInput.StoreId != 0 {
+		sql += "store_id =" + strconv.Itoa(requestInput.StoreId)
+	}
+	if timeStart != "" && timeEnd != "" {
+		sql += "transaction_create_date>= '" + timeStart + "' and transaction_create_date< '" + timeEnd + "'"
+	}
 	if err := factory.GetMslv2ReadonlyEngine().SQL(sql).Find(&failDatas); err != nil {
 		return 0, nil, err
 	}
-	return 0, failDatas, nil
+	return int64(len(failDatas)), failDatas, nil
 }
 
 func (SaleRecordIdSuccessMapping) GetAllSaleSuccess(ctx context.Context, requestInput RequestInput) (int64, []SaleRecordIdSuccessMapping, error) {

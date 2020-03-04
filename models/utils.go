@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"time"
 
 	"github.com/pangpanglabs/goutils/number"
 )
@@ -69,4 +70,16 @@ func getPaymentCodeAndPayCreditCardFirmCode(payMethod string) (paymentCode strin
 		return "", "", err
 	}
 	return paymentCode, payCreditCardFirmCode, nil
+}
+
+//DateParseToUtc parses a formatted local time string
+//and returns the UTC time value it represents.
+func DateParseToUtc(date string) (timeUtcString string, err error) {
+	timeLayout := "2006-01-02"
+	timeLoc, err := time.Parse(timeLayout, date)
+	if err != nil {
+		return
+	}
+	timeUtcString = timeLoc.Add(time.Hour * -8).Format("2006-01-02 15:04:05")
+	return
 }

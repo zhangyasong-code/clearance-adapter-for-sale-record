@@ -219,6 +219,7 @@ func GetPreSaleNo(saleTransaction SaleTransaction) (sql.NullString, error) {
 				CreatedBy:              "API",
 				Error:                  err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10) + " RefundId:" + strconv.FormatInt(saleTransaction.RefundId, 10),
 				Details:                details,
+				TransactionCreateDate:  saleTransaction.SaleDate,
 			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return sql.NullString{"", false}, err
@@ -248,6 +249,7 @@ func GetCustNoAndGradeCodeAndBrandCode(saleTransaction SaleTransaction) (sql.Nul
 				CreatedBy:              "API",
 				Error:                  err.Error() + " TransactionId:" + strconv.FormatInt(saleTransaction.TransactionId, 10),
 				Details:                "查询PostMileage失败！",
+				TransactionCreateDate:  saleTransaction.SaleDate,
 			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return sql.NullString{"", false}, sql.NullString{"", false}, "", err
@@ -276,6 +278,7 @@ func GetInUserID(saleTransaction SaleTransaction) (string, error) {
 				CreatedBy:              "API",
 				Error:                  err.Error() + " TransactionCreatedId:" + strconv.FormatInt(saleTransaction.TransactionCreatedId, 10),
 				Details:                "Colleague信息不存在！",
+				TransactionCreateDate:  saleTransaction.SaleDate,
 			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return "", err
@@ -303,6 +306,7 @@ func GetInUserName(saleTransaction SaleTransaction) (string, error) {
 				CreatedBy:              "API",
 				Error:                  err.Error() + " SalesmanId:" + strconv.FormatInt(saleTransaction.SalesmanId, 10),
 				Details:                "销售员信息不存在！",
+				TransactionCreateDate:  saleTransaction.SaleDate,
 			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return "", err
@@ -321,6 +325,7 @@ func GetInUserName(saleTransaction SaleTransaction) (string, error) {
 				CreatedBy:              "API",
 				Error:                  err.Error() + " EmpId:" + salesPerson.EmpId,
 				Details:                "UserInfo信息不存在！",
+				TransactionCreateDate:  saleTransaction.SaleDate,
 			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return "", err
@@ -378,6 +383,7 @@ func GetEANCodeAndSkuCode(saleTransaction SaleTransaction, saleTransactionDtl Sa
 			CreatedBy:              "API",
 			Error:                  err.Error() + " SkuId:" + strconv.FormatInt(saleTransactionDtl.SkuId, 10),
 			Details:                "商品不存在！",
+			TransactionCreateDate:  saleTransaction.SaleDate,
 		}
 		if err := SaleRecordIdFailMapping.Save(); err != nil {
 			return "", "", err
@@ -396,6 +402,7 @@ func GetEANCodeAndSkuCode(saleTransaction SaleTransaction, saleTransactionDtl Sa
 			CreatedBy:              "API",
 			Error:                  "Sku.Identifiers not exist.  SkuID : " + strconv.FormatInt(saleTransactionDtl.SkuId, 10),
 			Details:                "商品UID不存在！",
+			TransactionCreateDate:  saleTransaction.SaleDate,
 		}
 		if err := SaleRecordIdFailMapping.Save(); err != nil {
 			return "", "", err
@@ -424,6 +431,7 @@ func GetPreSaleDtSeq(saleTransaction SaleTransaction, saleTransactionDtl SaleTra
 					CreatedBy:              "API",
 					Error:                  err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10),
 					Details:                "换货处理必须有之前的退货数据！",
+					TransactionCreateDate:  saleTransaction.SaleDate,
 				}
 				if err := SaleRecordIdFailMapping.Save(); err != nil {
 					return sql.NullInt64{0, false}, err
@@ -447,6 +455,7 @@ func GetPreSaleDtSeq(saleTransaction SaleTransaction, saleTransactionDtl SaleTra
 					CreatedBy:              "API",
 					Error:                  err.Error() + " OrderId:" + strconv.FormatInt(saleTransaction.OrderId, 10) + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10),
 					Details:                "退货处理必须有之前的销售数据！",
+					TransactionCreateDate:  saleTransaction.SaleDate,
 				}
 				if err := SaleRecordIdFailMapping.Save(); err != nil {
 					return sql.NullInt64{0, false}, err
@@ -489,6 +498,7 @@ func GetShopEmpEstimateSaleAmt(saleTransaction SaleTransaction, saleTransactionD
 			CreatedBy:              "API",
 			Error:                  err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10) + " RefundItemId:" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10),
 			Details:                "营业员销售业绩不存在！",
+			TransactionCreateDate:  saleTransaction.SaleDate,
 		}
 		if err := SaleRecordIdFailMapping.Save(); err != nil {
 			return 0, err
@@ -512,6 +522,7 @@ func GetGeneratedSalePayments(saleTransaction SaleTransaction, inUserID, baseTri
 			CreatedBy:              "API",
 			Error:                  err.Error() + " TransactionId:" + strconv.FormatInt(saleTransaction.TransactionId, 10),
 			Details:                "支付信息不存在！",
+			TransactionCreateDate:  saleTransaction.SaleDate,
 		}
 		if err := SaleRecordIdFailMapping.Save(); err != nil {
 			return nil, err
@@ -572,6 +583,7 @@ func getPromotionEventByOfferNo(offerNo string, saleTransaction SaleTransaction,
 			CreatedBy:              "API",
 			Error:                  err.Error() + " OfferNo:" + offerNo + " EventNo:" + eventNo,
 			Details:                "商品参加的活动不存在！",
+			TransactionCreateDate:  saleTransaction.SaleDate,
 		}
 		if err := SaleRecordIdFailMapping.Save(); err != nil {
 			return nil, err
@@ -691,6 +703,7 @@ func GetPrimaryCustEventNo_PrimaryEventTypeCode_PrimaryEventSettleTypeCode(promo
 				CreatedBy:              "API",
 				Error:                  err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode,
 				Details:                "优惠券信息不存在！",
+				TransactionCreateDate:  saleTransaction.SaleDate,
 			}
 			if err := saleRecordIdFailMapping.Save(); err != nil {
 				return sql.NullInt64{0, false}, sql.NullString{"", false}, sql.NullString{"", false}, err
@@ -718,6 +731,7 @@ func ValidCustomerCustNo(saleMst SaleMst, promotionEvent *PromotionEvent, saleTr
 					CreatedBy:              "API",
 					Error:                  promotionEvent.EventTypeCode + "类型必须要有顾客信息!",
 					Details:                promotionEvent.EventTypeCode + "类型必须要有顾客信息!",
+					TransactionCreateDate:  saleTransaction.SaleDate,
 				}
 				if err := saleRecordIdFailMapping.Save(); err != nil {
 					return err
@@ -768,6 +782,7 @@ func GetProduct(saleTransaction SaleTransaction, saleTransactionDtl SaleTransact
 			CreatedBy:              "API",
 			Error:                  err.Error() + " ProductId:" + strconv.FormatInt(saleTransactionDtl.ProductId, 10),
 			Details:                "商品款式不存在!",
+			TransactionCreateDate:  saleTransaction.SaleDate,
 		}
 		if err := SaleRecordIdFailMapping.Save(); err != nil {
 			return Product{}, err
@@ -799,7 +814,8 @@ func GetPostSaleRecordFee(saleTransaction SaleTransaction, saleTransactionDtl Sa
 			TransactionDtlId:       saleTransactionDtl.TransactionDtlId,
 			CreatedBy:              "API",
 			Error:                  err.Error() + " OrderItemId:" + strconv.FormatInt(saleTransactionDtl.OrderItemId, 10) + " RefundItemId:" + strconv.FormatInt(saleTransactionDtl.RefundItemId, 10),
-			Details:                "",
+			Details:                "查询扣率数据失败！",
+			TransactionCreateDate:  saleTransaction.SaleDate,
 		}
 		if err := saleRecordIdFailMapping.Save(); err != nil {
 			return PostSaleRecordFee{}, err
@@ -826,6 +842,7 @@ func GetSaleEventFee_SaleEventFeeRate(postSaleRecordFee PostSaleRecordFee, norma
 				CreatedBy:              "API",
 				Error:                  "活动扣率不能为0！" + "TransactionId:" + strconv.FormatInt(postSaleRecordFee.TransactionId, 10) + " TransactionDtlId:" + strconv.FormatInt(postSaleRecordFee.TransactionDtlId, 10),
 				Details:                "活动扣率不能为0！",
+				TransactionCreateDate:  saleTransaction.SaleDate,
 			}
 			if err := SaleRecordIdFailMapping.Save(); err != nil {
 				return 0, 0, err
@@ -863,6 +880,7 @@ func GetPriceTypeCode_SupGroupCode(product Product, saleTransaction SaleTransact
 			CreatedBy:              "API",
 			Error:                  err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode + " productCode:" + product.Code,
 			Details:                "价格类型编码不存在！",
+			TransactionCreateDate:  saleTransaction.SaleDate,
 		}
 		if err := SaleRecordIdFailMapping.Save(); err != nil {
 			return "", "", err
@@ -882,6 +900,7 @@ func GetPriceTypeCode_SupGroupCode(product Product, saleTransaction SaleTransact
 			CreatedBy:              "API",
 			Error:                  err.Error() + " BrandCode:" + saleTransactionDtl.BrandCode + " productCode:" + product.Code,
 			Details:                "商品品类不存在",
+			TransactionCreateDate:  saleTransaction.SaleDate,
 		}
 		if err := SaleRecordIdFailMapping.Save(); err != nil {
 			return "", "", err
@@ -918,6 +937,7 @@ func ValidShop(saleMst SaleMst) error {
 			CreatedBy:              "API",
 			Error:                  err.Error() + " BrandCode:" + saleMst.BrandCode + " ShopCode:" + saleMst.ShopCode,
 			Details:                "卖场信息不存在!",
+			TransactionCreateDate:  saleMst.TransactionCreateDate,
 		}
 		if err := saleRecordIdFailMapping.Save(); err != nil {
 			return err
@@ -944,6 +964,7 @@ func ValidPaymentAmt(salePayments []SalePayment, saleMst SaleMst, paymentAmt flo
 			CreatedBy:              "API",
 			Error:                  "支付金额:" + fmt.Sprintf("%g", paymentAmt) + "和SaleMst实际销售金额:" + fmt.Sprintf("%g", saleMst.SellingAmt) + "不一致！",
 			Details:                "支付金额:" + fmt.Sprintf("%g", paymentAmt) + "和SaleMst实际销售金额:" + fmt.Sprintf("%g", saleMst.SellingAmt) + "不一致！",
+			TransactionCreateDate:  saleMst.TransactionCreateDate,
 		}
 		if err := saleRecordIdFailMapping.Save(); err != nil {
 			return err
@@ -968,6 +989,7 @@ func ValidNormalFeeRate(saleMst SaleMst, saleDtls []SaleDtl) error {
 					CreatedBy:              "API",
 					Error:                  "正常扣率不能为空！" + " NormalFeeRate:" + strconv.FormatFloat(saleDtl.NormalFeeRate, 'E', -1, 64),
 					Details:                "正常扣率不能为空！",
+					TransactionCreateDate:  saleMst.TransactionCreateDate,
 				}
 				if err := saleRecordIdFailMapping.Save(); err != nil {
 					return err
@@ -992,6 +1014,7 @@ func SaveInsertErrorLog(saleMst SaleMst, stringData, stringError, details string
 		Error:                  stringError,
 		Details:                details,
 		Data:                   stringData,
+		TransactionCreateDate:  saleMst.TransactionCreateDate,
 	}
 	if err := saleRecordIdFailMapping.Save(); err != nil {
 		return err
