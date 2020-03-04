@@ -203,10 +203,19 @@ func (TransactionController) GetSaleFailDataLog(c echo.Context) error {
 
 func (TransactionController) GetFailDataLog(c echo.Context) error {
 	storeId, _ := strconv.Atoi(c.QueryParam("storeId"))
-	if storeId == 0 {
-		return renderFail(c, http.StatusBadRequest, errors.New("StoreId can not be 0!"))
+	startAt := c.QueryParam("startAt")
+	endAt := c.QueryParam("endAt")
+	if storeId == 0 && (startAt == "" || endAt == "") {
+		return renderFail(c, http.StatusBadRequest, errors.New("No startAt and endAt, storeId can not be 0!"))
 	}
-	totalCount, items, err := models.SaleRecordIdFailMapping{}.GetAll(c.Request().Context(), models.RequestInput{StoreId: storeId})
+	res, err := DateTermMaxValidate(startAt, endAt, 31)
+	if err != nil {
+		return renderFail(c, http.StatusBadRequest, api.ParameterParsingError(err))
+	}
+	if !res {
+		return renderFail(c, http.StatusBadRequest, errors.New("The maximum interval of startAt and endAt is one month ！"))
+	}
+	totalCount, items, err := models.SaleRecordIdFailMapping{}.GetAll(c.Request().Context(), models.RequestInput{StoreId: storeId, StartAt: startAt, EndAt: endAt})
 	if err != nil {
 		return renderFail(c, http.StatusInternalServerError, err)
 	}

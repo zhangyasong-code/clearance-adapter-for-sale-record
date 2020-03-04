@@ -55,3 +55,29 @@ func renderFail(c echo.Context, status int, err error) error {
 		},
 	})
 }
+
+//DateTermMaxValidate validate data maxterm
+func DateTermMaxValidate(startAt, endAt string, term int) (result bool, err error) {
+	if startAt == "" && endAt == "" {
+		return true, nil
+	} else if startAt != "" && endAt != "" {
+		timeLayout := "2006-01-02"
+		var startTime, endTime time.Time
+		startTime, err = time.Parse(timeLayout, startAt)
+		if err != nil {
+			return false, err
+		}
+		endTime, err = time.Parse(timeLayout, endAt)
+		if err != nil {
+			return false, err
+		}
+		if startTime.After(endTime) {
+			return false, nil
+		}
+		if startTime.AddDate(0, 0, term-1).Before(endTime) {
+			return false, nil
+		}
+		return true, nil
+	}
+	return false, nil
+}

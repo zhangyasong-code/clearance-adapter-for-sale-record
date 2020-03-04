@@ -180,6 +180,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 			TransactionChannelType:      saleTransaction.TransactionChannelType,
 			TransactionType:             saleTransaction.TransactionType,
 			SalesmanId:                  saleTransaction.SalesmanId,
+			TransactionCreateDate:       saleTransaction.SaleDate,
 		}
 		appliedSaleRecordCartOffers, err := models.AppliedSaleRecordCartOffer{}.GetAppliedSaleRecordCartOffers(saleTransaction.TransactionId)
 		if err != nil {
