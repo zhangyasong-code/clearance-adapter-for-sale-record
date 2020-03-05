@@ -201,7 +201,7 @@ func (etl ClearanceToCslETL) Transform(ctx context.Context, source interface{}) 
 				discountAmtAsCost := float64(0)
 				saleAmt = 0
 
-				promotionEvent, couponNo, err := models.GetPromotionEventAndCouponNo(appliedSaleRecordCartOffers, saleTransaction, saleTransactionDtl)
+				promotionEvent, couponNo, err := models.GetPromotionEventAndCouponNo(ctx, appliedSaleRecordCartOffers, saleTransaction, saleTransactionDtl)
 				if err != nil {
 					return nil, err
 				}
