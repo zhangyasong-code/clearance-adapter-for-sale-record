@@ -73,6 +73,7 @@ type C struct {
 		GetTokenApi        string
 		Membership         string
 		ExchangeApi        string
+		SaleRecordPostProcessApi string
 	}
 	GetTokenUser struct {
 		AppId        string

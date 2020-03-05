@@ -562,8 +562,8 @@ func GetGeneratedSalePayments(saleTransaction SaleTransaction, inUserID, baseTri
 	return salePayments, nil
 }
 
-func getPromotionEventByOfferNo(offerNo string, saleTransaction SaleTransaction, saleTransactionDtl SaleTransactionDtl) (*PromotionEvent, error) {
-	promotionEvent, err := PromotionEvent{}.GetPromotionEvent(offerNo)
+func getPromotionEventByOfferNo(ctx context.Context, offerNo string, saleTransaction SaleTransaction, saleTransactionDtl SaleTransactionDtl) (*PromotionEvent, error) {
+	promotionEvent, err := PromotionEvent{}.GetPromotionEvent(ctx, offerNo)
 	if promotionEvent == nil || promotionEvent.EventNo == "" {
 		err = errors.New("PromotionEvent的EventNo为空!")
 	}
@@ -593,14 +593,14 @@ func getPromotionEventByOfferNo(offerNo string, saleTransaction SaleTransaction,
 	return promotionEvent, nil
 }
 
-func GetPromotionEventAndCouponNo(appliedSaleRecordCartOffers []AppliedSaleRecordCartOffer, saleTransaction SaleTransaction, saleTransactionDtl SaleTransactionDtl) (*PromotionEvent, string, error) {
+func GetPromotionEventAndCouponNo(ctx context.Context, appliedSaleRecordCartOffers []AppliedSaleRecordCartOffer, saleTransaction SaleTransaction, saleTransactionDtl SaleTransactionDtl) (*PromotionEvent, string, error) {
 	couponNo, offerNo := GetCouponNoAndOfferNo(appliedSaleRecordCartOffers, saleTransactionDtl.OrderItemId)
 	if couponNo != "" {
 		return nil, couponNo, nil
 	}
 	if offerNo != "" {
 		//if offerNo exist,promotionEvent can not be nil.
-		promotionEvent, err := getPromotionEventByOfferNo(offerNo, saleTransaction, saleTransactionDtl)
+		promotionEvent, err := getPromotionEventByOfferNo(ctx, offerNo, saleTransaction, saleTransactionDtl)
 		if err != nil {
 			return nil, "", err
 		}

@@ -261,7 +261,7 @@ func (etl ClearanceToCslTSaleETL) Transform(ctx context.Context, source interfac
 				}
 
 				if offerNo != "" && couponNo == "" {
-					promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(offerNo)
+					promotionEvent, err := models.PromotionEvent{}.GetPromotionEvent(ctx, offerNo)
 					if promotionEvent == nil || promotionEvent.EventNo == "" {
 						err = errors.New("PromotionEvent的EventNo为空!")
 					}

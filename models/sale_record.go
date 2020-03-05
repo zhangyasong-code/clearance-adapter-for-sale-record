@@ -275,18 +275,30 @@ func (AppliedSaleRecordCartOffer) GetAppliedSaleRecordCartOffers(transactionId i
 	return appliedSaleRecordCartOffers, nil
 }
 
-func (PromotionEvent) GetPromotionEvent(offerNo string) (*PromotionEvent, error) {
-	var promotionEvent PromotionEvent
-	exist, err := factory.GetSrEngine().Where("offer_no = ?", offerNo).Get(&promotionEvent)
-	if err != nil {
+func (PromotionEvent) GetPromotionEvent(ctx context.Context, offerNo string) (*PromotionEvent, error) {
+	var resp struct {
+		Result  PromotionEvent `json:"result"`
+		Success bool           `json:"success"`
+		Error   struct {
+			Code    int64       `json:"code"`
+			Message string      `json:"message"`
+			Details interface{} `json:"details"`
+		} `json:"error"`
+	}
+	url := fmt.Sprintf("%s/v1/promotion-event/%s", config.Config().Services.SaleRecordPostProcessApi, offerNo)
+	logrus.WithField("Url > ========:", url).Info("GetPromotionEvent")
+	if _, err := httpreq.New(http.MethodGet, url, nil).
+		WithBehaviorLogContext(behaviorlog.FromCtx(ctx)).
+		Call(&resp); err != nil {
 		return nil, err
-	} else if !exist {
+	}
+	if !resp.Success {
 		logrus.WithFields(logrus.Fields{
 			"offerNo": offerNo,
 		}).Error("Fail to GetPromotionEvent")
 		return nil, errors.New("PromotionEvent is not exist!")
 	}
-	return &promotionEvent, nil
+	return &resp.Result, nil
 }
 
 func (PostCouponEvent) GetPostCoupenEvent(brandCode string) (*PostCouponEvent, error) {
